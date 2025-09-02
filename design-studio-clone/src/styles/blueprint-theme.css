@@ -1,0 +1,73 @@
+/* Blueprint.js Dark Theme for Design Studio Clone */
+@import '@blueprintjs/core/lib/css/blueprint.css';
+@import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+
+:root {
+  /* Blueprint.js theme variables */
+  --bp5-intent-primary: #48aff0;
+  --bp5-intent-success: #15b371;
+  --bp5-intent-warning: #d9822b;
+  --bp5-intent-danger: #db3737;
+  
+  /* Polotno Studio color scheme */
+  --canvas-bg: #2f343c;
+  --canvas-surface: #ffffff;
+  --panel-bg: #394b59;
+  --toolbar-bg: #252a30;
+  --text-primary: #f5f8fa;
+  --text-secondary: #a7b6c2;
+  --text-muted: #8a9ba8;
+  --border-color: #495563;
+  --hover-bg: rgba(72, 175, 240, 0.1);
+  --active-bg: rgba(72, 175, 240, 0.2);
+  
+  /* Design tool specific colors */
+  --selection-color: #48aff0;
+  --selection-bg: rgba(72, 175, 240, 0.15);
+  --handle-color: #48aff0;
+  --grid-color: rgba(255, 255, 255, 0.1);
+  --guide-color: #ff6b6b;
+}
+
+/* Apply dark theme globally */
+.bp5-dark {
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+}
+
+/* Ensure the entire app uses dark theme */
+html,
+body,
+#root {
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Custom scrollbars for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--panel-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Focus styles for accessibility */
+.bp5-dark *:focus {
+  outline: 2px solid var(--bp5-intent-primary);
+  outline-offset: 2px;
+}

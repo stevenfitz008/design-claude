@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(source:*)",
+      "Bash(find:*)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(tree:*)",
+      "Bash(ruff:*)",
+      "Bash(touch:*)",
+      "Bash(cat:*)",
+      "Bash(ruff check:*)",
+      "Bash(pytest:*)",
+      "Bash(python:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(npm:*)",
+      "Bash(npm install:*)",
+      "Bash(npm search:*)",
+      "Read(/Users/stevenfitzpatrick/.nvm/versions/node/v22.14.0/lib/node_modules/@orunium/browser-mcp-server/**)",
+      "WebFetch(domain:studio.polotno.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:polotno.com)",
+      "WebFetch(domain:community.polotno.com)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)"
+      "Bash(lsof:*)",
+      "Read(/Applications/**)",
+      "Bash(chmod:*)",
+      "Bash(./capture_screenshots.sh:*)",
+      "Bash(curl:*)",
+      "Read(/Applications/**)",
+      "Bash(python3:*)"
+      "mcp__serena"
+      "mcp__archon"
+      "mcp__playwright"
+      "mcp__context7"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

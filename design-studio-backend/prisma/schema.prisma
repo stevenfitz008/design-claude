@@ -1,0 +1,399 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  plan      UserPlan @default(FREE)
+  
+  // Preferences stored as JSON
+  preferences Json @default("{}")
+  
+  // Usage limits
+  limits Json @default("{}")
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+  
+  // Relations
+  projects    Project[]
+  assets      Asset[]
+  templates   Template[]
+  exports     Export[]
+  sessions    Session[]
+  
+  @@map("users")
+}
+
+enum UserPlan {
+  FREE
+  PRO
+  TEAM
+  
+  @@map("user_plan")
+}
+
+// User Sessions for JWT management
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  type      SessionType @default(ACCESS)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  isRevoked Boolean @default(false) @map("is_revoked")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+enum SessionType {
+  ACCESS
+  REFRESH
+  
+  @@map("session_type")
+}
+
+// Project Management (Metadata in PostgreSQL, Canvas Data in MongoDB)
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  thumbnail   String?
+  
+  // Canvas configuration
+  canvasWidth  Int @default(1920) @map("canvas_width")
+  canvasHeight Int @default(1080) @map("canvas_height")
+  
+  // MongoDB reference for canvas data
+  canvasDocumentId String? @map("canvas_document_id")
+  
+  // Project settings
+  isPublic    Boolean @default(false) @map("is_public")
+  isTemplate  Boolean @default(false) @map("is_template")
+  tags        String[]
+  
+  // Version tracking
+  version     Int @default(1)
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  lastOpenedAt DateTime? @map("last_opened_at")
+  
+  // Relations
+  userId      String @map("user_id")
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  assets      ProjectAsset[]
+  exports     Export[]
+  collaborators ProjectCollaborator[]
+  timelines   Timeline[]
+  
+  @@map("projects")
+}
+
+// Project Collaboration
+model ProjectCollaborator {
+  id         String @id @default(cuid())
+  projectId  String @map("project_id")
+  userId     String @map("user_id")
+  role       CollaboratorRole @default(VIEWER)
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, userId])
+  @@map("project_collaborators")
+}
+
+enum CollaboratorRole {
+  VIEWER
+  EDITOR
+  ADMIN
+  
+  @@map("collaborator_role")
+}
+
+// Asset Management (Files, Images, Videos)
+model Asset {
+  id          String    @id @default(cuid())
+  filename    String
+  originalName String   @map("original_name")
+  mimeType    String    @map("mime_type")
+  size        Int
+  
+  // Storage information
+  storageKey  String    @map("storage_key")  // S3 key or file path
+  url         String?   // CDN URL
+  thumbnailUrl String?  @map("thumbnail_url")
+  
+  // Asset metadata
+  width       Int?
+  height      Int?
+  duration    Float?    // For videos
+  
+  // Organization
+  folder      String?
+  tags        String[]
+  isPublic    Boolean @default(false) @map("is_public")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  userId      String @map("user_id")
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  projectAssets ProjectAsset[]
+  
+  @@map("assets")
+}
+
+// Many-to-many relationship between Projects and Assets
+model ProjectAsset {
+  id        String @id @default(cuid())
+  projectId String @map("project_id")
+  assetId   String @map("asset_id")
+  
+  // Usage tracking
+  usageCount Int @default(1) @map("usage_count")
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+  
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset     Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, assetId])
+  @@map("project_assets")
+}
+
+// Template Library
+model Template {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  thumbnail   String
+  
+  // Template configuration
+  canvasWidth  Int @map("canvas_width")
+  canvasHeight Int @map("canvas_height")
+  
+  // MongoDB reference for template data
+  canvasDocumentId String @map("canvas_document_id")
+  
+  // Organization
+  category    String
+  tags        String[]
+  isPremium   Boolean @default(false) @map("is_premium")
+  isPublished Boolean @default(true) @map("is_published")
+  
+  // Usage statistics
+  downloadCount Int @default(0) @map("download_count")
+  likeCount     Int @default(0) @map("like_count")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+  
+  // Relations
+  authorId    String @map("author_id")
+  author      User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@map("templates")
+}
+
+// Export Jobs Management
+model Export {
+  id          String @id @default(cuid())
+  
+  // Export configuration
+  format      ExportFormat
+  quality     Int @default(100)
+  width       Int?
+  height      Int?
+  transparent Boolean @default(false)
+  
+  // Animation settings (for GIF/MP4)
+  duration    Float?
+  fps         Int?
+  loop        Boolean @default(true)
+  
+  // Job status
+  status      ExportStatus @default(PENDING)
+  progress    Int @default(0)
+  
+  // Results
+  outputUrl   String? @map("output_url")
+  fileSize    Int? @map("file_size")
+  errorMessage String? @map("error_message")
+  
+  // Processing times
+  estimatedTime Int? @map("estimated_time")
+  processingTime Int? @map("processing_time")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  completedAt DateTime? @map("completed_at")
+  expiresAt   DateTime? @map("expires_at")
+  
+  // Relations
+  projectId   String @map("project_id")
+  userId      String @map("user_id")
+  
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("exports")
+}
+
+enum ExportFormat {
+  PNG
+  JPEG
+  SVG
+  PDF
+  GIF
+  MP4
+  
+  @@map("export_format")
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+  
+  @@map("export_status")
+}
+
+// API Usage Tracking
+model ApiUsage {
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
+  
+  // API endpoint information
+  endpoint    String
+  method      String
+  
+  // Usage metrics
+  requestCount Int @default(1) @map("request_count")
+  responseTime Float? @map("response_time")
+  statusCode   Int @map("status_code")
+  
+  // Timestamps
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@map("api_usage")
+}
+
+// Animation and Timeline System
+model Timeline {
+  id          String @id @default(cuid())
+  name        String
+  duration    Float  // Duration in seconds (0.1 to 30)
+  frameRate   Int    @default(60) @map("frame_rate")
+  loop        Boolean @default(false)
+  autoPlay    Boolean @default(false) @map("auto_play")
+  
+  // Project association
+  projectId   String @map("project_id")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tracks      TimelineTrack[]
+  
+  @@map("timelines")
+}
+
+model TimelineTrack {
+  id          String @id @default(cuid())
+  name        String
+  targetId    String @map("target_id")  // Element ID being animated
+  property    String                     // Animation property (x, y, rotation, opacity, etc.)
+  enabled     Boolean @default(true)
+  
+  // Timeline association
+  timelineId  String @map("timeline_id")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  timeline    Timeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  keyframes   Keyframe[]
+  
+  @@map("timeline_tracks")
+}
+
+model Keyframe {
+  id          String @id @default(cuid())
+  time        Float  // Time position in seconds
+  value       Json   // Keyframe value (any animatable property)
+  easing      EasingType @default(LINEAR)
+  easingParams Json?  @map("easing_params") // Custom easing parameters for cubic-bezier
+  
+  // Track association
+  trackId     String @map("track_id")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  track       TimelineTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  
+  @@map("keyframes")
+}
+
+enum EasingType {
+  LINEAR
+  EASE_IN
+  EASE_OUT
+  EASE_IN_OUT
+  CUBIC_BEZIER
+  
+  @@map("easing_type")
+}
+
+// System Configuration
+model SystemConfig {
+  id        String @id @default(cuid())
+  key       String @unique
+  value     Json
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("system_config")
+}

@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: design-studio-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: design_studio
+      POSTGRES_USER: design_studio_user
+      POSTGRES_PASSWORD: design_studio_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U design_studio_user -d design_studio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: design-studio-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: design_studio_user
+      MONGO_INITDB_ROOT_PASSWORD: design_studio_password
+      MONGO_INITDB_DATABASE: design_studio_canvas
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: design-studio-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass design_studio_redis_password
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "design_studio_redis_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # PGAdmin (PostgreSQL Management - Development Only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: design-studio-pgadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@designstudio.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    profiles:
+      - dev
+
+  # MongoDB Express (MongoDB Management - Development Only)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: design-studio-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: design_studio_user
+      ME_CONFIG_MONGODB_ADMINPASSWORD: design_studio_password
+      ME_CONFIG_MONGODB_URL: mongodb://design_studio_user:design_studio_password@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    depends_on:
+      - mongodb
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  default:
+    name: design-studio-network

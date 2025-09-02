@@ -1,0 +1,486 @@
+# PRP: Design Studio Clone - Polotno-Style Canvas Editor
+
+## Context & Vision
+
+Build a comprehensive web-based design studio application that replicates the functionality of Polotno Studio. This is a **complete single-page application (SPA)** featuring a three-panel layout with advanced canvas-based editing capabilities, dynamic content panels, and professional design tools.
+
+The application targets **desktop-first** usage for complex design workflows while maintaining responsive adaptability for tablets. This is explicitly **not a mobile-first** design tool.
+
+### Reference Implementation
+- **Reference URL**: https://studio.polotno.com
+- **Application Analysis**: See `PRPs/initial.md` and `PRPs/Application-spec.md` for detailed UI/UX analysis
+- **Structured Requirements**: See `PRPs/specification_model.json` for Pydantic-validated specifications
+
+### Success Criteria
+- **Performance**: Match Polotno Studio's responsiveness (60fps canvas, <3s load)
+- **Feature Parity**: 14 tool categories with full functionality
+- **User Experience**: Intuitive three-panel workflow with context-sensitive controls
+- **Scalability**: Support complex designs with 100+ elements without performance degradation
+
+## Technical Architecture
+
+### Validated Technology Stack (from Pydantic models)
+```json
+{
+  "frontend_framework": "React 18.2+ with Blueprint.js components",
+  "build_system": "Vite",
+  "ui_components": "Blueprint.js UI components with dark theme",
+  "canvas_frameworks": ["Konva.js", "HTML5 Canvas", "WebGL", "Three.js"],
+  "styling_system": "Goober CSS-in-JS with auto-generated class names",
+  "state_management": "Zustand + React Context (primary), MobX (data flows)",
+  "database": "PostgreSQL (primary) + MobX (caching) + MongoDB (documents)"
+}
+```
+
+### Critical External Documentation
+- **React + Vite Setup**: https://vite.dev/guide/ (Node.js 20.19+, 22.12+ required)
+- **Blueprint.js Documentation**: https://blueprintjs.com/docs/ (TypeScript 3.8+ required)
+- **Konva.js React Integration**: https://konvajs.org/docs/react/index.html
+- **Konva.js Performance Guide**: https://konvajs.org/docs/performance/All_Performance_Tips.html
+- **Konva.js Memory Leak Prevention**: https://konvajs.org/docs/performance/Avoid_Memory_Leaks.html
+- **Konva.js Undo/Redo Implementation**: https://konvajs.org/docs/react/Undo-Redo.html
+- **Goober CSS-in-JS**: https://goober.js.org/ (<1KB alternative to styled-components)
+- **Canvas Design Editor Examples**: https://konvajs.org/docs/sandbox/Canvas_Editor.html
+- **React-Canvas-Editor Reference**: https://github.com/mindfiredigital/react-canvas-editor
+
+### Performance Targets (Non-negotiable)
+- **Initial Load Time**: <3 seconds on 3G connection
+- **Time to Interactive**: <5 seconds for full functionality  
+- **Canvas Rendering**: 60fps during interactions
+- **Memory Usage**: <500MB for typical projects
+
+## Implementation Blueprint
+
+### Phase 1: Foundation Setup
+**Priority: CRITICAL - Must complete before any other development**
+
+#### 1.1 Project Initialization
+```bash
+# Create Vite + React project
+npm create vite@latest design-studio --template react-ts
+cd design-studio
+npm install
+
+# Install core dependencies
+npm install @blueprintjs/core @blueprintjs/icons @blueprintjs/datetime2
+npm install react-konva konva
+npm install goober
+npm install zustand immer
+```
+
+#### 1.2 Blueprint.js Dark Theme Setup
+**Critical Configuration Steps:**
+```javascript
+// src/main.tsx - MUST include these imports
+import 'normalize.css/normalize.css';
+import '@blueprintjs/core/dist/css/blueprint.css';
+import '@blueprintjs/icons/dist/css/blueprint-icons.css';
+
+// Add dark theme class to body
+document.body.classList.add('bp5-dark');
+```
+
+#### 1.3 Goober CSS-in-JS Configuration
+```javascript
+// src/main.tsx - Setup Goober with React
+import { setup } from 'goober';
+import React from 'react';
+
+setup(React.createElement);
+```
+
+#### 1.4 Three-Panel Layout Structure
+**Exact Layout Specifications:**
+- **Left Panel**: 72px minimum width, expandable to 300px
+- **Center Panel**: Flexible width (fills remaining space)
+- **Right Panel**: Fixed 350px width, collapsible
+- **Theme**: Dark mode (#2f343c background) with Blueprint.js components
+
+**Blueprint.js Dark Theme Implementation:**
+```javascript
+// Apply dark theme globally
+document.body.classList.add('bp4-dark');
+
+// For specific components
+<div className="bp4-dark">
+  <NavigationPanel />
+  <CanvasArea />
+  <ToolsPanel />
+</div>
+
+// For dynamic components like popovers
+<Popover2 popoverClassName="bp4-dark">
+  {/* content */}
+</Popover2>
+```
+
+### Phase 2: Canvas System Implementation
+**Priority: HIGH - Core functionality**
+
+#### 2.1 Konva.js Integration
+**Key Implementation Points:**
+- Use `react-konva` for React integration
+- Implement HTML5 Canvas with WebGL acceleration
+- Support infinite zoom (10% to 500% range)
+- Enable multi-page/artboard functionality
+
+**Reference Code Pattern:**
+```javascript
+import { Stage, Layer, Rect, Text, Circle } from 'react-konva';
+
+// Follow patterns from https://konvajs.org/docs/react/Shapes.html
+// Implement transform controls from https://konvajs.org/docs/sandbox/Canvas_Editor.html
+```
+
+#### 2.2 Element Transform System
+**Required Controls:**
+- 8-point bounding box for resize operations
+- Rotation handle with snap angles (15°, 30°, 45°, 90°)
+- Multi-selection with lasso tool
+- Real-time transform feedback
+- Smart alignment guides with snap zones
+
+#### 2.3 Undo/Redo State Management
+**Technical Requirements:**
+- Immutable state trees supporting 100+ operations
+- Zustand store for canvas state
+- Command pattern implementation for actions
+
+**Recommended Implementation Pattern:**
+```javascript
+// Command Pattern for Undo/Redo
+class CanvasCommand {
+  execute() { /* implement action */ }
+  undo() { /* implement reverse action */ }
+}
+
+// Zustand store structure
+const useCanvasStore = create((set, get) => ({
+  elements: [],
+  history: [],
+  historyIndex: -1,
+  
+  executeCommand: (command) => {
+    command.execute();
+    const { history, historyIndex } = get();
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(command);
+    set({ history: newHistory, historyIndex: newHistory.length - 1 });
+  },
+  
+  undo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex >= 0) {
+      history[historyIndex].undo();
+      set({ historyIndex: historyIndex - 1 });
+    }
+  },
+  
+  redo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex < history.length - 1) {
+      history[historyIndex + 1].execute();
+      set({ historyIndex: historyIndex + 1 });
+    }
+  }
+}));
+```
+
+### Phase 3: Dynamic Panel System
+**Priority: HIGH - User experience core**
+
+#### 3.1 Left Sidebar - Tool Navigation
+**14 Required Tool Categories:**
+1. My Designs, 2. Templates, 3. Text, 4. Photos, 5. Icons
+6. Shapes, 7. Upload, 8. Videos, 9. Background, 10. Layers
+11. Resize, 12. Quotes, 13. QR code, 14. AI Img
+
+**Technical Implementation:**
+- React functional components with hooks
+- SVG sprite system (24x24px viewBox)
+- ARIA support with keyboard navigation
+- Active state: #48aff0 blue highlight
+
+#### 3.2 Right Panel - Context-Sensitive Tools
+**Dynamic Panel Switching:**
+- Templates Panel: Grid layout with search/filtering
+- Photos Panel: Unsplash API integration (https://unsplash.com/developers)
+- AI Image Panel: Text-to-image generation
+- Text Panel: Typography controls with Google Fonts
+
+### Phase 4: API Integrations
+
+#### 4.1 Unsplash API Integration
+```javascript
+// Official Unsplash API v1
+// Rate limiting: 5000 requests/hour
+// Required: Attribution display and tracking
+```
+
+#### 4.2 Google Fonts API
+```javascript
+// Load fonts dynamically: https://fonts.googleapis.com/css2
+// Implement font caching with preload strategies
+```
+
+#### 4.3 AI Image Generation (Optional)
+- Stable Diffusion API or DALL-E integration
+- Asynchronous processing with job tracking
+- Content filtering and safety checks
+
+### Phase 5: Advanced Features
+
+#### 5.1 Animation Timeline System
+- Frame-accurate animation (0.1s to 30s duration)
+- Keyframe editor with drag-and-drop
+- RequestAnimationFrame synchronization
+- Multi-layer timeline tracks
+
+#### 5.2 Export System
+**Required Formats:**
+- PNG (transparency), JPEG (quality settings)
+- SVG (CSS/inline styles), PDF (print-ready)
+- MP4/WebM (animated), GIF (optimized)
+
+## Critical Implementation Gotchas
+
+### Blueprint.js Specific Issues
+1. **CSS Import Order**: Must import normalize.css before Blueprint CSS
+2. **TypeScript Requirements**: Requires TypeScript 3.8+ for declaration files
+3. **Dark Theme**: Must add `bp4-dark` class to body element (not `bp5-dark`)
+4. **Mobile Compatibility**: Blueprint is NOT mobile-first - desktop-optimized only
+5. **Performance**: Use memoization (React.memo) to prevent unnecessary re-renders
+6. **Theme Context**: Use Context API for theme switching with localStorage persistence
+
+### Konva.js React Integration & Performance
+1. **Server-Side Rendering**: Use dynamic imports for Next.js compatibility
+2. **Event Handling**: Use Konva's event system, not DOM events on canvas
+3. **Performance**: Use `shouldComponentUpdate` or React.memo for canvas layers
+4. **Transform Updates**: Batch transform operations for smooth 60fps rendering
+
+**CRITICAL Performance Patterns:**
+```javascript
+// Disable event listeners for non-interactive layers
+<Layer listening={false}>
+  {/* static background elements */}
+</Layer>
+
+// Memory leak prevention - destroy Konva objects
+useEffect(() => {
+  return () => {
+    // Cleanup function
+    if (nodeRef.current) {
+      nodeRef.current.destroy();
+    }
+  };
+}, []);
+
+// Shape caching for complex elements only
+<ComplexShape cache={{}} />
+
+// Dragging optimization - use dedicated layer
+const handleDragStart = (e) => {
+  const node = e.target;
+  node.moveTo(dragLayer.current);
+  dragLayer.current.draw();
+};
+
+const handleDragEnd = (e) => {
+  const node = e.target;
+  node.moveTo(mainLayer.current);
+  mainLayer.current.draw();
+};
+```
+
+**Memory Leak Prevention:**
+- **Always call `destroy()`** on Konva nodes when unmounting
+- **Destroy Tween instances** after usage: `tween.destroy()`
+- **Safari Canvas Memory**: Specific workaround for Safari's 384MB canvas limit
+- **Route Navigation**: Clear canvas references when navigating between routes
+
+### Goober CSS-in-JS
+1. **Setup Required**: Must call `setup(React.createElement)` in main.tsx
+2. **Theme Access**: Use setup with theme provider for consistent styling
+3. **Server-Side Rendering**: Use `extractCss` for SSR if needed
+
+### State Management Architecture
+1. **Canvas State**: Use Zustand for canvas operations (undo/redo, transforms)
+2. **UI State**: Use React Context for panel switching and app-level state
+3. **API Cache**: Consider React Query for API response caching
+
+## Validation Gates
+
+### Development Validation
+```bash
+# Install dependencies
+npm install
+
+# Development server (must start without errors)
+npm run dev
+
+# Build validation (must complete successfully)
+npm run build
+
+# TypeScript validation (zero errors)
+npm run type-check
+
+# Linting validation
+npm run lint
+
+# Unit tests (if implemented)
+npm run test
+```
+
+### Functional Validation Checklist
+```bash
+# Foundation Layer
+✓ React app starts without console errors
+✓ Blueprint.js dark theme applies correctly
+✓ Three-panel layout renders with correct dimensions
+✓ Goober CSS-in-JS styling system works
+✓ Zustand store initializes correctly
+
+# Canvas Core Functionality
+✓ Can create new project with blank canvas
+✓ Konva.js Stage and Layer render correctly
+✓ Canvas supports zoom in/out (10%-500% range)
+✓ Elements can be selected (single and multi-selection)
+✓ Transform controls work (move, resize, rotate)
+✓ Undo/redo functionality works for all operations
+✓ Canvas performance maintains 60fps during interactions
+
+# Panel System
+✓ All 14 tools in left sidebar implemented and clickable
+✓ Right panel content changes based on active tool selection
+✓ Panel switching is instantaneous (<100ms)
+✓ Dark theme applied consistently across all panels
+✓ Blueprint.js components render correctly in panels
+
+# API Integrations
+✓ Google Fonts API loads fonts correctly
+✓ Unsplash API returns and displays photos
+✓ File upload functionality works for images
+✓ Export functionality generates correct formats
+
+# Error Handling
+✓ Canvas operations gracefully handle errors
+✓ API failures show user-friendly messages
+✓ Memory limits trigger appropriate warnings
+✓ Browser compatibility gracefully degrades
+```
+
+### Performance Validation
+```bash
+# Load Time Testing (Critical)
+✓ Initial page load < 3 seconds (3G throttling in Chrome DevTools)
+✓ Time to Interactive < 5 seconds (Core Web Vitals)
+✓ First Contentful Paint < 2 seconds
+
+# Canvas Performance Testing
+✓ Canvas maintains 60fps during element manipulation
+✓ Smooth zoom/pan operations (no frame drops)
+✓ Multi-selection of 10+ elements remains responsive
+✓ Complex shapes with 100+ points perform adequately
+
+# Memory Usage Monitoring
+✓ Memory usage stays below 500MB during typical use
+✓ No memory leaks detected after 30 minutes of use
+✓ Safari canvas memory stays under 384MB limit
+✓ Garbage collection doesn't cause UI freezing
+
+# Stress Testing
+✓ Canvas with 100+ elements maintains performance
+✓ Rapid undo/redo operations (50+ in sequence) work
+✓ Panel switching under load remains responsive
+```
+
+### Browser Compatibility Testing
+```bash
+# Minimum Browser Requirements
+✓ Chrome 90+ (tested)
+✓ Firefox 88+ (tested)
+✓ Safari 14+ (tested)
+✓ Edge 90+ (tested)
+
+# Feature Detection
+✓ WebGL fallback works when unavailable
+✓ Canvas 2D context fallback functional
+✓ Local storage gracefully handles quota exceeded
+```
+
+## Task Implementation Order
+
+### Sprint 1: Foundation (Week 1)
+1. **Setup Vite + React + TypeScript project**
+2. **Configure Blueprint.js with dark theme**
+3. **Setup Goober CSS-in-JS**
+4. **Implement three-panel layout structure**
+5. **Create basic left sidebar with 14 tool icons**
+
+### Sprint 2: Canvas Core (Week 2)
+1. **Integrate react-konva with basic Stage/Layer**
+2. **Implement element selection system**
+3. **Add transform controls (move, resize, rotate)**
+4. **Setup Zustand store for canvas state**
+5. **Implement undo/redo functionality**
+
+### Sprint 3: Dynamic Panels (Week 3)
+1. **Build panel switching system**
+2. **Implement Templates panel with grid layout**
+3. **Create Text panel with font controls**
+4. **Add basic shapes and icons panels**
+5. **Integrate Google Fonts API**
+
+### Sprint 4: API Integration (Week 4)
+1. **Integrate Unsplash API for photos**
+2. **Add upload functionality for user images**
+3. **Implement background and color panels**
+4. **Add export functionality (PNG, JPG)**
+5. **Performance optimization and bug fixes**
+
+## Error Handling Strategy
+
+### Canvas Errors
+- Graceful fallback when WebGL unavailable
+- Error boundaries around canvas operations
+- Auto-save functionality with local storage
+
+### API Failures
+- Offline capability with cached content
+- Rate limit handling for external APIs
+- User feedback for failed operations
+
+### Browser Compatibility
+- Modern browser requirement (Chrome 90+, Firefox 88+, Safari 14+)
+- Feature detection for advanced canvas features
+- Progressive enhancement approach
+
+## Success Metrics
+
+### Technical Success
+- All validation gates pass
+- Performance targets met consistently
+- Error rate < 1% of user operations
+- Canvas render rate maintains 60fps
+
+### User Experience Success
+- Three-panel layout matches reference design
+- Tool switching feels instant (<100ms)
+- Canvas operations provide immediate feedback
+- Export functionality works across all formats
+
+## PRP Confidence Score: 8.5/10
+
+**Reasoning:**
+✅ **Comprehensive technical stack validated** with current documentation  
+✅ **Clear implementation phases** with specific validation gates  
+✅ **External API documentation** confirmed and accessible  
+✅ **Performance targets** clearly defined and measurable  
+✅ **Common gotchas identified** from research and documentation  
+
+⚠️ **Risk Areas:**
+- Complex canvas interaction system may require iteration
+- API rate limits could impact user experience during development
+- Performance optimization may require specialized knowledge
+
+This PRP provides sufficient context and technical guidance for one-pass implementation success with an experienced React developer familiar with canvas-based applications.

@@ -1,0 +1,279 @@
+{
+  "application_name": "Design Studio - Polotno Clone",
+  "application_url": "https://studio.polotno.com (reference)",
+  "application_type": "Single Page Application (SPA)",
+  "technical_stack": {
+    "frontend_framework": "React 18.2+ with Blueprint.js components",
+    "build_system": "Vite",
+    "ui_components": "Blueprint.js UI components with dark theme",
+    "canvas_frameworks": [
+      "Konva.js",
+      "HTML5 Canvas",
+      "WebGL",
+      "Three.js"
+    ],
+    "styling_system": "Goober CSS-in-JS with auto-generated class names",
+    "state_management": "Zustand + React Context (primary), MobX (data flows)",
+    "database": "PostgreSQL (primary) + MobX (caching) + MongoDB (documents)",
+    "additional_technologies": [
+      "Google Fonts API",
+      "Unsplash API integration",
+      "AI image generation APIs",
+      "WebAssembly for video processing"
+    ]
+  },
+  "main_layout": {
+    "type": "Three-panel layout",
+    "left_panel": "Tool navigation (72px min)",
+    "center_panel": "Canvas workspace (flexible)",
+    "right_panel": "Context tools (350px)",
+    "theme": "Dark mode with Blueprint.js components"
+  },
+  "interface_components": [
+    {
+      "name": "Left Sidebar - Tool Navigation",
+      "location": "Left side of application",
+      "width": "72px minimum, expandable",
+      "primary_functions": [
+        "Primary navigation hub with 14 tool categories",
+        "Progressive disclosure for tool controls",
+        "SVG icon system with descriptive labels"
+      ],
+      "technical_details": [
+        "React functional components with hooks",
+        "SVG sprite system with 24x24px viewBox",
+        "ARIA support with keyboard navigation"
+      ]
+    },
+    {
+      "name": "Main Canvas Area",
+      "location": "Center of application",
+      "width": "Flexible width",
+      "primary_functions": [
+        "Interactive design workspace",
+        "Infinite zoom capabilities",
+        "Multi-page support with timeline",
+        "Element manipulation controls"
+      ],
+      "technical_details": [
+        "HTML5 Canvas with WebGL acceleration",
+        "Immutable state trees with 100+ undo/redo operations",
+        "RAF-based animation loops",
+        "Custom event delegation system"
+      ]
+    },
+    {
+      "name": "Right Panel - Context Tools",
+      "location": "Right side of application",
+      "width": "350px, collapsible",
+      "primary_functions": [
+        "Context-sensitive tool panels",
+        "Content libraries and search",
+        "Dynamic content based on left sidebar selection"
+      ],
+      "technical_details": [
+        "Dynamic panel switching system",
+        "API integrations for content libraries",
+        "Progressive loading with skeleton screens"
+      ]
+    }
+  ],
+  "panel_contents": [
+    {
+      "panel_type": "Templates Panel",
+      "description": "Curated collection of professionally designed layouts organized by category",
+      "functionality": [
+        "Responsive grid with hover previews",
+        "Search and filtering capabilities",
+        "Premium template badges",
+        "Drag-and-drop template application"
+      ],
+      "technical_info": [
+        "RESTful template service with CDN thumbnails",
+        "Service worker caching with 24-hour TTL",
+        "Elasticsearch-powered search"
+      ],
+      "api_integrations": [
+        "Template service API",
+        "CDN delivery"
+      ]
+    },
+    {
+      "panel_type": "Photos Panel",
+      "description": "Unsplash API integration providing 3M+ high-quality stock photographs",
+      "functionality": [
+        "Intelligent search with keyword suggestions",
+        "Masonry grid layout",
+        "Proper attribution and licensing",
+        "Infinite scroll with lazy loading"
+      ],
+      "technical_info": [
+        "Unsplash API v1 with rate limiting",
+        "Progressive JPEG loading",
+        "IndexedDB for offline capability"
+      ],
+      "api_integrations": [
+        "Unsplash API v1",
+        "Attribution tracking"
+      ]
+    },
+    {
+      "panel_type": "AI Image Generation",
+      "description": "AI-powered custom image creation from text prompts",
+      "functionality": [
+        "Natural language prompts",
+        "Style presets and parameters",
+        "Batch generation with variations",
+        "Negative prompts for content exclusion"
+      ],
+      "technical_info": [
+        "REST API integration with AI models",
+        "Asynchronous processing with job tracking",
+        "Content filtering and safety checks"
+      ],
+      "api_integrations": [
+        "Stable Diffusion API",
+        "DALL-E API"
+      ]
+    }
+  ],
+  "canvas_features": [
+    {
+      "feature_name": "Element Transform System",
+      "description": "Comprehensive element manipulation with on-canvas controls",
+      "controls": [
+        "8-point bounding box for resize",
+        "Rotation handle with snap angles",
+        "Corner and edge resize controls",
+        "Multi-selection with lasso tool"
+      ],
+      "technical_specs": [
+        "Real-time transform feedback",
+        "Constraint-based resizing",
+        "Smart alignment guides"
+      ]
+    },
+    {
+      "feature_name": "Animation Timeline",
+      "description": "Frame-accurate animation system with keyframe editing",
+      "controls": [
+        "Duration control (0.1s to 30s)",
+        "Keyframe editor with drag-and-drop",
+        "Easing curve editor",
+        "Multi-layer timeline tracks"
+      ],
+      "technical_specs": [
+        "RequestAnimationFrame synchronization",
+        "Hardware acceleration where available",
+        "Audio synchronization support"
+      ]
+    }
+  ],
+  "performance_metrics": [
+    {
+      "metric_name": "Initial Load Time",
+      "target_value": "<3 seconds on 3G connection",
+      "description": "Time to display usable interface"
+    },
+    {
+      "metric_name": "Time to Interactive",
+      "target_value": "<5 seconds for full functionality",
+      "description": "Time until all features are responsive"
+    },
+    {
+      "metric_name": "Canvas Rendering",
+      "target_value": "60fps for smooth interactions",
+      "description": "Maintained framerate during manipulation"
+    },
+    {
+      "metric_name": "Memory Usage",
+      "target_value": "<500MB for typical projects",
+      "description": "Memory consumption for standard designs"
+    }
+  ],
+  "security_features": [
+    {
+      "feature_name": "Content Security Policy",
+      "implementation": "Strict nonce-based script execution",
+      "compliance": [
+        "CSP Level 3"
+      ]
+    },
+    {
+      "feature_name": "Data Encryption",
+      "implementation": "AES-256 encryption for data at rest and in transit",
+      "compliance": [
+        "GDPR",
+        "CCPA"
+      ]
+    },
+    {
+      "feature_name": "Image Proxy Service",
+      "implementation": "Prevent SSRF attacks from external content",
+      "compliance": [
+        "OWASP security guidelines"
+      ]
+    }
+  ],
+  "collaboration_features": [
+    "Real-time multi-user editing",
+    "Live comments on elements",
+    "Version history with rollback",
+    "Permission management (owner/editor/viewer)"
+  ],
+  "export_formats": [
+    "PNG (with transparency)",
+    "JPEG (quality settings)",
+    "SVG (with CSS/inline styles)",
+    "PDF (print-ready)",
+    "MP4/WebM (animated)",
+    "GIF (optimized)"
+  ],
+  "accessibility_features": [
+    "WCAG 2.1 AA compliance",
+    "Keyboard navigation support",
+    "High contrast design (4.5:1 ratio)",
+    "Screen reader compatibility",
+    "Scalable interface up to 200%"
+  ],
+  "subscription_tiers": [
+    {
+      "tier": "Free",
+      "features": [
+        "Limited templates",
+        "Basic exports",
+        "Watermarked downloads"
+      ]
+    },
+    {
+      "tier": "Pro",
+      "features": [
+        "Full template library",
+        "Unlimited exports",
+        "Premium support"
+      ]
+    },
+    {
+      "tier": "Team",
+      "features": [
+        "Collaboration features",
+        "Brand management",
+        "Analytics"
+      ]
+    },
+    {
+      "tier": "Enterprise",
+      "features": [
+        "White-label solutions",
+        "API access",
+        "Custom integrations"
+      ]
+    }
+  ],
+  "developer_ecosystem": [
+    "RESTful API for integrations",
+    "Embeddable editor components",
+    "Plugin marketplace support",
+    "White-label solutions"
+  ]
+}

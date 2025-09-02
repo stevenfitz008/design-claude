@@ -1,0 +1,122 @@
+/* CSS Custom Properties for Design Studio Clone */
+
+:root {
+  /* Blueprint.js intent colors */
+  --bp5-intent-primary: #48aff0;
+  --bp5-intent-success: #15b371;
+  --bp5-intent-warning: #d9822b;
+  --bp5-intent-danger: #db3737;
+  
+  /* Polotno Studio inspired color palette */
+  --canvas-bg: #2f343c;           /* Main interface background */
+  --canvas-surface: #ffffff;      /* Design canvas background */
+  --panel-bg: #394b59;            /* Right panel backgrounds */
+  --toolbar-bg: #252a30;          /* Left toolbar background */
+  --header-bg: #252a30;           /* Top navigation background */
+  
+  /* Text colors */
+  --text-primary: #f5f8fa;        /* Primary text on dark */
+  --text-secondary: #a7b6c2;      /* Secondary text, icons */
+  --text-muted: #8a9ba8;          /* Muted text, placeholders */
+  --text-on-light: #182026;       /* Text on light backgrounds */
+  
+  /* Border and divider colors */
+  --border-color: #495563;        /* Default borders */
+  --border-light: #5c7080;        /* Lighter borders */
+  --divider-color: #495563;       /* Dividers between sections */
+  
+  /* Interactive states */
+  --hover-bg: rgba(72, 175, 240, 0.1);     /* Hover background */
+  --active-bg: rgba(72, 175, 240, 0.2);    /* Active/selected background */
+  --focus-ring: rgba(72, 175, 240, 0.3);   /* Focus ring color */
+  
+  /* Design tool specific colors */
+  --selection-color: #48aff0;      /* Canvas selection outline */
+  --selection-bg: rgba(72, 175, 240, 0.15); /* Selection background */
+  --handle-color: #48aff0;         /* Transform handles */
+  --handle-bg: #ffffff;            /* Handle backgrounds */
+  --grid-color: rgba(255, 255, 255, 0.1);   /* Canvas grid lines */
+  --guide-color: #ff6b6b;          /* Alignment guides */
+  
+  /* Shadows and elevation */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-4: 0 8px 24px rgba(0, 0, 0, 0.5);
+  
+  /* Layout dimensions */
+  --left-toolbar-width: 72px;      /* Left toolbar width */
+  --right-panel-width: 350px;      /* Right panel width */
+  --top-nav-height: 64px;          /* Top navigation height */
+  --timeline-height: 200px;        /* Timeline panel height */
+  
+  /* Border radius */
+  --border-radius-sm: 3px;
+  --border-radius: 4px;
+  --border-radius-lg: 6px;
+  --border-radius-xl: 8px;
+  
+  /* Spacing scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  
+  /* Typography scale */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-xxl: 20px;
+  
+  /* Line heights */
+  --line-height-sm: 1.2;
+  --line-height-md: 1.4;
+  --line-height-lg: 1.6;
+  
+  /* Font weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Z-index scale */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-tooltip: 70;
+  
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.15s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* Light theme overrides (for canvas content) */
+[data-theme="light"] {
+  --canvas-surface: #ffffff;
+  --text-on-canvas: #182026;
+}
+
+/* High contrast theme */
+[data-theme="high-contrast"] {
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --border-color: #ffffff;
+  --selection-color: #ffff00;
+}
+
+/* Print styles */
+@media print {
+  :root {
+    --canvas-bg: #ffffff;
+    --text-primary: #000000;
+    --border-color: #cccccc;
+  }
+}

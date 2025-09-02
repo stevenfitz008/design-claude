@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3010;
+const port = 3001;
 
 app.use(express.json());
 
@@ -58,6 +58,44 @@ app.get('/projects', (req, res) => {
     total: 1,
     page: 1,
     pageSize: 20
+  });
+});
+
+app.post('/projects', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Project created successfully',
+    data: {
+      id: 'project-' + Date.now(),
+      name: req.body.name,
+      description: req.body.description,
+      canvasWidth: req.body.canvasWidth || 1920,
+      canvasHeight: req.body.canvasHeight || 1080,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  });
+});
+
+app.put('/projects/:id', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Project updated successfully',
+    data: {
+      id: req.params.id,
+      name: req.body.name,
+      description: req.body.description,
+      canvasWidth: req.body.canvasWidth,
+      canvasHeight: req.body.canvasHeight,
+      updatedAt: new Date().toISOString()
+    }
+  });
+});
+
+app.delete('/projects/:id', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Project deleted successfully'
   });
 });
 
@@ -134,6 +172,48 @@ app.get('/templates', (req, res) => {
         isFeatured: false
       }
     ]
+  });
+});
+
+// Mock file upload endpoint
+app.post('/uploads', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Files uploaded successfully',
+    data: [
+      {
+        id: 'upload-' + Date.now(),
+        filename: 'test-image.jpg',
+        originalName: 'user-image.jpg',
+        mimeType: 'image/jpeg',
+        size: 1024567,
+        url: 'https://picsum.photos/800/600?random=upload1',
+        thumbnailUrl: 'https://picsum.photos/200/150?random=upload1',
+        createdAt: new Date().toISOString()
+      }
+    ]
+  });
+});
+
+app.delete('/uploads/:id', (req, res) => {
+  res.json({
+    success: true,
+    message: 'File deleted successfully'
+  });
+});
+
+// Mock file storage info endpoint
+app.get('/uploads/storage', (req, res) => {
+  res.json({
+    totalFiles: 156,
+    totalSize: 52428800,
+    availableSpace: 1073741824,
+    usagePercent: 4.9,
+    categories: {
+      images: 120,
+      videos: 15,
+      documents: 21
+    }
   });
 });
 

@@ -1,13 +1,12 @@
 // Goober CSS-in-JS setup for Design Studio Clone
-import { setup, styled as gooberStyled, css, keyframes, glob } from 'goober';
+import { setup, styled, css, keyframes, glob } from 'goober';
 import { createElement } from 'react';
 
 // Setup Goober to work with React
 setup(createElement);
 
-// Export styled function for components with explicit re-export
-export const styled = gooberStyled;
-export { css, keyframes, glob } from 'goober';
+// Re-export for components
+export { styled, css, keyframes, glob };
 
 // Theme interface for TypeScript (must be declared before usage)
 export interface Theme {

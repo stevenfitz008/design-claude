@@ -137,27 +137,28 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
   const utilityTools = TOOLS.filter(tool => ['utility', 'ai'].includes(tool.category));
 
   const renderToolButton = (tool: Tool) => (
-    <ToolButton
-      key={tool.id}
-      theme={theme}
-      isActive={activeToolId === tool.id}
-      onClick={() => handleToolClick(tool)}
-      title={`${tool.name}${tool.shortcut ? ` (${tool.shortcut})` : ''}`}
-      aria-label={tool.name}
-      aria-pressed={activeToolId === tool.id}
-    >
-      <ToolIcon>
-        <Icon icon={tool.icon as any} />
-      </ToolIcon>
-      <ToolLabel>
-        {tool.name}
-      </ToolLabel>
-      {tool.shortcut && (
-        <ShortcutHint>
-          {tool.shortcut}
-        </ShortcutHint>
-      )}
-    </ToolButton>
+    <div key={tool.id} data-testid={`tool-${tool.id}`}>
+      <ToolButton
+        theme={theme}
+        isActive={activeToolId === tool.id}
+        onClick={() => handleToolClick(tool)}
+        title={`${tool.name}${tool.shortcut ? ` (${tool.shortcut})` : ''}`}
+        aria-label={tool.name}
+        aria-pressed={activeToolId === tool.id}
+      >
+        <ToolIcon>
+          <Icon icon={tool.icon as any} />
+        </ToolIcon>
+        <ToolLabel>
+          {tool.name}
+        </ToolLabel>
+        {tool.shortcut && (
+          <ShortcutHint>
+            {tool.shortcut}
+          </ShortcutHint>
+        )}
+      </ToolButton>
+    </div>
   );
 
   return (

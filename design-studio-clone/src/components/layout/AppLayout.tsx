@@ -81,23 +81,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   };
 
   return (
-    <LayoutContainer theme={theme}>
+    <LayoutContainer theme={theme} data-testid="app-layout">
       {topNavigation && (
-        <TopNavigationContainer theme={theme}>
+        <TopNavigationContainer theme={theme} data-testid="top-navigation">
           {topNavigation}
         </TopNavigationContainer>
       )}
       
       <MainContainer>
-        <LeftToolbarContainer theme={theme} isVisible={leftToolbarVisible}>
+        <LeftToolbarContainer theme={theme} isVisible={leftToolbarVisible} data-testid="left-toolbar">
           {leftToolbar}
         </LeftToolbarContainer>
         
-        <MainCanvasContainer theme={theme}>
+        <MainCanvasContainer theme={theme} data-testid="main-canvas">
           {mainCanvas}
         </MainCanvasContainer>
         
-        <RightPanelContainer theme={theme} isVisible={rightPanelVisible}>
+        <RightPanelContainer theme={theme} isVisible={rightPanelVisible} data-testid="right-panel">
           {rightPanel}
         </RightPanelContainer>
       </MainContainer>

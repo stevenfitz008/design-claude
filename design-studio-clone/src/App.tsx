@@ -3,7 +3,9 @@ import '@styles/goober-setup';
 
 import React, { useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeProvider';
-import { AppLayout, LeftToolbar, MainCanvas, RightPanel, TopNavigation } from '@components/layout';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AppLayout } from '@components/layout/AppLayout.test';
+import { LeftToolbar, MainCanvas, RightPanel, TopNavigation } from '@components/basic';
 import '@styles/blueprint-theme.css';
 import '@styles/variables.css';
 import '@styles/globals.css';
@@ -68,9 +70,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

@@ -143,7 +143,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
       <CenterSection theme={theme}>
         <ProjectName theme={theme}>
-          <span className="project-title">{projectName}</span>
+          <span className="project-title" data-testid="project-name">{projectName}</span>
           <Button minimal icon="edit" className="edit-button" small />
         </ProjectName>
         
@@ -157,6 +157,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             icon="share" 
             text="Share"
             onClick={onShare}
+            data-testid="share-button"
           />
         </Popover>
         
@@ -165,6 +166,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
           icon="floppy-disk" 
           text="Save" 
           onClick={onSave}
+          data-testid="save-button"
+        />
+        
+        <Button 
+          intent="primary"
+          icon="export"
+          text="Export"
+          onClick={onExport}
+          data-testid="export-button"
         />
         
         <Popover content={helpMenu} placement="bottom-end">

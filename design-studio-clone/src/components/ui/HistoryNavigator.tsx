@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { observer } from 'mobx-react-lite';
+// we need observer to update component automatically on any store changes
 import { Button, Menu, MenuItem, Popover, Classes } from '@blueprintjs/core';
 import { styled } from '@styles/goober-setup';
 import { useCommandStore } from '@/stores/commandStore';
@@ -62,7 +64,7 @@ const HistoryItem = styled.div<{ isActive: boolean; isFuture: boolean }>`
   }
 `;
 
-export const HistoryNavigator: React.FC = () => {
+export const HistoryNavigator: React.FC = observer(() => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   const { 
@@ -195,6 +197,6 @@ export const HistoryNavigator: React.FC = () => {
       )}
     </HistoryContainer>
   );
-};
+});
 
 HistoryNavigator.displayName = 'HistoryNavigator';

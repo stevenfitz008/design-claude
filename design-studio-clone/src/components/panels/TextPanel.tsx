@@ -437,6 +437,25 @@ export const TextPanel: React.FC<TextPanelProps> = observer(({ onTemplateSelect 
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, template: TextTemplate) => {
+    const dragData = {
+      type: 'text',
+      text: template.preview,
+      fontSize: template.style.fontSize,
+      fontFamily: template.style.fontFamily,
+      fontWeight: template.style.fontWeight,
+      fontStyle: template.style.fontStyle,
+      color: template.style.color,
+      textAlign: template.style.textAlign,
+      verticalAlign: 'top',
+      lineHeight: template.style.lineHeight,
+      letterSpacing: template.style.letterSpacing,
+      textDecoration: template.style.textDecoration || 'none'
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
   return (
     <PanelContainer>
       <TabsContainer>
@@ -454,7 +473,9 @@ export const TextPanel: React.FC<TextPanelProps> = observer(({ onTemplateSelect 
                 {templates.map((template) => (
                   <TemplateCard
                     key={template.id}
+                    draggable={true}
                     onClick={() => handleTemplateClick(template)}
+                    onDragStart={(e) => handleDragStart(e, template)}
                   >
                     <TemplatePreview template={template}>
                       {template.preview}

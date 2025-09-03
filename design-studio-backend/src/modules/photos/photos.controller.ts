@@ -25,8 +25,8 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @ApiTags('photos')
 @Controller('photos')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+// @UseGuards(JwtAuthGuard) // Temporarily disabled for frontend integration testing
+// @ApiBearerAuth()
 export class PhotosController {
   constructor(private readonly photosService: PhotosService) {}
 

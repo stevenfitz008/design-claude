@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Photos Panel</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result { 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: #333; 
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .loading { color: #ff9800; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Photos Panel Integration</h1>
+    
+    <div class="test-section">
+        <h2>1. Frontend Status</h2>
+        <div id="frontend-status">Checking...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Backend API Tests</h2>
+        <button onclick="testBackendTrending()">Test Trending Photos</button>
+        <button onclick="testBackendSearch()">Test Search Photos</button>
+        <div id="backend-results" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Service Integration</h2>
+        <button onclick="testFrontendService()">Test Frontend Service</button>
+        <div id="service-results" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Direct Component Test</h2>
+        <button onclick="openMainApp()">Open Main App</button>
+        <button onclick="checkConsole()">Check Browser Console</button>
+        <div id="component-results" class="result"></div>
+    </div>
+
+    <script>
+        // Check frontend status
+        document.getElementById('frontend-status').innerHTML = 
+            `<span class="success">✅ Frontend running on ${window.location.origin}</span>`;
+            
+        async function testBackendTrending() {
+            const results = document.getElementById('backend-results');
+            results.innerHTML = '<span class="loading">Testing trending photos...</span>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/v1/photos/trending?per_page=3');
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    results.innerHTML = `
+                        <span class="success">✅ Trending API working</span><br>
+                        <strong>Results:</strong> ${data.results.length} photos<br>
+                        <strong>First Photo:</strong> ${data.results[0].description || 'No description'} by ${data.results[0].user.name}<br>
+                        <strong>Response:</strong> <pre>${JSON.stringify(data, null, 2).substring(0, 300)}...</pre>
+                    `;
+                } else {
+                    results.innerHTML = `<span class="error">❌ No photos returned</span>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<span class="error">❌ Backend Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testBackendSearch() {
+            const results = document.getElementById('backend-results');
+            results.innerHTML = '<span class="loading">Testing search photos...</span>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/v1/photos/search?query=nature&per_page=3');
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    results.innerHTML = `
+                        <span class="success">✅ Search API working</span><br>
+                        <strong>Query:</strong> nature<br>
+                        <strong>Results:</strong> ${data.results.length} photos<br>
+                        <strong>First Photo:</strong> ${data.results[0].description || 'No description'} by ${data.results[0].user.name}<br>
+                        <strong>Total Available:</strong> ${data.total} photos
+                    `;
+                } else {
+                    results.innerHTML = `<span class="error">❌ No search results returned</span>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<span class="error">❌ Search Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testFrontendService() {
+            const results = document.getElementById('service-results');
+            results.innerHTML = '<span class="loading">Testing frontend service...</span>';
+            
+            try {
+                // Try to dynamically import the service
+                const { unsplashService } = await import('./src/services/unsplashService.ts');
+                
+                // Test search
+                const searchResult = await unsplashService.searchPhotos({ 
+                    query: 'nature', 
+                    per_page: 2 
+                });
+                
+                if (searchResult.results && searchResult.results.length > 0) {
+                    results.innerHTML = `
+                        <span class="success">✅ Frontend Service working</span><br>
+                        <strong>Service imported successfully</strong><br>
+                        <strong>Search Results:</strong> ${searchResult.results.length} photos<br>
+                        <strong>First Photo:</strong> ${searchResult.results[0].description || 'No description'}
+                    `;
+                } else {
+                    results.innerHTML = `<span class="error">❌ Service returned no results</span>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<span class="error">❌ Service Error: ${error.message}</span><br><pre>${error.stack}</pre>`;
+            }
+        }
+        
+        function openMainApp() {
+            window.open('http://localhost:5173/', '_blank');
+            document.getElementById('component-results').innerHTML = 
+                '<span class="info">📱 Main app opened in new tab. Click "Photos" tool (camera icon) in left toolbar.</span>';
+        }
+        
+        function checkConsole() {
+            document.getElementById('component-results').innerHTML = `
+                <span class="info">🔍 Console Check Instructions:</span><br>
+                1. Open browser DevTools (F12)<br>
+                2. Go to Console tab<br>
+                3. Look for any errors in red<br>
+                4. Check Network tab for failed requests<br>
+                5. Refresh the page and watch for errors<br><br>
+                <strong>Common Issues to Check:</strong><br>
+                - CORS errors<br>
+                - 404/500 API errors<br>
+                - Import/module errors<br>
+                - TypeScript compilation errors
+            `;
+        }
+        
+        // Auto-run initial tests
+        setTimeout(() => {
+            testBackendTrending();
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -26,6 +26,7 @@ export class ImageExportService {
     [SocialMediaPreset.LINKEDIN_BANNER]: { width: 1584, height: 396, aspectRatio: '4:1' },
     [SocialMediaPreset.YOUTUBE_THUMBNAIL]: { width: 1280, height: 720, aspectRatio: '16:9' },
     [SocialMediaPreset.YOUTUBE_BANNER]: { width: 2560, height: 1440, aspectRatio: '16:9' },
+    [SocialMediaPreset.TIKTOK_VIDEO]: { width: 1080, height: 1920, aspectRatio: '9:16' },
     [SocialMediaPreset.PINTEREST_PIN]: { width: 1000, height: 1500, aspectRatio: '2:3' },
   };
 
@@ -95,7 +96,11 @@ export class ImageExportService {
     // Apply color profile if specified
     if (options.colorProfile) {
       try {
-        sharpInstance = sharpInstance.withColorProfile(options.colorProfile);
+        // Apply ICC color profile if specified
+      if (options.colorProfile) {
+        // Sharp doesn't have withColorProfile method, use withMetadata to preserve color profile
+        sharpInstance = sharpInstance.withMetadata({ icc: options.colorProfile });
+      }
       } catch (error) {
         console.warn(`Failed to apply color profile ${options.colorProfile}:`, error.message);
       }
@@ -115,7 +120,7 @@ export class ImageExportService {
         width: info.width,
         height: info.height,
         channels: info.channels,
-        density: info.density,
+        density: options.dpi || 72,
         hasAlpha: info.channels === 4,
         colorSpace: options.colorProfile || 'sRGB',
         quality: this.getQualityValue(options.format, options.quality),

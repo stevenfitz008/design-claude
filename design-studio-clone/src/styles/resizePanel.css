@@ -1,0 +1,591 @@
+/* Enhanced ResizePanel Animations and Styles - Reference Design Match */
+
+/* Magic Resize Toggle Styles */
+.magic-resize-toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.magic-resize-toggle.enabled {
+  background-color: #48aff0;
+  border: 1px solid #48aff0;
+}
+
+.magic-resize-toggle.disabled {
+  background-color: #495563;
+  border: 1px solid #495563;
+}
+
+.magic-resize-toggle-ball {
+  width: 18px;
+  height: 18px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.magic-resize-toggle.enabled .magic-resize-toggle-ball {
+  left: 22px;
+}
+
+.magic-resize-toggle.disabled .magic-resize-toggle-ball {
+  left: 2px;
+}
+
+/* Custom Input Styles */
+.custom-input {
+  flex: 1;
+  height: 40px;
+  padding: 0 12px;
+  background-color: #2f343c;
+  border: 1px solid #495563;
+  border-radius: 6px 0 0 6px;
+  color: #f5f8fa;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.custom-input:focus {
+  border-color: #48aff0;
+  box-shadow: 0 0 0 2px rgba(72, 175, 240, 0.15);
+}
+
+.custom-input-arrows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #495563;
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  background-color: #394b59;
+}
+
+.custom-input-arrow {
+  width: 24px;
+  height: 20px;
+  background-color: transparent;
+  border: none;
+  color: #a7b6c2;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.custom-input-arrow:hover {
+  background-color: #48aff0;
+  color: white;
+}
+
+.custom-input-arrow.down {
+  border-top: 1px solid #495563;
+}
+
+/* Large Blue Resize Button */
+.large-resize-button {
+  width: 100%;
+  height: 48px;
+  background-color: #48aff0;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(72, 175, 240, 0.2);
+}
+
+.large-resize-button:hover:not(:disabled) {
+  background-color: #3a9ad9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(72, 175, 240, 0.3);
+}
+
+.large-resize-button:active {
+  transform: translateY(0);
+}
+
+.large-resize-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Platform Preset Cards - More Compact */
+.platform-preset-card {
+  padding: 12px 8px;
+  background-color: #2f343c;
+  border: 1px solid #495563;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-preset-card:hover {
+  background-color: #394b59;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.platform-preset-card.selected {
+  background-color: transparent;
+  border: 2px solid #48aff0;
+  box-shadow: 0 0 0 2px rgba(72, 175, 240, 0.2);
+}
+
+.platform-preset-card.selected:hover {
+  background-color: transparent;
+}
+
+.platform-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+  transition: color 0.2s ease;
+}
+
+.platform-preset-card.selected .platform-icon {
+  color: #48aff0;
+}
+
+.preset-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: #f5f8fa;
+  margin-bottom: 2px;
+  transition: color 0.2s ease;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.platform-preset-card.selected .preset-name {
+  color: #48aff0;
+}
+
+.preset-dimensions {
+  font-size: 10px;
+  color: #a7b6c2;
+  line-height: 1.2;
+}
+
+/* Platform Headers */
+.platform-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #f5f8fa;
+}
+
+.platform-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* Units Dropdown */
+.units-dropdown {
+  height: 40px;
+  padding: 0 12px;
+  background-color: #2f343c;
+  border: 1px solid #495563;
+  border-radius: 6px;
+  color: #f5f8fa;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Enhanced scrolling for platform sections */
+.platform-sections-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #48aff0 #2f343c;
+}
+
+.platform-sections-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.platform-sections-scroll::-webkit-scrollbar-track {
+  background: #2f343c;
+  border-radius: 3px;
+}
+
+.platform-sections-scroll::-webkit-scrollbar-thumb {
+  background: #495563;
+  border-radius: 3px;
+  border: 1px solid #2f343c;
+  transition: background-color 0.2s ease;
+}
+
+.platform-sections-scroll::-webkit-scrollbar-thumb:hover {
+  background: #48aff0;
+}
+
+.resize-panel-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #252a30;
+}
+
+/* Smooth Canvas Resize Animation */
+@keyframes canvasResize {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.98);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.canvas-resizing {
+  animation: canvasResize 0.4s ease-in-out;
+}
+
+/* Preset Card Enhanced Animations */
+.preset-card {
+  transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform: translateY(0px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.preset-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(72, 175, 240, 0.15);
+}
+
+.preset-card.active {
+  transform: translateY(0px);
+  box-shadow: 0 0 0 2px rgba(72, 175, 240, 0.3), 0 4px 12px rgba(72, 175, 240, 0.2);
+}
+
+.preset-card.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Favorite Star Animation */
+.favorite-star {
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform: scale(1);
+}
+
+.favorite-star:hover {
+  transform: scale(1.2) rotate(5deg);
+}
+
+.favorite-star.active {
+  animation: starPulse 0.6s ease-in-out;
+}
+
+@keyframes starPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1); }
+}
+
+/* Magic Resize Loading Indicator */
+.magic-resize-loading {
+  position: relative;
+}
+
+.magic-resize-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #48aff0;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Recent Sizes Pills Animation */
+.recent-size-pill {
+  transition: all 0.2s ease;
+  transform: scale(1);
+  opacity: 0.8;
+}
+
+.recent-size-pill:hover {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.recent-size-pill:active {
+  transform: scale(0.95);
+}
+
+/* Search Input Enhanced Focus */
+.search-input-enhanced {
+  transition: all 0.3s ease;
+}
+
+.search-input-enhanced:focus-within {
+  box-shadow: 0 0 0 3px rgba(72, 175, 240, 0.2);
+  border-color: #48aff0;
+}
+
+/* Custom Size Input Animation */
+.custom-size-input {
+  transition: border-color 0.2s ease;
+}
+
+.custom-size-input:focus {
+  border-color: #48aff0;
+  box-shadow: 0 0 0 2px rgba(72, 175, 240, 0.15);
+}
+
+/* Apply Button Enhanced States */
+.apply-button {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.apply-button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(72, 175, 240, 0.3);
+}
+
+.apply-button:active {
+  transform: translateY(0px);
+}
+
+.apply-button.loading {
+  color: transparent !important;
+}
+
+/* Aspect Ratio Visual Indicator Animation */
+.aspect-ratio-indicator {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform: scale(1);
+}
+
+.preset-card:hover .aspect-ratio-indicator {
+  transform: scale(1.1);
+}
+
+.preset-card.active .aspect-ratio-indicator {
+  animation: aspectRatioPulse 2s ease-in-out infinite;
+}
+
+@keyframes aspectRatioPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Smart Suggestions Popover Animation */
+.suggestions-popover {
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced Scrollbar Styles */
+.resize-panel-scroll-x {
+  scrollbar-width: thin;
+  scrollbar-color: #48aff0 transparent;
+}
+
+.resize-panel-scroll-x::-webkit-scrollbar {
+  height: 4px;
+}
+
+.resize-panel-scroll-x::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.resize-panel-scroll-x::-webkit-scrollbar-thumb {
+  background: #495563;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.resize-panel-scroll-x::-webkit-scrollbar-thumb:hover {
+  background: #48aff0;
+}
+
+.resize-panel-scroll-y {
+  scrollbar-width: thin;
+  scrollbar-color: #48aff0 #2f343c;
+  scroll-behavior: smooth;
+  position: relative;
+}
+
+.resize-panel-scroll-y::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resize-panel-scroll-y::-webkit-scrollbar-track {
+  background: #2f343c;
+  border-radius: 3px;
+}
+
+.resize-panel-scroll-y::-webkit-scrollbar-thumb {
+  background: #495563;
+  border-radius: 3px;
+  border: 1px solid #2f343c;
+  transition: background-color 0.2s ease;
+}
+
+.resize-panel-scroll-y::-webkit-scrollbar-thumb:hover {
+  background: #48aff0;
+}
+
+.resize-panel-scroll-y::-webkit-scrollbar-thumb:active {
+  background: #2e5bba;
+}
+
+/* Enhanced scroll fade indicators for preset sections */
+.resize-panel-scroll-y::before,
+.resize-panel-scroll-y::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 6px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.3s ease;
+  opacity: 0.6;
+}
+
+.resize-panel-scroll-y::before {
+  top: 0;
+  background: linear-gradient(to bottom, #252a30 0%, #252a30 40%, transparent 100%);
+}
+
+.resize-panel-scroll-y::after {
+  bottom: 0;
+  background: linear-gradient(to top, #252a30 0%, #252a30 40%, transparent 100%);
+}
+
+/* Show scroll indicators more prominently when hovering */
+.resize-panel-scroll-y:hover::before,
+.resize-panel-scroll-y:hover::after {
+  opacity: 0.9;
+}
+
+/* Mobile Responsive Enhancements */
+@media (max-width: 768px) {
+  .preset-card,
+  .platform-preset-card {
+    padding: 8px 6px;
+    min-height: 70px;
+  }
+  
+  .recent-size-pill {
+    padding: 2px 4px;
+    font-size: 9px;
+  }
+  
+  .aspect-ratio-indicator {
+    width: 14px !important;
+    height: 10px !important;
+  }
+  
+  .platform-presets-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .platform-header {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+}
+
+/* High Performance Mode */
+@media (prefers-reduced-motion: reduce) {
+  .preset-card,
+  .favorite-star,
+  .apply-button,
+  .aspect-ratio-indicator,
+  .recent-size-pill {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .canvas-resizing {
+    animation: none !important;
+  }
+}
+
+/* Dark Theme Optimizations */
+@media (prefers-color-scheme: dark) {
+  .preset-card:hover {
+    box-shadow: 0 4px 12px rgba(72, 175, 240, 0.2);
+  }
+  
+  .preset-card.active {
+    box-shadow: 0 0 0 2px rgba(72, 175, 240, 0.4), 0 4px 12px rgba(72, 175, 240, 0.25);
+  }
+}
+
+/* Focus and Accessibility Enhancements */
+.preset-card:focus-visible,
+.recent-size-pill:focus-visible,
+.apply-button:focus-visible {
+  outline: 2px solid #48aff0;
+  outline-offset: 2px;
+}
+
+/* Loading States */
+.resize-panel-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.resize-panel-loading * {
+  animation-play-state: paused;
+}

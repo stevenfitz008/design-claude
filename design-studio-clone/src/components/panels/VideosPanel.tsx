@@ -1,400 +1,534 @@
-import React, { useState, useMemo } from 'react';
-import { Button, InputGroup, MenuItem, Card, Spinner } from '@blueprintjs/core';
-import { Select, ItemRenderer } from '@blueprintjs/select';
-import { useTheme } from '@/contexts/ThemeProvider';
-import { usePanelStore } from '@/stores/panelStore';
-import { useCanvasStore } from '@/stores/canvasStore';
+import React, { useState, useEffect } from 'react';
+import { observer } from "mobx-react-lite";
+import { Spinner } from '@blueprintjs/core';
+import { pexelsService } from '../../services/pexelsService';
+import type { PexelsVideo } from '../../types/videos';
 
-// Video categories
-const VIDEO_CATEGORIES = [
-  { value: 'all', label: 'All Videos' },
-  { value: 'nature', label: 'Nature' },
-  { value: 'business', label: 'Business' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'people', label: 'People' },
-  { value: 'abstract', label: 'Abstract' },
-  { value: 'food', label: 'Food' },
-  { value: 'travel', label: 'Travel' },
-  { value: 'sports', label: 'Sports' }
-];
+// we need observer to update component automatically on any store changes
+export const VideosPanel: React.FC = observer(() => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [videos, setVideos] = useState<PexelsVideo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-// Mock video data (in a real app, this would come from a video API like Pexels, Pixabay, etc.)
-const MOCK_VIDEOS = [
-  // Nature
-  { 
-    id: 'nature_1', 
-    title: 'Ocean Waves', 
-    category: 'nature', 
-    duration: 15,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjNDI5MEY1Ii8+CjxwYXRoIGQ9Ik0wIDgwUTUwIDYwIDEwMCA4MFQyMDAgNjBWMTIwSDBWODBaIiBmaWxsPSIjMUU3NkVGIi8+CjxjaXJjbGUgY3g9IjE2MCIgY3k9IjMwIiByPSIxNSIgZmlsbD0iI0ZERjRGRiIvPgo8L3N2Zz4=',
-    tags: ['ocean', 'water', 'relaxing'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4' // Sample video URL
-  },
-  { 
-    id: 'nature_2', 
-    title: 'Forest Trees', 
-    category: 'nature', 
-    duration: 20,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjMTZBMDg1Ii8+CjxyZWN0IHg9IjkwIiB5PSI4MCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjOTJBM0FCIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjcwIiByPSIzMCIgZmlsbD0iIzEwQjk4MSIvPgo8L3N2Zz4=',
-    tags: ['forest', 'trees', 'nature'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4'
-  },
+  const handleSearch = async (query: string, isLoadMore = false) => {
+    if (!isLoadMore) {
+      setSearchQuery(query);
+      setPage(1);
+    }
 
-  // Business
-  { 
-    id: 'business_1', 
-    title: 'Office Meeting', 
-    category: 'business', 
-    duration: 25,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjNGNEY2Ii8+CjxyZWN0IHg9IjQwIiB5PSI0MCIgd2lkdGg9IjEyMCIgaGVpZ2h0PSI0MCIgZmlsbD0iIzM3NDE0OSIvPgo8Y2lyY2xlIGN4PSI3MCIgY3k9IjMwIiByPSIxMCIgZmlsbD0iIzQ4QUZGMCIvPgo8Y2lyY2xlIGN4PSIxMzAiIGN5PSIzMCIgcj0iMTAiIGZpbGw9IiM0OEFGRjAiLz4KPC9zdmc+',
-    tags: ['office', 'meeting', 'professional'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_640x360_1mb.mp4'
-  },
+    if (query.trim()) {
+      if (!isLoadMore) setLoading(true);
+      else setLoadingMore(true);
+      setError(null);
 
-  // Technology
-  { 
-    id: 'tech_1', 
-    title: 'Code Animation', 
-    category: 'technology', 
-    duration: 12,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjMUIyMDJEIi8+CjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSI4MCIgZmlsbD0iIzI3MzAzRCIvPgo8cmVjdCB4PSIzMCIgeT0iMzAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI0IiBmaWxsPSIjNDhBRkYwIi8+CjxyZWN0IHg9IjMwIiB5PSI0MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNGRkVCM0IiLz4KPC9zdmc+',
-    tags: ['code', 'programming', 'tech'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4'
-  },
+      try {
+        const currentPage = isLoadMore ? page + 1 : 1;
+        const response = await pexelsService.searchVideos({
+          query: query,
+          page: currentPage,
+          per_page: 20
+        });
 
-  // People
-  { 
-    id: 'people_1', 
-    title: 'Team Collaboration', 
-    category: 'people', 
-    duration: 18,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRkVGM0VBIi8+CjxjaXJjbGUgY3g9IjYwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSIjRjU5RTBCIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjQwIiByPSIxNSIgZmlsbD0iI0Y1OUUwQiIvPgo8Y2lyY2xlIGN4PSIxNDAiIGN5PSI0MCIgcj0iMTUiIGZpbGw9IiNGNTlFMEIiLz4KPC9zdmc+',
-    tags: ['team', 'collaboration', 'people'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4'
-  },
-
-  // Abstract
-  { 
-    id: 'abstract_1', 
-    title: 'Geometric Motion', 
-    category: 'abstract', 
-    duration: 10,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjMUYyOTM3Ii8+CjxjaXJjbGUgY3g9IjgwIiBjeT0iNDAiIHI9IjIwIiBmaWxsPSIjRUIzOTgyIi8+CjxyZWN0IHg9IjEyMCIgeT0iMjAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgZmlsbD0iIzRGNDZFNSIvPgo8L3N2Zz4=',
-    tags: ['abstract', 'geometric', 'motion'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_3mb.mp4'
-  },
-
-  // Food
-  { 
-    id: 'food_1', 
-    title: 'Cooking Process', 
-    category: 'food', 
-    duration: 30,
-    thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRkJFQ0I1Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjYwIiByPSIzMCIgZmlsbD0iI0VGNDQ0NCIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjUwIiByPSI4IiBmaWxsPSIjRjU5RTBCIi8+CjxjaXJjbGUgY3g9IjExMCIgY3k9IjcwIiByPSI2IiBmaWxsPSIjMTBCOTgxIi8+Cjwvc3ZnPg==',
-    tags: ['cooking', 'food', 'kitchen'],
-    src: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1920x1080_1mb.mp4'
-  }
-];
-
-const CategorySelect = Select.ofType<{ value: string; label: string }>();
-
-const renderCategory: ItemRenderer<{ value: string; label: string }> = (
-  category,
-  { handleClick, modifiers }
-) => {
-  return (
-    <MenuItem
-      active={modifiers.active}
-      key={category.value}
-      onClick={handleClick}
-      text={category.label}
-    />
-  );
-};
-
-export const VideosPanel: React.FC = () => {
-  const { theme } = useTheme();
-  const { searchQuery, setSearchQuery } = usePanelStore();
-  const { addElement } = useCanvasStore();
-  const [selectedCategory, setSelectedCategory] = useState(VIDEO_CATEGORIES[0]);
-  const [loadingVideo, setLoadingVideo] = useState<string | null>(null);
-
-  const filteredVideos = useMemo(() => {
-    return MOCK_VIDEOS.filter(video => {
-      // Category filter
-      if (selectedCategory.value !== 'all' && video.category !== selectedCategory.value) {
-        return false;
+        if (isLoadMore) {
+          setVideos(prev => {
+            const existingIds = new Set(prev.map(video => video.id));
+            const newVideos = response.videos.filter(video => !existingIds.has(video.id));
+            return [...prev, ...newVideos];
+          });
+          setPage(currentPage);
+        } else {
+          setVideos(response.videos.length > 0 ? response.videos : mockVideos);
+        }
+        setHasMore(response.videos.length >= 20);
+      } catch (err) {
+        console.error('Search error:', err);
+        setError('Failed to search videos');
+        if (!isLoadMore) {
+          setVideos(mockVideos);
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-      
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        return (
-          video.title.toLowerCase().includes(query) ||
-          video.tags.some(tag => tag.toLowerCase().includes(query))
-        );
-      }
-      
-      return true;
-    });
-  }, [selectedCategory, searchQuery]);
-
-  const handleVideoClick = async (video: any) => {
-    setLoadingVideo(video.id);
-    
-    try {
-      // In a real app, you might want to validate the video URL or fetch metadata
-      const element = {
-        id: `video_${video.id}_${Date.now()}`,
-        type: 'video' as const,
-        x: 100,
-        y: 100,
-        width: 320,
-        height: 240,
-        rotation: 0,
-        scaleX: 1,
-        scaleY: 1,
-        opacity: 1,
-        visible: true,
-        locked: false,
-        zIndex: Date.now(),
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        src: video.src,
-        title: video.title,
-        duration: video.duration,
-        thumbnail: video.thumbnail,
-        autoplay: false,
-        controls: true,
-        muted: false,
-        loop: false
-      };
-      
-      addElement(element);
-    } catch (error) {
-      console.error('Failed to add video:', error);
-    } finally {
-      setLoadingVideo(null);
+    } else {
+      // Show trending videos when no search query
+      loadTrendingVideos();
     }
   };
 
+  const loadTrendingVideos = async (isLoadMore = false) => {
+    if (isLoadMore && (loadingMore || !hasMore)) return;
+
+    if (!isLoadMore) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const currentPage = isLoadMore ? page + 1 : 1;
+      const results = await pexelsService.getTrendingVideos({
+        page: currentPage,
+        per_page: 20
+      });
+      
+      if (isLoadMore) {
+        setVideos(prev => {
+          const existingIds = new Set(prev.map(video => video.id));
+          const newVideos = results.filter(video => !existingIds.has(video.id));
+          return [...prev, ...newVideos];
+        });
+        setPage(currentPage);
+      } else {
+        setVideos(results.length > 0 ? results : mockVideos);
+        setPage(1);
+      }
+      setHasMore(results.length >= 20);
+    } catch (err) {
+      console.error('Load trending error:', err);
+      if (!isLoadMore) {
+        setVideos(mockVideos);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Load trending videos on component mount
+  useEffect(() => {
+    loadTrendingVideos();
+  }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+
+    const timeoutId = setTimeout(() => {
+      const sentinel = document.querySelector('#video-scroll-sentinel');
+
+      if (sentinel) {
+        observer = new IntersectionObserver(
+          (entries) => {
+            const target = entries[0];
+
+            if (target.isIntersecting && !loadingMore && !loading && hasMore) {
+              console.log('🚀 Video infinite scroll triggered, hasMore:', hasMore);
+              if (searchQuery.trim()) {
+                handleSearch(searchQuery, true);
+              } else {
+                loadTrendingVideos(true);
+              }
+            }
+          },
+          {
+            threshold: 0.1,
+            rootMargin: '100px'
+          }
+        );
+        console.log('📍 Observing video sentinel');
+        observer.observe(sentinel);
+      } else {
+        console.log('❌ Missing video sentinel element');
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [searchQuery, hasMore, loadingMore, loading, page, videos.length]);
+
+  const handleVideoClick = (video: PexelsVideo) => {
+    console.log('Video selected:', video);
+  };
+
+  const handleDragStart = (e: React.DragEvent, video: PexelsVideo) => {
+    console.log('🚀 Drag start for video:', video.id);
+    const dragData = {
+      type: 'video',
+      src: video.video_files[0]?.link || video.preview_url,
+      thumbnail: video.image,
+      duration: video.duration,
+      user: video.user.name,
+      width: video.width,
+      height: video.height,
+      download_url: video.download_url,
+      video_files: video.video_files
+    };
+    console.log('📦 Video drag data:', dragData);
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'copy';
+    // Also set text data as fallback
+    e.dataTransfer.setData('text/plain', video.preview_url);
+  };
+
   const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatDimensions = (video: PexelsVideo): string => {
+    return `${video.width}×${video.height}`;
   };
 
   return (
     <div style={{
       height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
+      width: '100%',
+      background: '#2f343c',
+      color: '#f5f8fa',
+      position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Search and Filters */}
-      <div style={{
+      {/* Search Bar */}
+      <div style={{ 
         padding: '16px',
-        borderBottom: `1px solid ${theme.colors?.border || '#495563'}`
+        borderBottom: '1px solid #495563'
       }}>
-        <InputGroup
-          leftIcon="search"
-          placeholder="Search videos..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          rightElement={
-            searchQuery ? (
-              <Button
-                icon="cross"
-                minimal
-                onClick={() => setSearchQuery('')}
-              />
-            ) : undefined
-          }
-          style={{ marginBottom: '12px' }}
-        />
-        
-        <div style={{
+        <div style={{ 
           display: 'flex',
-          gap: '8px',
           alignItems: 'center',
-          flexWrap: 'wrap'
+          gap: '8px'
         }}>
-          <span style={{
-            fontSize: '12px',
-            color: theme.colors?.textSecondary || '#a7b6c2',
-            marginRight: '4px'
+          <div style={{ 
+            color: '#8a9ba8',
+            fontSize: '16px',
+            flexShrink: 0,
+            paddingLeft: '2px'
           }}>
-            Category:
-          </span>
-          
-          <CategorySelect
-            items={VIDEO_CATEGORIES}
-            itemRenderer={renderCategory}
-            onItemSelect={(category) => setSelectedCategory(category)}
-            filterable={false}
-          >
-            <Button
-              text={selectedCategory.label}
-              rightIcon="caret-down"
-              minimal
-              small
-            />
-          </CategorySelect>
+            🔍
+          </div>
+          <input
+            type="text"
+            placeholder="Search videos..."
+            value={searchQuery}
+            onChange={(e) => {
+              const value = e.target.value;
+              handleSearch(value);
+            }}
+            style={{
+              flex: 1,
+              minHeight: '36px',
+              backgroundColor: 'rgba(16, 22, 26, 0.3)',
+              border: '1px solid #495563',
+              borderRadius: '3px',
+              padding: '8px 12px',
+              color: '#f5f8fa',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#48aff0';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#495563';
+            }}
+          />
+          {loading && (
+            <div style={{ flexShrink: 0, paddingRight: '4px' }}>
+              <Spinner size={16} />
+            </div>
+          )}
+        </div>
+        <div style={{
+          fontSize: '11px',
+          color: '#8a9ba8',
+          textAlign: 'center',
+          marginTop: '8px'
+        }}>
+          Videos by <span style={{ color: '#48aff0', fontWeight: '500' }}>Pexels</span>
         </div>
       </div>
+      
 
       {/* Videos Grid */}
-      <div style={{
-        flex: 1,
-        padding: '16px',
-        overflowY: 'auto'
-      }}>
-        {filteredVideos.length === 0 ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '200px',
-            color: theme.colors?.textSecondary || '#a7b6c2',
-            fontSize: '14px'
-          }}>
-            No videos found
-          </div>
-        ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: '16px'
-          }}>
-            {filteredVideos.map((video) => (
-              <Card
+      <div 
+        id="videos-scroll-container"
+        style={{
+          position: 'absolute',
+          top: '76px', // Account for search bar only
+          bottom: '0px',
+          left: '0px',
+          right: '0px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: '16px',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridAutoRows: '10px',
+          gap: '12px'
+        }}>
+          {videos.map((video, index) => {
+            // Calculate dynamic height based on video aspect ratio
+            const getGridRowSpan = () => {
+              const aspectRatio = video.aspect_ratio || (video.width / video.height);
+              if (aspectRatio > 1.3) return 6; // Landscape - shorter
+              if (aspectRatio < 0.8) return 10; // Portrait - taller  
+              return 8; // Square/default
+            };
+
+            return (
+              <div
                 key={video.id}
-                interactive
+                draggable={true}
                 onClick={() => handleVideoClick(video)}
+                onDragStart={(e) => handleDragStart(e, video)}
                 style={{
-                  padding: '0',
-                  cursor: loadingVideo === video.id ? 'wait' : 'pointer',
+                  position: 'relative',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  cursor: 'grab',
+                  background: '#1c2127',
+                  border: '1px solid #495563',
                   transition: 'all 0.2s ease',
-                  backgroundColor: theme.colors?.cardBg || '#394b59',
-                  border: `1px solid ${theme.colors?.border || '#495563'}`,
-                  position: 'relative'
+                  gridRowEnd: `span ${getGridRowSpan()}`,
+                  userSelect: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  if (loadingVideo !== video.id) {
-                    e.currentTarget.style.borderColor = theme.colors?.primary || '#48aff0';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                  }
+                  e.currentTarget.style.borderColor = '#48aff0';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = theme.colors?.border || '#495563';
+                  e.currentTarget.style.borderColor = '#495563';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                {/* Video Thumbnail */}
+                <img
+                  src={video.image}
+                  alt={`Video by ${video.user.name}`}
+                  draggable={false}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                    pointerEvents: 'none'
+                  }}
+                />
+
+                {/* Play Overlay */}
                 <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100px',
-                  overflow: 'hidden',
-                  borderRadius: '3px 3px 0 0',
-                  backgroundColor: theme.colors?.bg || '#30404d'
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '48px',
+                  height: '48px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0.8,
+                  transition: 'opacity 0.2s ease'
                 }}>
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                  
-                  {/* Play Overlay */}
                   <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    opacity: loadingVideo === video.id ? 1 : 0,
-                    transition: 'opacity 0.2s ease'
-                  }}>
-                    {loadingVideo === video.id ? (
-                      <Spinner size={20} />
-                    ) : (
-                      <div style={{
-                        width: '24px',
-                        height: '24px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <div style={{
-                          width: '0',
-                          height: '0',
-                          borderLeft: '6px solid #000',
-                          borderTop: '4px solid transparent',
-                          borderBottom: '4px solid transparent',
-                          marginLeft: '1px'
-                        }} />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Duration Badge */}
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '6px',
-                    right: '6px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: '3px'
-                  }}>
-                    {formatDuration(video.duration)}
-                  </div>
+                    width: 0,
+                    height: 0,
+                    borderLeft: '12px solid white',
+                    borderTop: '8px solid transparent',
+                    borderBottom: '8px solid transparent',
+                    marginLeft: '3px'
+                  }} />
                 </div>
-                
-                {/* Video Info */}
-                <div style={{ padding: '12px' }}>
-                  <div style={{
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    color: theme.colors?.textPrimary || '#f5f8fa',
-                    marginBottom: '4px',
-                    lineHeight: '1.3',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
-                  }}>
-                    {video.title}
-                  </div>
-                  
+
+                {/* Duration Badge */}
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '500'
+                }}>
+                  {formatDuration(video.duration)}
+                </div>
+
+                {/* Video Info Overlay */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.7))',
+                  padding: '12px 8px 8px',
+                  color: 'white'
+                }}>
                   <div style={{
                     fontSize: '10px',
-                    color: theme.colors?.textSecondary || '#a7b6c2',
-                    textTransform: 'capitalize'
+                    opacity: 0.9,
+                    lineHeight: '1.2',
+                    marginBottom: '2px'
                   }}>
-                    {video.category}
+                    <div style={{ fontWeight: '500' }}>
+                      {formatDimensions(video)}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    opacity: 0.8,
+                    lineHeight: '1.2'
+                  }}>
+                    Video by <span style={{ fontWeight: '500' }}>{video.user.name}</span> on Pexels
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        )}
+              </div>
+            );
+          })}
+          
+          {/* Infinite scroll sentinel */}
+          {videos.length > 0 && (
+            <div 
+              id="video-scroll-sentinel" 
+              style={{ 
+                height: '40px', 
+                margin: '20px auto',
+                gridColumn: '1 / -1',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              {loadingMore && <Spinner size={20} />}
+              {!hasMore && videos.length > 10 && (
+                <div style={{ color: '#8a9ba8', fontSize: '12px' }}>No more videos to load</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-};
+});
 
 VideosPanel.displayName = 'VideosPanel';
+
+// Mock videos for development/fallback
+const mockVideos: PexelsVideo[] = [
+  {
+    id: 1,
+    width: 1920,
+    height: 1080,
+    duration: 15,
+    image: 'https://images.pexels.com/videos/1526909/free-video-1526909.jpg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+    url: 'https://www.pexels.com/video/1526909/',
+    user: {
+      id: 1,
+      name: 'Pixabay',
+      url: 'https://www.pexels.com/@pixabay'
+    },
+    video_files: [
+      {
+        id: 1,
+        quality: 'hd',
+        file_type: 'video/mp4',
+        width: 1920,
+        height: 1080,
+        link: 'https://player.vimeo.com/external/291648067.hd.mp4',
+        size: 25000000
+      }
+    ],
+    aspect_ratio: 1.78,
+    file_size_mb: 25,
+    preview_url: 'https://player.vimeo.com/external/291648067.hd.mp4',
+    download_url: 'https://player.vimeo.com/external/291648067.hd.mp4'
+  },
+  {
+    id: 2,
+    width: 1280,
+    height: 720,
+    duration: 8,
+    image: 'https://images.pexels.com/videos/1851190/free-video-1851190.jpg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+    url: 'https://www.pexels.com/video/1851190/',
+    user: {
+      id: 2,
+      name: 'Kelly Lacy',
+      url: 'https://www.pexels.com/@kelly-lacy-1179532'
+    },
+    video_files: [
+      {
+        id: 2,
+        quality: 'hd',
+        file_type: 'video/mp4',
+        width: 1280,
+        height: 720,
+        link: 'https://player.vimeo.com/external/293125340.hd.mp4',
+        size: 15000000
+      }
+    ],
+    aspect_ratio: 1.78,
+    file_size_mb: 15,
+    preview_url: 'https://player.vimeo.com/external/293125340.hd.mp4',
+    download_url: 'https://player.vimeo.com/external/293125340.hd.mp4'
+  },
+  {
+    id: 3,
+    width: 1080,
+    height: 1920,
+    duration: 12,
+    image: 'https://images.pexels.com/videos/3298863/free-video-3298863.jpg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+    url: 'https://www.pexels.com/video/3298863/',
+    user: {
+      id: 3,
+      name: 'Taryn Elliott',
+      url: 'https://www.pexels.com/@taryn-elliott'
+    },
+    video_files: [
+      {
+        id: 3,
+        quality: 'hd',
+        file_type: 'video/mp4',
+        width: 1080,
+        height: 1920,
+        link: 'https://player.vimeo.com/external/380233894.hd.mp4',
+        size: 20000000
+      }
+    ],
+    aspect_ratio: 0.56,
+    file_size_mb: 20,
+    preview_url: 'https://player.vimeo.com/external/380233894.hd.mp4',
+    download_url: 'https://player.vimeo.com/external/380233894.hd.mp4'
+  },
+  {
+    id: 4,
+    width: 1920,
+    height: 1080,
+    duration: 20,
+    image: 'https://images.pexels.com/videos/852421/free-video-852421.jpg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+    url: 'https://www.pexels.com/video/852421/',
+    user: {
+      id: 4,
+      name: 'Life of Pix',
+      url: 'https://www.pexels.com/@life-of-pix'
+    },
+    video_files: [
+      {
+        id: 4,
+        quality: 'hd',
+        file_type: 'video/mp4',
+        width: 1920,
+        height: 1080,
+        link: 'https://player.vimeo.com/external/233397823.hd.mp4',
+        size: 30000000
+      }
+    ],
+    aspect_ratio: 1.78,
+    file_size_mb: 30,
+    preview_url: 'https://player.vimeo.com/external/233397823.hd.mp4',
+    download_url: 'https://player.vimeo.com/external/233397823.hd.mp4'
+  }
+];

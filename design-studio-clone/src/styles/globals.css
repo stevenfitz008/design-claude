@@ -1,19 +1,65 @@
 /* Global styles for Design Studio Clone */
 
-/* Reset and base styles */
+/* YOLO AGGRESSIVE Reset - Force box-sizing everywhere */
 *,
 *::before,
 *::after {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
+}
+
+/* AGGRESSIVE: Force ALL elements inside right panel to respect box-sizing */
+[data-testid="right-panel"] *,
+[data-testid="right-panel"] *::before,
+[data-testid="right-panel"] *::after {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* AGGRESSIVE: Prevent flexbox from changing widths */
+[data-testid="right-panel"] .bp5-input-group,
+[data-testid="right-panel"] .bp5-input,
+[data-testid="right-panel"] input,
+[data-testid="right-panel"] button,
+[data-testid="right-panel"] div {
+  flex-shrink: 0 !important;
+  flex-basis: auto !important;
+}
+
+/* AGGRESSIVE: Override any CSS that might change widths dynamically */
+[data-testid="right-panel"] * {
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow !important;
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow !important;
+  /* Explicitly exclude width, height, margin, padding from transitions */
 }
 
 html,
 body,
 #root {
   height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden; /* Prevent body scroll, let components handle scrolling */
+  position: fixed; /* Prevent any browser scrollbars */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Ensure browser chrome doesn't interfere */
+html {
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%; /* Prevent iOS text size adjustment */
+  -ms-text-size-adjust: 100%;    /* Prevent Windows Phone text size adjustment */
+}
+
+/* Force full viewport usage */
+body {
+  min-height: 100vh;
+  min-width: 100vw;
+  max-height: 100vh;
+  max-width: 100vw;
 }
 
 body {
@@ -69,10 +115,19 @@ input, textarea, select {
   outline-offset: 2px;
 }
 
-/* Custom scrollbars */
+/* Custom scrollbars - AGGRESSIVE width control */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px !important; /* Thinner scrollbar to prevent width issues */
+  height: 6px !important;
+}
+
+/* AGGRESSIVE: Ensure scrollbars don't affect layout */
+[data-testid="photos-scroll-container"]::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+[data-testid="photos-scroll-container"] {
+  scrollbar-gutter: stable !important; /* Reserve space for scrollbar */
 }
 
 ::-webkit-scrollbar-track {

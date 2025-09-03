@@ -38,7 +38,8 @@ export class ProjectsService {
 
     // Check project limits based on user plan
     const projectCount = user.projects.length;
-    const maxProjects = user.limits?.maxProjects || 10;
+    const limits = user.limits as any; // JSON field needs casting
+    const maxProjects = limits?.maxProjects || 10;
 
     if (projectCount >= maxProjects) {
       throw new ForbiddenException(`Project limit reached. Current plan allows ${maxProjects} projects.`);
@@ -66,7 +67,11 @@ export class ProjectsService {
           initialCanvasData = {
             elements: templateCanvas.elements || [],
             layers: templateCanvas.layers || initialCanvasData.layers,
-            timeline: templateCanvas.timeline || initialCanvasData.timeline,
+            timeline: {
+              duration: templateCanvas.timeline?.duration || initialCanvasData.timeline.duration,
+              currentTime: templateCanvas.timeline?.currentTime || initialCanvasData.timeline.currentTime,
+              markers: (templateCanvas.timeline as any)?.markers || initialCanvasData.timeline.markers,
+            },
             viewport: templateCanvas.viewport || initialCanvasData.viewport,
             settings: templateCanvas.settings || initialCanvasData.settings,
             backgroundColor: templateCanvas.backgroundColor || initialCanvasData.backgroundColor
@@ -353,7 +358,8 @@ export class ProjectsService {
     }
 
     const projectCount = user.projects.length;
-    const maxProjects = user.limits?.maxProjects || 10;
+    const limits = user.limits as any; // JSON field needs casting
+    const maxProjects = limits?.maxProjects || 10;
 
     if (projectCount >= maxProjects) {
       throw new ForbiddenException(`Project limit reached. Current plan allows ${maxProjects} projects.`);
@@ -443,7 +449,8 @@ export class ProjectsService {
 
     // Calculate storage used (rough estimation)
     const storageUsed = user.assets.reduce((total, asset) => total + (asset.size || 0), 0);
-    const storageLimit = user.limits?.maxStorageSize || 104857600; // 100MB default
+    const limits = user.limits as any; // JSON field needs casting
+    const storageLimit = limits?.maxStorageSize || 104857600; // 100MB default
 
     return {
       totalProjects,

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { observer } from "mobx-react-lite";
+// we need observer to update component automatically on any store changes  
 import { Button, FormGroup, NumericInput, Divider } from '@blueprintjs/core';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { useCanvasStore } from '@/stores/canvasStore';
 
-// Shape definitions with preview SVGs
+// Shape definitions using Konva.js shape types
 const BASIC_SHAPES = [
   {
     id: 'rectangle',
     name: 'Rectangle',
-    type: 'rectangle',
+    type: 'rectangle' as const,
     preview: (
       <svg width="40" height="30" viewBox="0 0 40 30">
         <rect x="2" y="2" width="36" height="26" fill="currentColor" stroke="none" rx="2" />
@@ -18,7 +20,7 @@ const BASIC_SHAPES = [
   {
     id: 'circle',
     name: 'Circle',
-    type: 'circle',
+    type: 'circle' as const,
     preview: (
       <svg width="40" height="30" viewBox="0 0 40 30">
         <circle cx="20" cy="15" r="13" fill="currentColor" stroke="none" />
@@ -26,9 +28,19 @@ const BASIC_SHAPES = [
     )
   },
   {
+    id: 'ellipse',
+    name: 'Ellipse',
+    type: 'ellipse' as const,
+    preview: (
+      <svg width="40" height="30" viewBox="0 0 40 30">
+        <ellipse cx="20" cy="15" rx="18" ry="12" fill="currentColor" stroke="none" />
+      </svg>
+    )
+  },
+  {
     id: 'triangle',
     name: 'Triangle',
-    type: 'triangle',
+    type: 'triangle' as const,
     preview: (
       <svg width="40" height="30" viewBox="0 0 40 30">
         <polygon points="20,3 37,27 3,27" fill="currentColor" stroke="none" />
@@ -36,19 +48,9 @@ const BASIC_SHAPES = [
     )
   },
   {
-    id: 'diamond',
-    name: 'Diamond',
-    type: 'diamond',
-    preview: (
-      <svg width="40" height="30" viewBox="0 0 40 30">
-        <polygon points="20,3 37,15 20,27 3,15" fill="currentColor" stroke="none" />
-      </svg>
-    )
-  },
-  {
     id: 'star',
     name: 'Star',
-    type: 'star',
+    type: 'star' as const,
     preview: (
       <svg width="40" height="30" viewBox="0 0 40 30">
         <polygon points="20,2 24,12 35,12 26,19 30,29 20,23 10,29 14,19 5,12 16,12" fill="currentColor" stroke="none" />
@@ -58,7 +60,8 @@ const BASIC_SHAPES = [
   {
     id: 'hexagon',
     name: 'Hexagon',
-    type: 'hexagon',
+    type: 'polygon' as const,
+    sides: 6,
     preview: (
       <svg width="40" height="30" viewBox="0 0 40 30">
         <polygon points="20,3 33,9 33,21 20,27 7,21 7,9" fill="currentColor" stroke="none" />
@@ -69,42 +72,12 @@ const BASIC_SHAPES = [
 
 const ARROW_SHAPES = [
   {
-    id: 'arrow-right',
-    name: 'Arrow Right',
-    type: 'arrow-right',
+    id: 'arrow',
+    name: 'Arrow',
+    type: 'arrow' as const,
     preview: (
       <svg width="40" height="30" viewBox="0 0 40 30">
         <polygon points="2,10 2,20 25,20 25,25 38,15 25,5 25,10" fill="currentColor" stroke="none" />
-      </svg>
-    )
-  },
-  {
-    id: 'arrow-left',
-    name: 'Arrow Left',
-    type: 'arrow-left',
-    preview: (
-      <svg width="40" height="30" viewBox="0 0 40 30">
-        <polygon points="38,10 38,20 15,20 15,25 2,15 15,5 15,10" fill="currentColor" stroke="none" />
-      </svg>
-    )
-  },
-  {
-    id: 'arrow-up',
-    name: 'Arrow Up',
-    type: 'arrow-up',
-    preview: (
-      <svg width="40" height="30" viewBox="0 0 40 30">
-        <polygon points="10,28 20,28 20,8 25,8 15,2 5,8 10,8" fill="currentColor" stroke="none" />
-      </svg>
-    )
-  },
-  {
-    id: 'arrow-down',
-    name: 'Arrow Down',
-    type: 'arrow-down',
-    preview: (
-      <svg width="40" height="30" viewBox="0 0 40 30">
-        <polygon points="10,2 20,2 20,22 25,22 15,28 5,22 10,22" fill="currentColor" stroke="none" />
       </svg>
     )
   }
@@ -133,7 +106,7 @@ const LINE_SHAPES = [
   }
 ];
 
-export const ShapesPanel: React.FC = () => {
+export const ShapesPanel: React.FC = observer(() => {
   const { theme } = useTheme();
   const { addElement } = useCanvasStore();
   
@@ -148,10 +121,10 @@ export const ShapesPanel: React.FC = () => {
     const element = {
       id: `shape_${shape.id}_${Date.now()}`,
       type: 'shape' as const,
-      x: 100,
-      y: 100,
-      width: shapeSize,
-      height: shape.type === 'circle' ? shapeSize : Math.round(shapeSize * 0.8),
+      x: 300,
+      y: 200,
+      width: shape.type === 'arrow' ? Math.round(shapeSize * 1.5) : shapeSize,
+      height: shape.type === 'circle' ? shapeSize : (shape.type === 'arrow' ? Math.round(shapeSize * 0.6) : shapeSize),
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
@@ -166,10 +139,26 @@ export const ShapesPanel: React.FC = () => {
       stroke: strokeColor,
       strokeWidth: strokeWidth,
       cornerRadius: shape.type === 'rectangle' ? cornerRadius : 0,
-      strokeDashArray: shape.type.includes('dashed') ? [4, 2] : undefined
+      strokeDashArray: shape.type.includes('dashed') ? [4, 2] : undefined,
+      sides: shape.sides || (shape.type === 'star' ? 5 : undefined),
+      innerRadius: shape.type === 'star' ? 0.5 : undefined
     };
     
     addElement(element);
+  };
+
+  const handleDragStart = (e: React.DragEvent, shape: any) => {
+    const dragData = {
+      type: 'shape',
+      shapeType: shape.type,
+      fill: fillColor,
+      stroke: strokeColor,
+      strokeWidth: strokeWidth,
+      cornerRadius: cornerRadius,
+      sides: shape.sides
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'copy';
   };
 
   const ShapeGrid: React.FC<{ shapes: any[], title: string }> = ({ shapes, title }) => (
@@ -191,7 +180,9 @@ export const ShapesPanel: React.FC = () => {
         {shapes.map((shape) => (
           <div
             key={shape.id}
+            draggable={true}
             onClick={() => handleShapeClick(shape)}
+            onDragStart={(e) => handleDragStart(e, shape)}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -346,6 +337,6 @@ export const ShapesPanel: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 ShapesPanel.displayName = 'ShapesPanel';

@@ -123,6 +123,29 @@ app.get('/photos/search', (req, res) => {
   });
 });
 
+app.get('/photos/trending', (req, res) => {
+  res.json({
+    total: 100,
+    total_pages: 5,
+    page: 1,
+    per_page: 20,
+    results: [
+      {
+        id: 'photo-trending-1',
+        description: 'Trending landscape',
+        urls: {
+          regular: 'https://picsum.photos/800/600?random=trending1',
+          small: 'https://picsum.photos/400/300?random=trending1',
+          thumb: 'https://picsum.photos/200/150?random=trending1'
+        },
+        user: {
+          name: 'Trending Photographer'
+        }
+      }
+    ]
+  });
+});
+
 // Mock fonts endpoint
 app.get('/fonts', (req, res) => {
   res.json({

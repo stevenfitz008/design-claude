@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { observer } from "mobx-react-lite";
+// we need observer to update component automatically on any store changes  
 import { Button, ButtonGroup, FormGroup, NumericInput, Slider, Divider } from '@blueprintjs/core';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { useCanvasStore } from '@/stores/canvasStore';
@@ -98,7 +100,7 @@ const PATTERN_BACKGROUNDS = [
   }
 ];
 
-export const BackgroundPanel: React.FC = () => {
+export const BackgroundPanel: React.FC = observer(() => {
   const { theme } = useTheme();
   const { canvasBackground, setCanvasBackground } = useCanvasStore();
   
@@ -520,6 +522,6 @@ export const BackgroundPanel: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 BackgroundPanel.displayName = 'BackgroundPanel';

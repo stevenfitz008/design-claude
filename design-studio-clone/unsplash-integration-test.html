@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsplash Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        .test-section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 200px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d2e;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .photo-card {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            background: white;
+            transition: all 0.2s;
+        }
+        .photo-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        .photo-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .photo-info {
+            padding: 10px;
+        }
+        .photo-info h4 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        .photo-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .endpoint-test {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .endpoint-url {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #495057;
+        }
+        .response-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .integration-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+        .status-indicator.success {
+            background: #27ae60;
+        }
+        .status-indicator.warning {
+            background: #f39c12;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Unsplash API Integration Test</h1>
+        
+        <div class="test-section">
+            <h2>🔗 Backend Connection Status</h2>
+            <div class="integration-status">
+                <div class="status-indicator" id="backend-status"></div>
+                <span id="backend-text">Checking backend connection...</span>
+            </div>
+            <button class="btn-primary" onclick="testBackendConnection()">Test Backend</button>
+        </div>
+
+        <div class="test-section">
+            <h2>🔥 Trending Photos Test</h2>
+            <div class="test-controls">
+                <button class="btn-primary" onclick="testTrending()">Load Trending Photos</button>
+                <button class="btn-secondary" onclick="testTrendingPagination()">Test Pagination</button>
+            </div>
+            <div id="trending-status"></div>
+            <div id="trending-results" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Search Photos Test</h2>
+            <div class="test-controls">
+                <input type="text" id="search-input" placeholder="Enter search query (e.g., nature, city, ocean)" value="nature">
+                <button class="btn-primary" onclick="testSearch()">Search Photos</button>
+                <button class="btn-success" onclick="testMultipleSearches()">Test Multiple Queries</button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚀 Performance & Error Handling Tests</h2>
+            <div class="test-controls">
+                <button class="btn-secondary" onclick="testErrorHandling()">Test Error Scenarios</button>
+                <button class="btn-secondary" onclick="testRateLimiting()">Test Rate Limiting</button>
+                <button class="btn-success" onclick="testLoadTime()">Measure Load Times</button>
+            </div>
+            <div id="performance-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 API Endpoint Details</h2>
+            <div id="endpoint-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Frontend Integration Test</h2>
+            <div class="test-controls">
+                <button class="btn-primary" onclick="openFrontendApp()">Open Frontend App</button>
+                <button class="btn-secondary" onclick="testDirectIntegration()">Test Direct Integration</button>
+            </div>
+            <div id="frontend-status"></div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:3001/api/v1';
+        const FRONTEND_URL = 'http://localhost:5173';
+
+        // Utility functions
+        function setStatus(elementId, message, type = 'loading') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function clearResults(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        function displayPhotos(photos, containerId) {
+            const container = document.getElementById(containerId);
+            if (!photos || photos.length === 0) {
+                container.innerHTML = '<p>No photos found</p>';
+                return;
+            }
+
+            const photosHTML = photos.map(photo => `
+                <div class="photo-card">
+                    <img src="${photo.urls.small}" alt="${photo.alt_description || 'Unsplash photo'}" 
+                         onerror="this.src='https://via.placeholder.com/250x200?text=Image+Error'">
+                    <div class="photo-info">
+                        <h4>${photo.alt_description || photo.description || 'Untitled'}</h4>
+                        <p>By ${photo.user.name} • ${photo.likes} likes</p>
+                        <p>Size: ${photo.width}x${photo.height}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = photosHTML;
+        }
+
+        // Test backend connection
+        async function testBackendConnection() {
+            const statusIndicator = document.getElementById('backend-status');
+            const statusText = document.getElementById('backend-text');
+            
+            statusText.textContent = 'Testing backend connection...';
+            statusIndicator.className = 'status-indicator';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/photos/trending?per_page=1`);
+                if (response.ok) {
+                    statusIndicator.className = 'status-indicator success';
+                    statusText.textContent = `Backend connected successfully! Status: ${response.status}`;
+                } else {
+                    statusIndicator.className = 'status-indicator warning';
+                    statusText.textContent = `Backend responded with status: ${response.status}`;
+                }
+            } catch (error) {
+                statusIndicator.className = 'status-indicator';
+                statusText.textContent = `Backend connection failed: ${error.message}`;
+            }
+        }
+
+        // Test trending photos
+        async function testTrending() {
+            setStatus('trending-status', 'Loading trending photos...', 'loading');
+            clearResults('trending-results');
+
+            try {
+                const startTime = performance.now();
+                const response = await fetch(`${BACKEND_URL}/photos/trending?per_page=12`);
+                const endTime = performance.now();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const loadTime = Math.round(endTime - startTime);
+
+                setStatus('trending-status', 
+                    `✅ Loaded ${data.results?.length || 0} trending photos in ${loadTime}ms`, 'success');
+                
+                displayPhotos(data.results, 'trending-results');
+
+                // Update endpoint details
+                updateEndpointResults('Trending Photos', '/photos/trending', data, loadTime);
+            } catch (error) {
+                setStatus('trending-status', `❌ Error loading trending photos: ${error.message}`, 'error');
+            }
+        }
+
+        // Test search functionality
+        async function testSearch() {
+            const query = document.getElementById('search-input').value || 'nature';
+            setStatus('search-status', `Searching for "${query}"...`, 'loading');
+            clearResults('search-results');
+
+            try {
+                const startTime = performance.now();
+                const response = await fetch(`${BACKEND_URL}/photos/search?query=${encodeURIComponent(query)}&per_page=12`);
+                const endTime = performance.now();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const loadTime = Math.round(endTime - startTime);
+
+                setStatus('search-status', 
+                    `✅ Found ${data.results?.length || 0} photos for "${query}" in ${loadTime}ms`, 'success');
+                
+                displayPhotos(data.results, 'search-results');
+
+                // Update endpoint details
+                updateEndpointResults('Search Photos', `/photos/search?query=${query}`, data, loadTime);
+            } catch (error) {
+                setStatus('search-status', `❌ Error searching photos: ${error.message}`, 'error');
+            }
+        }
+
+        // Test multiple search queries
+        async function testMultipleSearches() {
+            const queries = ['ocean', 'mountain', 'city', 'forest', 'sunset'];
+            setStatus('search-status', 'Testing multiple search queries...', 'loading');
+            
+            let results = [];
+            for (const query of queries) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/photos/search?query=${query}&per_page=2`);
+                    const data = await response.json();
+                    results = results.concat(data.results || []);
+                } catch (error) {
+                    console.error(`Failed to search for ${query}:`, error);
+                }
+            }
+
+            setStatus('search-status', `✅ Multi-search completed: ${results.length} photos from ${queries.length} queries`, 'success');
+            displayPhotos(results, 'search-results');
+        }
+
+        // Test pagination
+        async function testTrendingPagination() {
+            setStatus('trending-status', 'Testing pagination...', 'loading');
+            
+            try {
+                const page1 = await fetch(`${BACKEND_URL}/photos/trending?per_page=6&page=1`);
+                const page2 = await fetch(`${BACKEND_URL}/photos/trending?per_page=6&page=2`);
+                
+                const data1 = await page1.json();
+                const data2 = await page2.json();
+                
+                const allResults = [...(data1.results || []), ...(data2.results || [])];
+                
+                setStatus('trending-status', `✅ Pagination test: Page 1 (${data1.results?.length || 0}) + Page 2 (${data2.results?.length || 0}) = ${allResults.length} total`, 'success');
+                displayPhotos(allResults, 'trending-results');
+            } catch (error) {
+                setStatus('trending-status', `❌ Pagination test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Test error handling
+        async function testErrorHandling() {
+            setStatus('performance-status', 'Testing error handling scenarios...', 'loading');
+            
+            const tests = [
+                { name: 'Invalid endpoint', url: `${BACKEND_URL}/photos/invalid` },
+                { name: 'Invalid query', url: `${BACKEND_URL}/photos/search?query=` },
+                { name: 'Invalid pagination', url: `${BACKEND_URL}/photos/trending?page=-1` }
+            ];
+
+            let results = [];
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url);
+                    results.push(`${test.name}: Status ${response.status}`);
+                } catch (error) {
+                    results.push(`${test.name}: ${error.message}`);
+                }
+            }
+
+            setStatus('performance-status', 
+                `✅ Error handling tests completed:<br>${results.join('<br>')}`, 'success');
+        }
+
+        // Test rate limiting
+        async function testRateLimiting() {
+            setStatus('performance-status', 'Testing rate limiting...', 'loading');
+            
+            const requests = [];
+            for (let i = 0; i < 5; i++) {
+                requests.push(fetch(`${BACKEND_URL}/photos/trending?per_page=1`));
+            }
+
+            try {
+                const responses = await Promise.all(requests);
+                const statuses = responses.map(r => r.status);
+                
+                setStatus('performance-status', 
+                    `✅ Rate limiting test: ${requests.length} concurrent requests, statuses: ${statuses.join(', ')}`, 'success');
+            } catch (error) {
+                setStatus('performance-status', `❌ Rate limiting test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Test load times
+        async function testLoadTime() {
+            setStatus('performance-status', 'Measuring load times...', 'loading');
+            
+            const tests = [
+                { name: 'Trending photos', url: `${BACKEND_URL}/photos/trending?per_page=12` },
+                { name: 'Search "nature"', url: `${BACKEND_URL}/photos/search?query=nature&per_page=12` },
+                { name: 'Search "city"', url: `${BACKEND_URL}/photos/search?query=city&per_page=12` }
+            ];
+
+            let results = [];
+            for (const test of tests) {
+                const startTime = performance.now();
+                try {
+                    const response = await fetch(test.url);
+                    const endTime = performance.now();
+                    const loadTime = Math.round(endTime - startTime);
+                    results.push(`${test.name}: ${loadTime}ms`);
+                } catch (error) {
+                    results.push(`${test.name}: Failed`);
+                }
+            }
+
+            setStatus('performance-status', 
+                `✅ Load time measurements:<br>${results.join('<br>')}`, 'success');
+        }
+
+        // Update endpoint results
+        function updateEndpointResults(testName, endpoint, data, loadTime) {
+            const container = document.getElementById('endpoint-results');
+            const div = document.createElement('div');
+            div.className = 'endpoint-test';
+            div.innerHTML = `
+                <h4>${testName}</h4>
+                <div class="endpoint-url">GET ${endpoint}</div>
+                <div class="response-info">
+                    ⏱️ Response time: ${loadTime}ms<br>
+                    📊 Results: ${data.results?.length || 0} photos<br>
+                    📄 Total available: ${data.total || 'N/A'}<br>
+                    📃 Page: ${data.page || 1} of ${data.total_pages || 'N/A'}
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        // Open frontend app
+        function openFrontendApp() {
+            window.open(FRONTEND_URL, '_blank');
+            setStatus('frontend-status', '🚀 Frontend app opened in new tab', 'success');
+        }
+
+        // Test direct integration
+        async function testDirectIntegration() {
+            setStatus('frontend-status', 'Testing direct frontend integration...', 'loading');
+            
+            try {
+                // Check if frontend is accessible
+                const frontendResponse = await fetch(FRONTEND_URL);
+                if (frontendResponse.ok) {
+                    setStatus('frontend-status', 
+                        '✅ Frontend is running! You can test the photos panel by:<br>' +
+                        '1. Opening the frontend app<br>' +
+                        '2. Clicking the Photos tool in the left toolbar<br>' +
+                        '3. Searching for different photo categories<br>' +
+                        '4. Testing drag & drop functionality', 'success');
+                } else {
+                    setStatus('frontend-status', 
+                        '⚠️ Frontend server might not be running. Start with: npm run dev', 'error');
+                }
+            } catch (error) {
+                setStatus('frontend-status', 
+                    '❌ Could not connect to frontend. Make sure it\'s running on port 5173', 'error');
+            }
+        }
+
+        // Initialize tests on page load
+        window.addEventListener('load', function() {
+            testBackendConnection();
+            
+            // Auto-test trending photos after 1 second
+            setTimeout(() => {
+                testTrending();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

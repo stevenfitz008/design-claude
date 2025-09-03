@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { observer } from "mobx-react-lite";
+// we need observer to update component automatically on any store changes  
 import { Button, InputGroup, MenuItem, ButtonGroup, Tag } from '@blueprintjs/core';
 import { Select, ItemRenderer } from '@blueprintjs/select';
 import { styled } from '@styles/goober-setup';
@@ -270,7 +272,7 @@ const renderCategory: ItemRenderer<{ value: string; label: string }> = (
   );
 };
 
-export const TemplatesPanel: React.FC = () => {
+export const TemplatesPanel: React.FC = observer(() => {
   const { theme } = useTheme();
   const { searchQuery, setSearchQuery, filters, setFilter } = usePanelStore();
   const { addElement, setCanvasSize } = useCanvasStore();
@@ -436,6 +438,6 @@ export const TemplatesPanel: React.FC = () => {
       </TemplateGrid>
     </PanelContainer>
   );
-};
+});
 
 TemplatesPanel.displayName = 'TemplatesPanel';

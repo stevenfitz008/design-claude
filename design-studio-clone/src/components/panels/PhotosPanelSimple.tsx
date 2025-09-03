@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { observer } from "mobx-react-lite";
 import { InputGroup, Spinner } from '@blueprintjs/core';
 
-// Simple API service without complex type imports
-const API_BASE_URL = 'http://127.0.0.1:3003/api/v1';
+import { mediaService } from '../../services/mediaService';
+import type { Photo } from '../../services/mediaService';
 
 interface SimplePhoto {
   id: string;
@@ -13,17 +13,37 @@ interface SimplePhoto {
   description?: string;
 }
 
+// Convert Photo to SimplePhoto format
+const convertPhoto = (photo: Photo): SimplePhoto => ({
+  id: photo.id,
+  urls: { small: photo.urls.small },
+  user: { name: photo.user.name },
+  alt_description: photo.alt_description,
+  description: photo.description
+});
+
 const fetchPhotos = async (endpoint: string, isLoadMore = false, page = 1): Promise<{photos: SimplePhoto[], hasMore: boolean}> => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    console.log('🔍 fetchPhotos called:', { endpoint, isLoadMore, page });
+    let photos: Photo[] = [];
+    
+    if (endpoint.includes('trending')) {
+      console.log('🔥 Calling mediaService.getTrendingPhotos...');
+      photos = await mediaService.getTrendingPhotos({ page, per_page: 20 });
+      console.log('📊 mediaService.getTrendingPhotos returned:', photos.length, 'photos');
+    } else if (endpoint.includes('search')) {
+      const query = new URLSearchParams(endpoint.split('?')[1] || '').get('query') || 'nature';
+      console.log('🔍 Calling mediaService.searchPhotos with query:', query);
+      const response = await mediaService.searchPhotos({ query, page, per_page: 20 });
+      photos = response.results;
+      console.log('📊 mediaService.searchPhotos returned:', photos.length, 'photos');
     }
-    const data = await response.json();
-    const results = data.results || data || [];
+    
+    const simplePhotos = photos.map(convertPhoto);
+    
     return {
-      photos: results,
-      hasMore: results.length >= 20
+      photos: simplePhotos,
+      hasMore: simplePhotos.length >= 20
     };
   } catch (error) {
     console.error('Failed to fetch photos:', error);
@@ -175,12 +195,16 @@ export const PhotosPanelSimple: React.FC = observer(() => {
   const loadTrendingPhotos = async (isLoadMore = false) => {
     if (isLoadMore && (loadingMore || !hasMore)) return;
 
+    console.log('📸 loadTrendingPhotos called:', { isLoadMore, currentPage: isLoadMore ? page + 1 : 1 });
+    
     if (!isLoadMore) setLoading(true);
     else setLoadingMore(true);
 
     try {
       const currentPage = isLoadMore ? page + 1 : 1;
+      console.log('🔄 Calling getTrendingPhotos with page:', currentPage);
       const { photos: results, hasMore: more } = await getTrendingPhotos(currentPage);
+      console.log('✅ getTrendingPhotos result:', { resultsCount: results.length, hasMore: more });
       
       if (isLoadMore) {
         setPhotos(prev => {
@@ -207,6 +231,7 @@ export const PhotosPanelSimple: React.FC = observer(() => {
 
   // Load trending photos on component mount
   useEffect(() => {
+    console.log('🚀 PhotosPanelSimple mounted, loading trending photos...');
     loadTrendingPhotos();
   }, []);
 
@@ -253,6 +278,21 @@ export const PhotosPanelSimple: React.FC = observer(() => {
 
   const handlePhotoClick = (photo: any) => {
     console.log('Photo selected:', photo);
+  };
+
+  const handleDragStart = (e: React.DragEvent, photo: any) => {
+    console.log('🚀 Drag start for photo:', photo.id);
+    const dragData = {
+      type: 'photo',
+      src: photo.urls.small,
+      alt: photo.alt_description || photo.description || 'Photo',
+      user: photo.user.name
+    };
+    console.log('📦 Drag data:', dragData);
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'copy';
+    // Also set text data as fallback
+    e.dataTransfer.setData('text/plain', photo.urls.small);
   };
 
   return (
@@ -324,6 +364,7 @@ export const PhotosPanelSimple: React.FC = observer(() => {
         </div>
       </div>
       
+
       {/* Photos Grid */}
       <div 
         id="photos-scroll-container"
@@ -342,23 +383,42 @@ export const PhotosPanelSimple: React.FC = observer(() => {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
+          gridAutoRows: '10px',
           gap: '12px'
         }}>
-          {photos.map((photo, index) => (
-            <div
-              key={photo.id}
-              draggable={true}
-              onClick={() => handlePhotoClick(photo)}
-              style={{
-                position: 'relative',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                background: '#1c2127',
-                border: '1px solid #495563',
-                transition: 'all 0.2s ease',
-                aspectRatio: '3/4'
-              }}
+          {photos.map((photo, index) => {
+            // Calculate dynamic height based on image aspect ratio
+            // Landscape photos (wider): smaller height spans (15-20 units)
+            // Portrait photos (taller): larger height spans (25-35 units)  
+            // Default for unknown: medium height (20 units)
+            const getGridRowSpan = () => {
+              // Use photo dimensions if available in API response
+              if (photo.width && photo.height) {
+                const aspectRatio = photo.width / photo.height;
+                if (aspectRatio > 1.3) return 6; // Landscape - shorter
+                if (aspectRatio < 0.8) return 10; // Portrait - taller  
+                return 8; // Square/default
+              }
+              return 8; // Default
+            };
+
+            return (
+              <div
+                key={photo.id}
+                draggable={true}
+                onClick={() => handlePhotoClick(photo)}
+                onDragStart={(e) => handleDragStart(e, photo)}
+                style={{
+                  position: 'relative',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  cursor: 'grab',
+                  background: '#1c2127',
+                  border: '1px solid #495563',
+                  transition: 'all 0.2s ease',
+                  gridRowEnd: `span ${getGridRowSpan()}`,
+                  userSelect: 'none'
+                }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#48aff0';
                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -370,16 +430,31 @@ export const PhotosPanelSimple: React.FC = observer(() => {
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              <img
-                src={photo.urls.small}
-                alt={photo.alt_description || photo.description || 'Photo'}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block'
-                }}
-              />
+                <img
+                  src={photo.urls.small}
+                  alt={photo.alt_description || photo.description || 'Photo'}
+                  draggable={false}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                    pointerEvents: 'none'
+                  }}
+                  onLoad={(e) => {
+                    // Adjust parent container height based on actual image dimensions
+                    const img = e.target as HTMLImageElement;
+                    const container = img.parentElement as HTMLElement;
+                    if (img.naturalWidth && img.naturalHeight) {
+                      const aspectRatio = img.naturalWidth / img.naturalHeight;
+                      let spans;
+                      if (aspectRatio > 1.3) spans = 6; // Landscape
+                      else if (aspectRatio < 0.8) spans = 10; // Portrait
+                      else spans = 8; // Square
+                      container.style.gridRowEnd = `span ${spans}`;
+                    }
+                  }}
+                />
               <div style={{
                 position: 'absolute',
                 bottom: 0,
@@ -397,8 +472,9 @@ export const PhotosPanelSimple: React.FC = observer(() => {
                   Photo by <span style={{ fontWeight: '500' }}>{photo.user.name}</span> on Unsplash
                 </div>
               </div>
-            </div>
-          ))}
+              </div>
+            );
+          })}
           
           {/* Infinite scroll sentinel */}
           {photos.length > 0 && (

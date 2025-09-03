@@ -22,6 +22,11 @@ export enum TemplateSortBy {
   DOWNLOADS = 'downloads',
 }
 
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
 export class TemplateQueryDto extends PaginationDto {
   @ApiPropertyOptional({
     description: 'Search templates by name or description',
@@ -75,4 +80,13 @@ export class TemplateQueryDto extends PaginationDto {
   @IsOptional()
   @IsEnum(TemplateSortBy)
   sortBy?: TemplateSortBy = TemplateSortBy.POPULARITY;
+
+  @ApiPropertyOptional({
+    description: 'Sort order (ascending or descending)',
+    enum: SortOrder,
+    example: SortOrder.DESC,
+  })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
 }

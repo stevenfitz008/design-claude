@@ -4,7 +4,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export enum ExportFormat {
   PNG = 'PNG',
+  JPG = 'JPG',
   JPEG = 'JPEG',
+  WEBP = 'WEBP',
   SVG = 'SVG',
   PDF = 'PDF',
   MP4 = 'MP4',
@@ -271,4 +273,90 @@ export class ExportStatsDto {
 
   @ApiProperty({ description: 'Export breakdown by format' })
   formatBreakdown: Record<ExportFormat, number>;
+}
+
+// Additional DTOs needed by the service
+export enum ExportStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+}
+
+export class CreateExportDto {
+  @ApiProperty({ description: 'Project ID to export' })
+  @IsNotEmpty()
+  @IsString()
+  projectId: string;
+
+  @ApiProperty({ description: 'Export format', enum: ExportFormat })
+  @IsEnum(ExportFormat)
+  format: ExportFormat;
+
+  @ApiProperty({ description: 'Export quality', enum: ExportQuality, required: false })
+  @IsOptional()
+  @IsEnum(ExportQuality)
+  quality?: ExportQuality;
+
+  @ApiProperty({ description: 'Output width in pixels', required: false })
+  @IsOptional()
+  @IsNumber()
+  width?: number;
+
+  @ApiProperty({ description: 'Output height in pixels', required: false })
+  @IsOptional()
+  @IsNumber()
+  height?: number;
+
+  @ApiProperty({ description: 'Export settings', required: false })
+  @IsOptional()
+  settings?: Record<string, any>;
+}
+
+export class ExportDto {
+  @ApiProperty({ description: 'Export ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Project ID' })
+  projectId: string;
+
+  @ApiProperty({ description: 'User ID' })
+  userId: string;
+
+  @ApiProperty({ description: 'Export format', enum: ExportFormat })
+  format: ExportFormat;
+
+  @ApiProperty({ description: 'Export quality', enum: ExportQuality })
+  quality: ExportQuality;
+
+  @ApiProperty({ description: 'Output width', required: false })
+  width?: number;
+
+  @ApiProperty({ description: 'Output height', required: false })
+  height?: number;
+
+  @ApiProperty({ description: 'Export status', enum: ExportStatus })
+  status: ExportStatus;
+
+  @ApiProperty({ description: 'File URL when completed', required: false })
+  url?: string;
+
+  @ApiProperty({ description: 'File size in bytes', required: false })
+  fileSize?: number;
+
+  @ApiProperty({ description: 'Error message if failed', required: false })
+  errorMessage?: string;
+
+  @ApiProperty({ description: 'Export settings' })
+  settings: Record<string, any>;
+
+  @ApiProperty({ description: 'Created timestamp' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Updated timestamp' })
+  updatedAt: Date;
+
+  @ApiProperty({ description: 'Completed timestamp', required: false })
+  completedAt?: Date;
 }

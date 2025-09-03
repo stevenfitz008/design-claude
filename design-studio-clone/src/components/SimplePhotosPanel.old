@@ -1,0 +1,187 @@
+import React, { useState, useEffect } from 'react';
+
+interface Photo {
+  id: string;
+  url: string;
+  alt: string;
+  photographer: string;
+}
+
+const mockPhotos: Photo[] = [
+  {
+    id: '1',
+    url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop',
+    alt: 'Mountain landscape',
+    photographer: 'John Doe'
+  },
+  {
+    id: '2', 
+    url: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=300&h=200&fit=crop',
+    alt: 'City skyline',
+    photographer: 'Jane Smith'
+  },
+  {
+    id: '3',
+    url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=200&fit=crop', 
+    alt: 'Forest path',
+    photographer: 'Bob Johnson'
+  },
+  {
+    id: '4',
+    url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=300&fit=crop',
+    alt: 'Ocean waves',
+    photographer: 'Alice Wilson'
+  },
+  {
+    id: '5',
+    url: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=300&h=400&fit=crop',
+    alt: 'Desert sunset',
+    photographer: 'Mike Brown'
+  },
+  {
+    id: '6',
+    url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=250&fit=crop',
+    alt: 'Urban street',
+    photographer: 'Sarah Davis'
+  }
+];
+
+export const SimplePhotosPanel: React.FC = () => {
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    // Simulate API loading
+    setTimeout(() => {
+      setPhotos(mockPhotos);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  const filteredPhotos = photos.filter(photo => 
+    photo.alt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    photo.photographer.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Search Section */}
+      <div style={{ 
+        padding: '16px', 
+        borderBottom: '1px solid #495563',
+        backgroundColor: '#252a30'
+      }}>
+        <input
+          type="text"
+          placeholder="Search photos..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '8px',
+            borderRadius: '4px',
+            border: '1px solid #495563',
+            backgroundColor: '#364459',
+            color: '#f5f8fa',
+            fontSize: '14px'
+          }}
+        />
+      </div>
+
+      {/* Photos Grid */}
+      <div 
+        data-testid="photos-grid"
+        style={{ 
+          flex: 1, 
+          padding: '16px', 
+          overflowY: 'auto',
+          backgroundColor: '#2f343c'
+        }}
+      >
+        {loading ? (
+          <div 
+            data-testid="loading-photos"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              height: '200px',
+              color: '#8a9ba8'
+            }}
+          >
+            Loading photos...
+          </div>
+        ) : (
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+            gap: '12px' 
+          }}>
+            {filteredPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                data-testid={`photo-${photo.id}`}
+                style={{
+                  backgroundColor: '#495563',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                onClick={() => {
+                  console.log('Photo clicked:', photo.id);
+                  alert(`Photo by ${photo.photographer} would be added to canvas`);
+                }}
+              >
+                <img
+                  src={photo.url}
+                  alt={photo.alt}
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                  loading="lazy"
+                />
+                <div style={{
+                  padding: '8px',
+                  fontSize: '11px',
+                  color: '#f5f8fa'
+                }}>
+                  <div style={{ fontWeight: '500', marginBottom: '2px' }}>
+                    {photo.photographer}
+                  </div>
+                  <div style={{ opacity: 0.8, fontSize: '10px' }}>
+                    {photo.alt}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {!loading && filteredPhotos.length === 0 && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '200px',
+            color: '#8a9ba8'
+          }}>
+            No photos found
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

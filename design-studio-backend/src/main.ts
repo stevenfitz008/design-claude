@@ -54,6 +54,15 @@ async function bootstrap() {
       .addTag('fonts', 'Google Fonts integration')
       .addTag('export', 'Export and rendering services')
       .addTag('health', 'Health check endpoints')
+      .addTag('DAM - Asset Search', 'Digital Asset Management - Search')
+      .addTag('DAM - Asset Metadata', 'Digital Asset Management - Metadata')
+      .addTag('DAM - Asset Analytics', 'Digital Asset Management - Analytics')
+      .addTag('DAM - Asset Collections', 'Digital Asset Management - Collections')
+      .addTag('DAM - Asset Processing', 'Digital Asset Management - Processing')
+      .addTag('Design System - Components', 'Modular Design System - Components')
+      .addTag('Design System - Reports', 'Modular Design System - Reports')
+      .addTag('Design System - Rendering', 'Modular Design System - Rendering')
+      .addTag('Design System - Themes', 'Modular Design System - Themes')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

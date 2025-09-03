@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 
-// Using our backend API at port 3002
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://127.0.0.1:3002/api/v1';
+// Using our backend API at port 3001
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://127.0.0.1:3001/api/v1';
 
 export interface UnsplashPhoto {
   id: string;

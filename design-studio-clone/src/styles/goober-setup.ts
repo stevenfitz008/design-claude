@@ -26,6 +26,12 @@ export interface Theme {
     handleColor: string;
     gridColor: string;
     guideColor: string;
+    // Additional properties for PhotosPanelPremium
+    bg: string;
+    cardBg: string;
+    text: string;
+    border: string;
+    primary: string;
   };
   shadows: {
     sm: string;
@@ -93,6 +99,12 @@ export const darkTheme: Theme = {
     handleColor: '#48aff0',
     gridColor: 'rgba(255, 255, 255, 0.1)',
     guideColor: '#ff6b6b',
+    // Additional properties for PhotosPanelPremium
+    bg: '#2f343c',
+    cardBg: '#394b59',
+    text: '#f5f8fa',
+    border: '#495563',
+    primary: '#48aff0',
   },
   shadows: {
     sm: '0 1px 3px rgba(0, 0, 0, 0.2)',

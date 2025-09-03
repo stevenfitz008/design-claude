@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTimelineDto, UpdateTimelineDto, TimelineDto, TimelineTrackDto, KeyframeDto } from './dto/timeline.dto';
+import { EasingType } from '@prisma/client';
 
 @Injectable()
 export class AnimationsService {

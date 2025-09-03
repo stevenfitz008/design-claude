@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Unsplash Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        .large-btn {
+            font-size: 18px;
+            padding: 16px 32px;
+            margin: 10px 0;
+        }
+        .link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+        .checklist {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .checklist label {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .checklist label:hover {
+            background: #f8f9fa;
+        }
+        .checklist input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        .summary {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .emoji {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            color: #495057;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 Final Unsplash Integration Test</h1>
+        <p>This is your comprehensive verification that the Unsplash API integration is working perfectly with the Design Studio frontend!</p>
+        
+        <div class="test-section">
+            <h3>🔗 Step 1: Backend API Verification</h3>
+            <div id="backend-status"></div>
+            <button onclick="testBackend()">Test Backend API</button>
+            <button onclick="testPhotos()">Test Photo Loading</button>
+            <button onclick="testSearch()">Test Search Functionality</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 Step 2: Frontend Integration Test</h3>
+            <div id="frontend-status"></div>
+            <button onclick="openFrontend()" class="large-btn">Open Design Studio Frontend</button>
+            <p>Click above to open the frontend, then follow the manual testing checklist below.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>✅ Step 3: Manual Testing Checklist</h3>
+            <div class="checklist">
+                <label>
+                    <input type="checkbox" id="frontend-loads"> 
+                    <span>Frontend application loads without errors</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="photos-tool"> 
+                    <span>Photos tool is visible in the left toolbar (camera icon)</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="photos-panel"> 
+                    <span>Clicking the Photos tool opens the photos panel on the right</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="photos-load"> 
+                    <span>Photos load automatically in the panel (from Unsplash API)</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="search-works"> 
+                    <span>Search bar works (try "nature", "city", "ocean")</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="photos-display"> 
+                    <span>Photos display correctly with photographer credits</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="scroll-works"> 
+                    <span>Infinite scroll loads more photos when scrolling</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="hover-effects"> 
+                    <span>Photos have nice hover effects and animations</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="drag-drop"> 
+                    <span>Photos can be dragged (drag & drop functionality)</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="responsive"> 
+                    <span>Interface is responsive and works on different screen sizes</span>
+                </label>
+            </div>
+            
+            <button onclick="checkProgress()">Check Progress</button>
+            <div id="progress-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🛠️ Step 4: Advanced Feature Tests</h3>
+            <div class="checklist">
+                <label>
+                    <input type="checkbox" id="error-handling"> 
+                    <span>Error handling works (disconnect internet briefly)</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="loading-states"> 
+                    <span>Loading states display properly</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="performance"> 
+                    <span>Photos load quickly (under 2 seconds)</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="image-quality"> 
+                    <span>Images are high quality and properly sized</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="pagination"> 
+                    <span>Multiple pages of photos load seamlessly</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Integration Summary</h3>
+            <div id="final-summary" class="summary">
+                <p>Complete the tests above to see your final integration score!</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Troubleshooting</h3>
+            <p><strong>If something isn't working:</strong></p>
+            <ol>
+                <li>Make sure both servers are running:
+                    <div class="code-block">
+                        Backend: npm run dev (in design-studio-backend folder)<br>
+                        Frontend: npm run dev (in design-studio-clone folder)
+                    </div>
+                </li>
+                <li>Check that ports are correct:
+                    <div class="code-block">
+                        Backend: http://localhost:3001<br>
+                        Frontend: http://localhost:5173
+                    </div>
+                </li>
+                <li>Verify environment variables:
+                    <div class="code-block">
+                        VITE_BACKEND_API_URL=http://localhost:3001/api/v1
+                    </div>
+                </li>
+                <li>Clear browser cache and refresh</li>
+                <li>Check browser console for errors</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:3001/api/v1';
+        const FRONTEND_URL = 'http://localhost:5173';
+
+        async function testBackend() {
+            const status = document.getElementById('backend-status');
+            status.innerHTML = '<div class="status info">🔄 Testing backend connection...</div>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/photos/trending?per_page=1`);
+                if (response.ok) {
+                    status.innerHTML = '<div class="status success">✅ Backend API is working perfectly!</div>';
+                    return true;
+                } else {
+                    status.innerHTML = `<div class="status error">❌ Backend returned status: ${response.status}</div>`;
+                    return false;
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ Backend connection failed: ${error.message}</div>`;
+                return false;
+            }
+        }
+
+        async function testPhotos() {
+            const status = document.getElementById('backend-status');
+            status.innerHTML = '<div class="status info">🔄 Testing photo loading...</div>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/photos/trending?per_page=6`);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    status.innerHTML = `<div class="status success">✅ Loaded ${data.results.length} photos successfully!</div>`;
+                    return true;
+                } else {
+                    status.innerHTML = '<div class="status error">❌ No photos returned from API</div>';
+                    return false;
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ Photo loading failed: ${error.message}</div>`;
+                return false;
+            }
+        }
+
+        async function testSearch() {
+            const status = document.getElementById('backend-status');
+            status.innerHTML = '<div class="status info">🔄 Testing search functionality...</div>';
+            
+            try {
+                const queries = ['nature', 'city', 'ocean'];
+                let successCount = 0;
+                
+                for (const query of queries) {
+                    const response = await fetch(`${BACKEND_URL}/photos/search?query=${query}&per_page=3`);
+                    const data = await response.json();
+                    
+                    if (data.results && data.results.length > 0) {
+                        successCount++;
+                    }
+                }
+                
+                if (successCount === queries.length) {
+                    status.innerHTML = `<div class="status success">✅ Search working perfectly! All ${queries.length} test queries returned results.</div>`;
+                    return true;
+                } else {
+                    status.innerHTML = `<div class="status error">❌ Search issues: only ${successCount}/${queries.length} queries worked</div>`;
+                    return false;
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ Search test failed: ${error.message}</div>`;
+                return false;
+            }
+        }
+
+        function openFrontend() {
+            window.open(FRONTEND_URL, '_blank');
+            document.getElementById('frontend-status').innerHTML = 
+                '<div class="status info">🚀 Frontend opened in new tab! Follow the manual testing checklist below.</div>';
+        }
+
+        function checkProgress() {
+            const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+            const checked = document.querySelectorAll('.checklist input[type="checkbox"]:checked');
+            const percentage = Math.round((checked.length / checkboxes.length) * 100);
+            
+            let message = '';
+            let statusClass = 'info';
+            
+            if (percentage === 100) {
+                message = '🎉 Perfect! All tests passed! Your Unsplash integration is working flawlessly!';
+                statusClass = 'success';
+            } else if (percentage >= 80) {
+                message = `✅ Excellent! ${percentage}% complete. Almost perfect integration!`;
+                statusClass = 'success';
+            } else if (percentage >= 60) {
+                message = `👍 Good progress! ${percentage}% complete. A few more items to test.`;
+                statusClass = 'info';
+            } else {
+                message = `🔧 ${percentage}% complete. More testing needed to verify integration.`;
+                statusClass = 'error';
+            }
+            
+            document.getElementById('progress-status').innerHTML = 
+                `<div class="status ${statusClass}">${message}</div>`;
+                
+            // Update final summary
+            updateFinalSummary(percentage);
+        }
+
+        function updateFinalSummary(percentage) {
+            const summary = document.getElementById('final-summary');
+            
+            if (percentage === 100) {
+                summary.innerHTML = `
+                    <p><span class="emoji">🎉</span>CONGRATULATIONS!</p>
+                    <p>Your Unsplash API integration is <strong>100% COMPLETE</strong> and working perfectly!</p>
+                    <p>✅ Backend API: Connected</p>
+                    <p>✅ Frontend Integration: Perfect</p>
+                    <p>✅ User Experience: Excellent</p>
+                    <p>✅ Advanced Features: All Working</p>
+                    <p style="margin-top: 20px; font-size: 18px;">🚀 <strong>READY FOR PRODUCTION!</strong></p>
+                `;
+                summary.style.background = '#27ae60';
+            } else if (percentage >= 80) {
+                summary.innerHTML = `
+                    <p><span class="emoji">✅</span>EXCELLENT PROGRESS!</p>
+                    <p>Integration Score: <strong>${percentage}%</strong></p>
+                    <p>Your Unsplash integration is nearly perfect. Just a few minor items to complete.</p>
+                `;
+                summary.style.background = '#2980b9';
+            } else if (percentage >= 60) {
+                summary.innerHTML = `
+                    <p><span class="emoji">🔧</span>GOOD PROGRESS</p>
+                    <p>Integration Score: <strong>${percentage}%</strong></p>
+                    <p>Core functionality is working. Continue testing advanced features.</p>
+                `;
+                summary.style.background = '#f39c12';
+            } else {
+                summary.innerHTML = `
+                    <p><span class="emoji">⚠️</span>NEEDS MORE TESTING</p>
+                    <p>Integration Score: <strong>${percentage}%</strong></p>
+                    <p>More verification needed. Check troubleshooting section if issues persist.</p>
+                `;
+                summary.style.background = '#e74c3c';
+            }
+        }
+
+        // Auto-run backend tests when page loads
+        window.addEventListener('load', async function() {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+            await testBackend();
+            await testPhotos();
+            await testSearch();
+        });
+    </script>
+</body>
+</html>

@@ -211,7 +211,10 @@ export class TemplatesController {
     };
 
     if (healthy) {
-      const templates = await this.templatesService.getTemplates({ page: 1, limit: 1 });
+      const queryDto = new TemplateQueryDto();
+      queryDto.page = 1;
+      queryDto.limit = 1;
+      const templates = await this.templatesService.getTemplates(queryDto);
       result.totalTemplates = templates.total;
     }
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { observer } from "mobx-react-lite";
 import { Button, ButtonGroup, Icon, Menu, MenuDivider, MenuItem, Popover } from '@blueprintjs/core';
 import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
@@ -80,7 +81,8 @@ const Logo = styled.div<{ theme: any }>`
   font-size: ${props => props.theme.typography.fontSizeLg};
 `;
 
-export const TopNavigation: React.FC<TopNavigationProps> = ({
+// we need observer to update component automatically on any store changes
+export const TopNavigation: React.FC<TopNavigationProps> = observer(({ 
   projectName = 'Untitled Design',
   onSave,
   onExport,
@@ -183,6 +185,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
       </RightSection>
     </NavigationContainer>
   );
-};
+});
 
 export type { TopNavigationProps };

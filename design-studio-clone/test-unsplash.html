@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Unsplash Integration</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .photos-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-top: 20px; 
+        }
+        .photo-card { 
+            background: white; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        .photo-card img { 
+            width: 100%; 
+            height: 200px; 
+            object-fit: cover; 
+        }
+        .photo-info { 
+            padding: 15px; 
+        }
+        .photo-title { 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+        }
+        .photo-user { 
+            color: #666; 
+            font-size: 14px; 
+        }
+        .controls { 
+            margin-bottom: 20px; 
+        }
+        .controls input { 
+            padding: 10px; 
+            margin-right: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        .controls button { 
+            padding: 10px 20px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        .controls button:hover { 
+            background: #0056b3; 
+        }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+        }
+        .status.loading { 
+            background: #e7f3ff; 
+            color: #0066cc; 
+        }
+        .status.error { 
+            background: #ffe7e7; 
+            color: #cc0000; 
+        }
+        .status.success { 
+            background: #e7ffe7; 
+            color: #006600; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Unsplash Integration Test</h1>
+        
+        <div class="controls">
+            <input type="text" id="searchQuery" placeholder="Search photos (e.g., nature, cat, mountain)" value="nature">
+            <button onclick="searchPhotos()">Search Photos</button>
+            <button onclick="getTrendingPhotos()">Get Trending</button>
+        </div>
+
+        <div id="status"></div>
+        
+        <div id="photosGrid" class="photos-grid"></div>
+    </div>
+
+    <script type="module">
+        // Import the Unsplash service
+        import { unsplashService } from './src/services/unsplashService.ts';
+        
+        window.unsplashService = unsplashService;
+        
+        window.searchPhotos = async () => {
+            const query = document.getElementById('searchQuery').value;
+            const statusDiv = document.getElementById('status');
+            const photosDiv = document.getElementById('photosGrid');
+            
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.textContent = 'Searching for photos...';
+                photosDiv.innerHTML = '';
+                
+                const response = await unsplashService.searchPhotos({
+                    query: query,
+                    per_page: 12
+                });
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = `Found ${response.total} photos. Showing ${response.results.length} results.`;
+                
+                displayPhotos(response.results);
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `Error: ${error.message}`;
+                console.error('Search error:', error);
+            }
+        };
+        
+        window.getTrendingPhotos = async () => {
+            const statusDiv = document.getElementById('status');
+            const photosDiv = document.getElementById('photosGrid');
+            
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.textContent = 'Loading trending photos...';
+                photosDiv.innerHTML = '';
+                
+                const photos = await unsplashService.getRandomPhotos({ per_page: 12 });
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = `Loaded ${photos.length} trending photos.`;
+                
+                displayPhotos(photos);
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `Error: ${error.message}`;
+                console.error('Trending error:', error);
+            }
+        };
+        
+        window.displayPhotos = (photos) => {
+            const photosDiv = document.getElementById('photosGrid');
+            
+            photos.forEach(photo => {
+                const photoCard = document.createElement('div');
+                photoCard.className = 'photo-card';
+                
+                photoCard.innerHTML = `
+                    <img src="${photo.urls.small}" alt="${photo.description}" loading="lazy">
+                    <div class="photo-info">
+                        <div class="photo-title">${photo.description || 'Untitled'}</div>
+                        <div class="photo-user">by ${photo.user.name}</div>
+                        <small>${photo.width} x ${photo.height}</small>
+                    </div>
+                `;
+                
+                photosDiv.appendChild(photoCard);
+            });
+        };
+        
+        // Load trending photos on page load
+        window.addEventListener('load', () => {
+            getTrendingPhotos();
+        });
+    </script>
+</body>
+</html>

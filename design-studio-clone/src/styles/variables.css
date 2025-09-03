@@ -1,6 +1,10 @@
 /* CSS Custom Properties for Design Studio Clone */
 
 :root {
+  /* YOLO AGGRESSIVE: Global panel width enforcement */
+  --FORCE-RIGHT-PANEL-WIDTH: 350px !important;
+  --FORCE-RIGHT-PANEL-CONTENT-WIDTH: 318px !important;
+  --FORCE-SCROLLBAR-WIDTH: 6px !important;
   /* Blueprint.js intent colors */
   --bp5-intent-primary: #48aff0;
   --bp5-intent-success: #15b371;
@@ -44,9 +48,11 @@
   --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-4: 0 8px 24px rgba(0, 0, 0, 0.5);
   
-  /* Layout dimensions */
+  /* Layout dimensions - YOLO AGGRESSIVE fixed values */
   --left-toolbar-width: 72px;      /* Left toolbar width */
-  --right-panel-width: 350px;      /* Right panel width */
+  --right-panel-width: 350px !important;      /* Right panel width - NEVER CHANGE */
+  --right-panel-inner-width: 318px !important; /* Right panel content width (350 - 32px padding) */
+  --right-panel-column-width: 155px !important; /* Per column width: (318 - 8px gap) / 2 */
   --top-nav-height: 64px;          /* Top navigation height */
   --timeline-height: 200px;        /* Timeline panel height */
   

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Icon } from '@blueprintjs/core';
-// import { styled } from 'goober';
-import { useTheme } from '@/contexts/ThemeProvider';
-import { usePanelStore } from '@/stores/panelStore';
-import { TOOLS } from '@types/tools';
-type Tool = any;
+import { observer } from "mobx-react-lite";
+import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaTh as FaDots, FaLayerGroup, FaExpandArrowsAlt } from '@meronex/icons/fa';
+import { useTheme } from '../../../contexts/ThemeProvider';
+import { usePanelStore } from '../../stores/panelStore';
+import { TOOLS, Tool } from '../../types/tools';
 
 interface LeftToolbarProps {
   activeTool?: string;
@@ -115,12 +114,13 @@ const ShortcutHint: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </div>
 );
 
-export const LeftToolbar: React.FC<LeftToolbarProps> = ({ 
+// we need observer to update component automatically on any store changes
+export const LeftToolbar: React.FC<LeftToolbarProps> = observer(({ 
   activeTool = 'templates', 
   onToolChange 
 }) => {
   const { theme } = useTheme();
-  const { activePanel, setActivePanel } = usePanelStore();
+  const { setActivePanel } = usePanelStore();
   const [activeToolId, setActiveToolId] = useState(activeTool);
 
   const handleToolClick = (tool: Tool) => {
@@ -136,30 +136,61 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
   const mediaTools = TOOLS.filter(tool => tool.category === 'media');
   const utilityTools = TOOLS.filter(tool => ['utility', 'ai'].includes(tool.category));
 
-  const renderToolButton = (tool: Tool) => (
-    <div key={tool.id} data-testid={`tool-${tool.id}`}>
-      <ToolButton
-        theme={theme}
-        isActive={activeToolId === tool.id}
-        onClick={() => handleToolClick(tool)}
-        title={`${tool.name}${tool.shortcut ? ` (${tool.shortcut})` : ''}`}
-        aria-label={tool.name}
-        aria-pressed={activeToolId === tool.id}
-      >
-        <ToolIcon>
-          <Icon icon={tool.icon as any} />
-        </ToolIcon>
-        <ToolLabel>
-          {tool.name}
-        </ToolLabel>
-        {tool.shortcut && (
-          <ShortcutHint>
-            {tool.shortcut}
-          </ShortcutHint>
-        )}
-      </ToolButton>
-    </div>
-  );
+  // Icon mapping for tools - using Font Awesome for better visual matches
+  const getToolIcon = (toolId: string) => {
+    const iconMap: Record<string, React.ElementType> = {
+      'my-designs': FaFolder,
+      'templates': FaTh,           // Grid of squares - perfect match for Templates
+      'text': FaFont,              // "Tt" text icon - perfect match
+      'photos': FaImage,           // Image/photo icon - perfect match 
+      'icons': FaStar,             // Star icon - perfect match
+      'shapes': FaShapes,          // Triangle shapes icon - perfect match
+      'upload': FaUpload,          // Upload arrow - perfect match
+      'videos': FaPlay,            // Play triangle - perfect match
+      'background': FaDots,        // Dot pattern - matches background
+      'layers': FaLayerGroup,      // Layer stack - perfect match
+      'resize': FaExpandArrowsAlt, // Expand arrows - perfect match
+      'quotes': FaFont,
+      'qr-code': FaTh,
+      'ai-img': FaStar,
+    };
+    return iconMap[toolId] || FaTh;
+  };
+
+  const renderToolButton = (tool: Tool) => {
+    const IconComponent = getToolIcon(tool.id);
+    const isActive = activeToolId === tool.id;
+    const iconColor = isActive ? '#48aff0' : '#f5f8fa'; // Blue when active, white when inactive
+    
+    return (
+      <div key={tool.id} data-testid={`tool-${tool.id}`}>
+        <ToolButton
+          theme={theme}
+          isActive={isActive}
+          onClick={() => handleToolClick(tool)}
+          title={`${tool.name}${tool.shortcut ? ` (${tool.shortcut})` : ''}`}
+          aria-label={tool.name}
+          aria-pressed={isActive}
+        >
+          <ToolIcon>
+            <IconComponent 
+              size={24} 
+              color={iconColor}
+              style={{ color: iconColor }}
+            />
+          </ToolIcon>
+          <ToolLabel>
+            {tool.name}
+          </ToolLabel>
+          {tool.shortcut && (
+            <ShortcutHint>
+              {tool.shortcut}
+            </ShortcutHint>
+          )}
+        </ToolButton>
+      </div>
+    );
+  };
 
   return (
     <ToolbarContainer theme={theme}>
@@ -177,6 +208,6 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
       {utilityTools.map(renderToolButton)}
     </ToolbarContainer>
   );
-};
+});
 
 export type { LeftToolbarProps };

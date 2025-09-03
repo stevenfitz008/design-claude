@@ -401,29 +401,51 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       fitCanvasToContainer: (containerWidth, containerHeight) => {
-        // AUTOFIT: Use maximum available container space
-        const margin = 0.05; // Minimal 5% margin for autofit
-        const availableWidth = containerWidth * (1 - margin);
-        const availableHeight = containerHeight * (1 - margin);
+        // Account for the 20px padding we added around the canvas container
+        const containerPadding = 40; // 20px on each side
+        const availableWidth = containerWidth - containerPadding;
+        const availableHeight = containerHeight - containerPadding;
         
-        // Remove size limits for true autofit - only minimum constraints
-        let canvasWidth = Math.max(300, availableWidth);  // Minimum 300px width
-        let canvasHeight = Math.max(200, availableHeight); // Minimum 200px height
+        // Use a good portion of available space but leave room for comfortable viewing
+        const usagePercent = 0.85; // 85% usage for better visibility
+        const targetWidth = availableWidth * usagePercent;
+        const targetHeight = availableHeight * usagePercent;
         
-        // Remove the restrictive ratio calculations - let it fill the space
-        // Just ensure it doesn't exceed available space
-        if (canvasWidth > availableWidth) {
-          canvasWidth = availableWidth;
+        // Use a standard aspect ratio that works well for design work
+        const standardRatio = 4/3; // 4:3 aspect ratio (1.33:1)
+        let canvasWidth, canvasHeight;
+        
+        // Calculate dimensions based on which constraint is tighter
+        if (targetWidth / targetHeight > standardRatio) {
+          // Height is the limiting factor
+          canvasHeight = targetHeight;
+          canvasWidth = canvasHeight * standardRatio;
+        } else {
+          // Width is the limiting factor  
+          canvasWidth = targetWidth;
+          canvasHeight = canvasWidth / standardRatio;
         }
         
+        // Apply minimum sizes
+        canvasWidth = Math.max(400, canvasWidth);  // Minimum 400px width
+        canvasHeight = Math.max(300, canvasHeight); // Minimum 300px height
+        
+        // Ensure we don't exceed available space
+        if (canvasWidth > availableWidth) {
+          canvasWidth = availableWidth;
+          canvasHeight = canvasWidth / standardRatio;
+        }
         if (canvasHeight > availableHeight) {
           canvasHeight = availableHeight;
+          canvasWidth = canvasHeight * standardRatio;
         }
         
         const newSize = {
           width: Math.round(canvasWidth),
           height: Math.round(canvasHeight)
         };
+        
+        console.log(`📐 Canvas resized to ${newSize.width}x${newSize.height} (container: ${containerWidth}x${containerHeight})`);
         
         set((state) => ({ ...state, canvasSize: newSize }));
       },

@@ -37,6 +37,18 @@ model User {
   exports     Export[]
   sessions    Session[]
   
+  // DAM System relations
+  assetCollections AssetCollection[]
+  assetVersions    AssetVersion[]
+  assetUsageLogs   AssetUsageLog[]
+  
+  // Modular Design System relations
+  reports          Report[]
+  components       Component[]
+  componentVersions ComponentVersion[]
+  reportExports    ReportExport[]
+  designThemes     DesignTheme[]
+  
   @@map("users")
 }
 
@@ -69,6 +81,16 @@ enum SessionType {
   REFRESH
   
   @@map("session_type")
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  FONT
+  
+  @@map("asset_type")
 }
 
 // Project Management (Metadata in PostgreSQL, Canvas Data in MongoDB)
@@ -141,6 +163,7 @@ model Asset {
   filename    String
   originalName String   @map("original_name")
   mimeType    String    @map("mime_type")
+  type        AssetType // Asset type (image, video, audio, document)
   size        Int
   
   // Storage information
@@ -167,6 +190,12 @@ model Asset {
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   projectAssets ProjectAsset[]
+  
+  // DAM System relations
+  collections   AssetCollectionItem[]
+  metadata      AssetMetadata?
+  versions      AssetVersion[]
+  usageLogs     AssetUsageLog[]
   
   @@map("assets")
 }
@@ -396,4 +425,461 @@ model SystemConfig {
   updatedAt DateTime @updatedAt @map("updated_at")
   
   @@map("system_config")
+}
+
+// Digital Asset Management (DAM) System Extensions
+
+// Asset Collections for organization
+model AssetCollection {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?  // Hex color for UI
+  icon        String?  // Icon identifier
+  
+  // Organization
+  parentId    String?  @map("parent_id")
+  parent      AssetCollection? @relation("CollectionHierarchy", fields: [parentId], references: [id])
+  children    AssetCollection[] @relation("CollectionHierarchy")
+  
+  // Access control
+  isPublic    Boolean @default(true) @map("is_public")
+  isSystem    Boolean @default(false) @map("is_system") // System collections (fonts, templates, etc.)
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  userId      String @map("user_id")
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  assets      AssetCollectionItem[]
+  
+  @@map("asset_collections")
+}
+
+// Many-to-many relationship between Collections and Assets
+model AssetCollectionItem {
+  id           String @id @default(cuid())
+  collectionId String @map("collection_id")
+  assetId      String @map("asset_id")
+  
+  // Positioning within collection
+  sortOrder    Int @default(0) @map("sort_order")
+  
+  // Timestamps
+  addedAt      DateTime @default(now()) @map("added_at")
+  
+  // Relations
+  collection   AssetCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  @@unique([collectionId, assetId])
+  @@map("asset_collection_items")
+}
+
+// Enhanced Asset model with DAM features
+model AssetMetadata {
+  id              String @id @default(cuid())
+  assetId         String @unique @map("asset_id")
+  
+  // Image/Video metadata
+  colorProfile    String? @map("color_profile")
+  bitDepth        Int? @map("bit_depth")
+  compression     String?
+  dpi             Int?
+  
+  // EXIF/Camera data
+  cameraMake      String? @map("camera_make")
+  cameraModel     String? @map("camera_model")
+  dateTime        DateTime? @map("date_time")
+  gpsLatitude     Float? @map("gps_latitude")
+  gpsLongitude    Float? @map("gps_longitude")
+  
+  // AI-extracted features
+  dominantColors  String[] @map("dominant_colors") // Hex colors
+  detectedObjects String[] @map("detected_objects")
+  description     String? // AI-generated description
+  keywords        String[]
+  
+  // Content analysis
+  hasText         Boolean @default(false) @map("has_text")
+  hasFaces        Boolean @default(false) @map("has_faces")
+  isScreenshot    Boolean @default(false) @map("is_screenshot")
+  
+  // Performance metrics
+  loadTime        Float? @map("load_time")
+  renderTime      Float? @map("render_time")
+  
+  // Timestamps
+  analyzedAt      DateTime @default(now()) @map("analyzed_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  asset           Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  @@map("asset_metadata")
+}
+
+// Asset version control
+model AssetVersion {
+  id          String @id @default(cuid())
+  assetId     String @map("asset_id")
+  version     Int
+  
+  // Version details
+  storageKey  String @map("storage_key")
+  size        Int
+  checksum    String // File hash for integrity
+  
+  // Change tracking
+  changeLog   String? @map("change_log")
+  isActive    Boolean @default(false) @map("is_active")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy   String @map("created_by")
+  user        User @relation(fields: [createdBy], references: [id])
+  
+  @@unique([assetId, version])
+  @@map("asset_versions")
+}
+
+// Asset usage analytics
+model AssetUsageLog {
+  id          String @id @default(cuid())
+  assetId     String @map("asset_id")
+  
+  // Usage context
+  action      AssetAction
+  context     String? // project, template, export, etc.
+  contextId   String? @map("context_id") // ID of the context entity
+  
+  // User and session info
+  userId      String? @map("user_id")
+  sessionId   String? @map("session_id")
+  ipAddress   String? @map("ip_address")
+  userAgent   String? @map("user_agent")
+  
+  // Performance metrics
+  loadTime    Float? @map("load_time")
+  bandwidth   Int? // Bytes transferred
+  
+  // Timestamps
+  timestamp   DateTime @default(now())
+  
+  // Relations
+  asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user        User? @relation(fields: [userId], references: [id])
+  
+  @@map("asset_usage_logs")
+}
+
+enum AssetAction {
+  VIEW
+  DOWNLOAD
+  EDIT
+  DELETE
+  SHARE
+  EXPORT
+  DUPLICATE
+  
+  @@map("asset_action")
+}
+
+// MODULAR DESIGN SYSTEM ARCHITECTURE
+
+// Reports: Top-level container objects
+model Report {
+  id          String @id @default(cuid())
+  title       String
+  description String?
+  
+  // Metadata
+  author      String
+  tags        String[]
+  category    String?
+  
+  // Version control
+  version     Int @default(1)
+  isPublished Boolean @default(false) @map("is_published")
+  
+  // Access control
+  isPublic    Boolean @default(false) @map("is_public")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+  
+  // Relations
+  userId      String @map("user_id")
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  pages       ReportPage[]
+  exports     ReportExport[]
+  
+  @@map("reports")
+}
+
+// Pages: Structural units within reports
+model ReportPage {
+  id          String @id @default(cuid())
+  reportId    String @map("report_id")
+  
+  // Page details
+  title       String
+  description String?
+  order       Int // Position within report
+  
+  // Layout configuration
+  layoutType  PageLayoutType @default(FLEXIBLE) @map("layout_type")
+  columns     Int @default(1)
+  
+  // Canvas settings
+  width       Int @default(1920)
+  height      Int @default(1080)
+  
+  // Version control
+  version     Int @default(1)
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  report      Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  components  PageComponent[]
+  
+  @@map("report_pages")
+}
+
+enum PageLayoutType {
+  FLEXIBLE
+  GRID
+  FIXED
+  RESPONSIVE
+  
+  @@map("page_layout_type")
+}
+
+// Components: Reusable design units
+model Component {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  
+  // Component type and category
+  type        ComponentType
+  category    String
+  
+  // Component definition (stored in MongoDB)
+  definitionId String @map("definition_id") // MongoDB document ID
+  
+  // Default properties
+  defaultProps Json @default("{}") @map("default_props")
+  
+  // Rendering capabilities
+  supportedFormats ExportFormat[] @map("supported_formats")
+  
+  // Version control
+  version     Int @default(1)
+  isPublished Boolean @default(false) @map("is_published")
+  
+  // Organization
+  tags        String[]
+  isSystem    Boolean @default(false) @map("is_system")
+  
+  // Usage statistics
+  usageCount  Int @default(0) @map("usage_count")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  createdBy   String @map("created_by")
+  user        User @relation(fields: [createdBy], references: [id])
+  
+  versions    ComponentVersion[]
+  pageComponents PageComponent[]
+  
+  // Component dependencies
+  dependencies   ComponentDependency[] @relation("ComponentDependencies")
+  dependents     ComponentDependency[] @relation("ComponentDependents")
+  
+  @@map("components")
+}
+
+enum ComponentType {
+  CHART
+  TEXT
+  IMAGE
+  TABLE
+  SHAPE
+  CONTAINER
+  FORM
+  MEDIA
+  WIDGET
+  
+  @@map("component_type")
+}
+
+// Component version control
+model ComponentVersion {
+  id            String @id @default(cuid())
+  componentId   String @map("component_id")
+  version       Int
+  
+  // Version details
+  definitionId  String @map("definition_id") // MongoDB document ID
+  changeLog     String? @map("change_log")
+  
+  // Version properties
+  props         Json @default("{}") // Version-specific properties
+  isStable      Boolean @default(false) @map("is_stable")
+  isDeprecated  Boolean @default(false) @map("is_deprecated")
+  
+  // Compatibility
+  minVersion    String? @map("min_version") // Minimum app version
+  maxVersion    String? @map("max_version") // Maximum app version
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  component     Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  createdBy     String @map("created_by")
+  user          User @relation(fields: [createdBy], references: [id])
+  
+  @@unique([componentId, version])
+  @@map("component_versions")
+}
+
+// Many-to-many: Pages and Components
+model PageComponent {
+  id            String @id @default(cuid())
+  pageId        String @map("page_id")
+  componentId   String @map("component_id")
+  
+  // Specific component version used
+  componentVersion Int @map("component_version")
+  
+  // Position and layout
+  x             Float @default(0)
+  y             Float @default(0)
+  width         Float
+  height        Float
+  rotation      Float @default(0)
+  zIndex        Int @default(0) @map("z_index")
+  
+  // Instance-specific properties
+  props         Json @default("{}") // Override component defaults
+  
+  // State
+  isVisible     Boolean @default(true) @map("is_visible")
+  isLocked      Boolean @default(false) @map("is_locked")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  page          ReportPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  component     Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  
+  @@map("page_components")
+}
+
+// Report exports with multi-format support
+model ReportExport {
+  id          String @id @default(cuid())
+  reportId    String @map("report_id")
+  
+  // Export configuration
+  format      ExportFormat
+  quality     Int @default(100)
+  options     Json @default("{}") // Format-specific options
+  
+  // Rendering configuration
+  includePages String[] @map("include_pages") // Page IDs to include
+  
+  // Job status
+  status      ExportStatus @default(PENDING)
+  progress    Int @default(0)
+  
+  // Results
+  outputUrl   String? @map("output_url")
+  fileSize    Int? @map("file_size")
+  errorMessage String? @map("error_message")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  completedAt DateTime? @map("completed_at")
+  
+  // Relations
+  report      Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId      String @map("user_id")
+  user        User @relation(fields: [userId], references: [id])
+  
+  @@map("report_exports")
+}
+
+// Component dependency tracking
+model ComponentDependency {
+  id              String @id @default(cuid())
+  componentId     String @map("component_id")
+  dependsOnId     String @map("depends_on_id")
+  dependencyType  DependencyType @map("dependency_type")
+  
+  // Version constraints
+  minVersion      Int? @map("min_version")
+  maxVersion      Int? @map("max_version")
+  
+  // Relations
+  component       Component @relation("ComponentDependencies", fields: [componentId], references: [id], onDelete: Cascade)
+  dependsOn       Component @relation("ComponentDependents", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  
+  @@unique([componentId, dependsOnId])
+  @@map("component_dependencies")
+}
+
+enum DependencyType {
+  REQUIRED
+  OPTIONAL
+  PEER
+  
+  @@map("dependency_type")
+}
+
+// Theme and style management
+model DesignTheme {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  
+  // Theme definition (colors, fonts, spacing, etc.)
+  definition  Json // Stored as JSON in PostgreSQL
+  
+  // Organization
+  isSystem    Boolean @default(false) @map("is_system")
+  isPublic    Boolean @default(false) @map("is_public")
+  
+  // Version control
+  version     Int @default(1)
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  createdBy   String @map("created_by")
+  user        User @relation(fields: [createdBy], references: [id])
+  
+  @@map("design_themes")
 }

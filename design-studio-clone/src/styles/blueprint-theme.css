@@ -71,3 +71,64 @@ body,
   outline: 2px solid var(--bp5-intent-primary);
   outline-offset: 2px;
 }
+
+/* YOLO AGGRESSIVE: Override Blueprint.js styles that interfere with panel width */
+
+/* Force Blueprint input groups to respect container width */
+[data-testid="right-panel"] .bp5-input-group {
+  width: var(--FORCE-RIGHT-PANEL-CONTENT-WIDTH) !important;
+  min-width: var(--FORCE-RIGHT-PANEL-CONTENT-WIDTH) !important;
+  max-width: var(--FORCE-RIGHT-PANEL-CONTENT-WIDTH) !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Force Blueprint inputs to respect container width */
+[data-testid="right-panel"] .bp5-input {
+  width: 100% !important;
+  flex-shrink: 1 !important;
+  flex-grow: 1 !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Force Blueprint buttons to not expand */
+[data-testid="right-panel"] .bp5-button {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Override Blueprint responsive styles */
+[data-testid="right-panel"] .bp5-form-group,
+[data-testid="right-panel"] .bp5-form-content,
+[data-testid="right-panel"] .bp5-control-group {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* AGGRESSIVE: Prevent Blueprint from adding margins/padding that change layout */
+[data-testid="right-panel"] .bp5-input-group:focus-within {
+  margin: 0 !important;
+  padding: inherit !important;
+  width: var(--FORCE-RIGHT-PANEL-CONTENT-WIDTH) !important;
+  transform: none !important;
+}
+
+/* AGGRESSIVE: Override Blueprint dark theme containers */
+.bp5-dark [data-testid="right-panel"] {
+  width: var(--FORCE-RIGHT-PANEL-WIDTH) !important;
+  min-width: var(--FORCE-RIGHT-PANEL-WIDTH) !important;
+  max-width: var(--FORCE-RIGHT-PANEL-WIDTH) !important;
+}
+
+/* AGGRESSIVE: Force all Blueprint components inside panel */
+[data-testid="right-panel"] .bp5-spinner,
+[data-testid="right-panel"] .bp5-icon,
+[data-testid="right-panel"] .bp5-text-muted {
+  flex-shrink: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}

@@ -8,10 +8,13 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { PhotosModule } from './modules/photos/photos.module';
+import { VideosModule } from './modules/videos/videos.module';
 import { FontsModule } from './modules/fonts/fonts.module';
 import { AnimationsModule } from './modules/animations/animations.module';
 import { HealthModule } from './common/health/health.module';
 import { CacheModule } from './common/cache/cache.module';
+import { DAMModule } from './modules/dam/dam.module';
+import { DesignSystemModule } from './modules/design-system/design-system.module';
 
 @Module({
   imports: [
@@ -57,8 +60,13 @@ import { CacheModule } from './common/cache/cache.module';
     // UploadsModule,
     TemplatesModule,
     PhotosModule,
+    VideosModule,
     FontsModule,
     // AnimationsModule,
+    
+    // Advanced modules
+    // DAMModule, // Temporarily disabled due to dependency issue
+    // DesignSystemModule, // Temporarily disabled due to compilation error
   ],
 })
 export class AppModule {}

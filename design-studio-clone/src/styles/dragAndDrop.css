@@ -1,0 +1,424 @@
+/* Drag and Drop Styles */
+
+/* Global drag cursor */
+body.dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.dragging * {
+  cursor: grabbing !important;
+  pointer-events: none;
+}
+
+body.dragging .drag-source {
+  pointer-events: auto;
+}
+
+/* Drop Zone Styles */
+.drop-zone {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drop-zone.drag-over,
+.drop-zone.drop-zone-active {
+  background: rgba(74, 144, 226, 0.05);
+  border: 2px dashed rgba(74, 144, 226, 0.5);
+  transform: scale(1.02);
+  box-shadow: 
+    inset 0 0 0 1px rgba(74, 144, 226, 0.2),
+    0 8px 32px rgba(74, 144, 226, 0.15);
+  animation: dropZonePulse 2s infinite ease-in-out;
+}
+
+.drop-zone.drag-over::before,
+.drop-zone.drop-zone-active::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: rgba(74, 144, 226, 0.1);
+  border: 2px solid rgba(74, 144, 226, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1000;
+  animation: dropIndicatorSpin 1.5s linear infinite;
+}
+
+.drop-zone.drag-over::after,
+.drop-zone.drop-zone-active::after {
+  content: '+';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: bold;
+  color: rgba(74, 144, 226, 0.8);
+  pointer-events: none;
+  z-index: 1001;
+  animation: dropIndicatorBounce 1s infinite ease-in-out;
+}
+
+/* Canvas specific drop zone */
+[data-canvas-container] {
+  position: relative;
+}
+
+[data-canvas-container].drop-zone-active {
+  background: radial-gradient(
+    circle at center,
+    rgba(74, 144, 226, 0.08) 0%,
+    rgba(74, 144, 226, 0.02) 50%,
+    transparent 100%
+  );
+  border: 2px dashed rgba(74, 144, 226, 0.4);
+  border-radius: 12px;
+}
+
+/* Drag ghost styles */
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 10000;
+  transform: rotate(3deg);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(74, 144, 226, 0.6);
+  border-radius: 8px;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.drag-ghost.dragging {
+  animation: dragGhostFloat 0.6s ease-in-out infinite alternate;
+}
+
+/* Photo card drag states */
+.photo-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.photo-card.dragging {
+  opacity: 0.5;
+  transform: rotate(3deg) scale(1.05);
+  z-index: 1000;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border-color: rgba(74, 144, 226, 0.8);
+}
+
+.photo-card:not(.dragging):hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(74, 144, 226, 0.4);
+}
+
+/* Animations */
+@keyframes dropZonePulse {
+  0%, 100% {
+    box-shadow: 
+      inset 0 0 0 1px rgba(74, 144, 226, 0.2),
+      0 8px 32px rgba(74, 144, 226, 0.15);
+  }
+  50% {
+    box-shadow: 
+      inset 0 0 0 2px rgba(74, 144, 226, 0.4),
+      0 12px 40px rgba(74, 144, 226, 0.25);
+  }
+}
+
+@keyframes dropIndicatorSpin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes dropIndicatorBounce {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@keyframes dragGhostFloat {
+  from {
+    transform: rotate(3deg) translateY(0px);
+  }
+  to {
+    transform: rotate(3deg) translateY(-4px);
+  }
+}
+
+/* Loading and hover states for photos */
+.photo-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: photoShimmer 1.5s infinite;
+}
+
+@keyframes photoShimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Photo hover effects */
+.photo-card .photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom, 
+    transparent 0%, 
+    transparent 60%, 
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: flex-end;
+  padding: 16px 12px;
+  pointer-events: none;
+}
+
+.photo-card:hover .photo-overlay {
+  opacity: 1;
+}
+
+.photo-card .photo-info {
+  color: white;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.photo-card .photo-author {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.photo-card .photo-dimensions {
+  opacity: 0.8;
+  font-size: 10px;
+}
+
+.photo-card .photo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.photo-card .photo-tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 9px;
+  opacity: 0.9;
+  backdrop-filter: blur(4px);
+}
+
+/* Action buttons on photos */
+.photo-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.photo-card:hover .photo-actions {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.photo-actions .action-button {
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.photo-actions .action-button:hover {
+  background: rgba(74, 144, 226, 0.9);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+}
+
+.photo-actions .action-button .bp5-icon {
+  font-size: 12px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .drop-zone.drag-over::before,
+  .drop-zone.drop-zone-active::before {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .drop-zone.drag-over::after,
+  .drop-zone.drop-zone-active::after {
+    font-size: 24px;
+  }
+  
+  .photo-actions .action-button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .photo-actions .action-button .bp5-icon {
+    font-size: 14px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .drop-zone.drag-over,
+  .drop-zone.drop-zone-active {
+    border-color: #000;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  .drop-zone.drag-over::before,
+  .drop-zone.drop-zone-active::before {
+    border-color: #000;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  .drop-zone.drag-over::after,
+  .drop-zone.drop-zone-active::after {
+    color: #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .photo-card,
+  .drop-zone,
+  .photo-actions,
+  .photo-overlay {
+    transition-duration: 0.05s;
+    animation-duration: 0.05s;
+  }
+  
+  .drop-zone.drag-over,
+  .drop-zone.drop-zone-active {
+    animation: none;
+  }
+  
+  .drop-zone.drag-over::before,
+  .drop-zone.drop-zone-active::before {
+    animation: none;
+  }
+  
+  .drop-zone.drag-over::after,
+  .drop-zone.drop-zone-active::after {
+    animation: none;
+  }
+  
+  .drag-ghost.dragging {
+    animation: none;
+  }
+}
+
+/* YOLO AGGRESSIVE: Ensure drag and drop never affects panel widths */
+
+/* Force photo cards to maintain exact width during any state */
+[data-testid="photos-scroll-container"] .photo-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  transform-origin: center center !important;
+}
+
+/* Prevent drag states from changing layout */
+[data-testid="photos-scroll-container"] .photo-card.dragging {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Prevent hover states from changing layout */
+[data-testid="photos-scroll-container"] .photo-card:hover {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Force drag states to only affect visual appearance, not layout */
+body.dragging [data-testid="right-panel"] {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+}
+
+body.dragging [data-testid="photos-panel"] {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+}
+
+/* Prevent drop zone states from affecting panel dimensions */
+.drop-zone [data-testid="right-panel"],
+.drop-zone.drag-over [data-testid="right-panel"],
+.drop-zone.drop-zone-active [data-testid="right-panel"] {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  transform: none !important;
+}
+
+/* AGGRESSIVE: Override any transform that might affect layout */
+[data-testid="right-panel"] * {
+  transform-origin: center center !important;
+}
+
+[data-testid="right-panel"] .photo-card:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  /* Only allow transforms that don't affect layout */
+}

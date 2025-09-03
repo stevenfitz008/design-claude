@@ -34,7 +34,6 @@
       "Bash(curl:*)",
       "Read(/Applications/**)",
       "Bash(python3:*)"
-      "mcp__serena"
       "mcp__archon"
       "mcp__playwright"
       "mcp__context7"
@@ -43,3 +42,4 @@
     "ask": []
   }
 }
+//      "mcp_serena"

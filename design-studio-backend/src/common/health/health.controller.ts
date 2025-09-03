@@ -45,7 +45,7 @@ export class HealthController {
     ]);
   }
 
-  private async checkPrismaHealth() {
+  private async checkPrismaHealth(): Promise<any> {
     const isHealthy = await this.prismaService.isHealthy();
     if (!isHealthy) {
       throw new Error('PostgreSQL connection failed');
@@ -58,7 +58,7 @@ export class HealthController {
     };
   }
 
-  private async checkRedisHealth() {
+  private async checkRedisHealth(): Promise<any> {
     try {
       await this.cacheManager.set('health_check', 'ok', 1000);
       const value = await this.cacheManager.get('health_check');

@@ -24,10 +24,15 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
 }
 
 h1 {
@@ -64,5 +69,213 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+/* Photos panel scrolling improvements */
+.photos-scroll-container {
+  /* Ensure consistent scrollbar appearance */
+  scrollbar-width: thin;
+  scrollbar-color: #48aff0 #2f343c;
+}
+
+.photos-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.photos-scroll-container::-webkit-scrollbar-track {
+  background: #2f343c;
+  border-radius: 3px;
+}
+
+.photos-scroll-container::-webkit-scrollbar-thumb {
+  background: #48aff0;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.photos-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #5cbef5;
+}
+
+/* Prevent horizontal overflow and ensure stable width */
+.photos-scroll-container {
+  contain: layout style;
+  overflow-anchor: auto;
+}
+
+/* Ensure CSS columns maintain consistent width during scroll */
+.photos-scroll-container > div {
+  will-change: scroll-position;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* YOLO AGGRESSIVE FIX: Force ALL panel elements to respect 350px width */
+
+/* Force right panel container to NEVER change width */
+[data-testid="right-panel"] {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Force ALL children to respect the container width */
+[data-testid="right-panel"] * {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* Force header sections to exact width */
+[data-testid="right-panel"] > div:first-child {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+}
+
+/* Force content sections to exact width */
+[data-testid="right-panel"] > div:last-child {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+}
+
+/* AGGRESSIVE: Force photos panel container width */
+[data-testid="photos-panel"] {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* AGGRESSIVE: Force photos panel header width */
+[data-testid="photos-panel"] > div:first-child {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+  padding: 16px !important;
+}
+
+/* AGGRESSIVE: Force search input width */
+[data-testid="photos-panel"] .bp5-input-group {
+  width: 318px !important; /* 350 - 32 (16px padding each side) */
+  min-width: 318px !important;
+  max-width: 318px !important;
+  box-sizing: border-box !important;
+  transition: none !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+[data-testid="photos-panel"] .bp5-input-group .bp5-input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: none !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 6px 12px 6px 32px !important; /* Account for search icon */
+}
+
+[data-testid="photos-panel"] .bp5-input-group:focus-within {
+  transform: none !important;
+  box-shadow: 0 0 0 1px #48aff0, 0 0 0 3px rgba(72, 175, 240, 0.3) !important;
+  width: 318px !important; /* Maintain exact width on focus */
+}
+
+/* AGGRESSIVE: Force scroll container width */
+[data-testid="photos-scroll-container"] {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+/* AGGRESSIVE: Force column layout width calculations */
+[data-testid="photos-scroll-container"] > div {
+  width: 350px !important;
+  min-width: 350px !important;
+  max-width: 350px !important;
+  box-sizing: border-box !important;
+  padding: 16px !important;
+  column-count: 2 !important;
+  column-gap: 8px !important;
+  column-fill: balance !important;
+}
+
+/* AGGRESSIVE: Force individual photo card widths */
+[data-testid="photos-scroll-container"] .photo-card,
+[data-testid="photos-scroll-container"] > div > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  break-inside: avoid !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+/* AGGRESSIVE: Prevent ANY layout shifts from transforms */
+[data-testid="photos-panel"] * {
+  transform-origin: center center !important;
+}
+
+[data-testid="photos-panel"] *:hover {
+  transform: translateY(-4px) scale(1.02) !important; /* Preserve hover but prevent width changes */
+}
+
+/* AGGRESSIVE: Override Blueprint.js global styles that might interfere */
+.bp5-input-group {
+  flex-shrink: 0 !important;
+}
+
+.bp5-input {
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}
+
+/* AGGRESSIVE: Force exact pixel calculations for mobile */
+@media (max-width: 600px) {
+  [data-testid="photos-scroll-container"] > div {
+    column-count: 1 !important;
+    padding: 12px !important;
+  }
+}
+
+/* PHOTO HOVER FIX: Prevent scale transforms from causing panel resize */
+[data-testid="photos-panel"] [draggable="true"] {
+  contain: layout style !important; /* Contain all layout changes */
+  transform-origin: center !important; /* Center transforms */
+  will-change: transform !important;
+}
+
+/* PHOTO HOVER OVERRIDE: No scale, only translate */
+[data-testid="photos-panel"] [draggable="true"]:hover {
+  transform: translateY(-2px) !important; /* Only move up, NO SCALE */
+}
+
+/* MASONRY CONTAINER LOCK: Fixed width regardless of content */
+.photos-scroll-container > div {
+  contain: size layout style !important;
+  width: 312px !important; /* Exact width: 350 - 32 - 6 */
+  max-width: 312px !important;
+  min-width: 312px !important;
+  margin: 0 auto !important;
+  overflow: visible !important; /* Allow content to flow in columns */
+}
+
+/* SMALL SCREEN CONTAINER */
+@media (max-height: 600px) {
+  .photos-scroll-container > div {
+    width: 288px !important; /* 312 - 24 padding difference */
+    max-width: 288px !important;
+    min-width: 288px !important;
   }
 }

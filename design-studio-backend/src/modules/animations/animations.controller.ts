@@ -54,11 +54,7 @@ export class AnimationsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: timeline,
-      message: 'Timeline created successfully',
-    };
+    return ApiResponseDto.success(timeline, 'Timeline created successfully');
   }
 
   @Get('timelines/project/:projectId')
@@ -82,11 +78,7 @@ export class AnimationsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: timelines,
-      message: 'Timelines retrieved successfully',
-    };
+    return ApiResponseDto.success(timelines, 'Timelines retrieved successfully');
   }
 
   @Get('timelines/:timelineId')
@@ -110,11 +102,7 @@ export class AnimationsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: timeline,
-      message: 'Timeline retrieved successfully',
-    };
+    return ApiResponseDto.success(timeline, 'Timeline retrieved successfully');
   }
 
   @Put('timelines/:timelineId')
@@ -144,11 +132,7 @@ export class AnimationsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: timeline,
-      message: 'Timeline updated successfully',
-    };
+    return ApiResponseDto.success(timeline, 'Timeline updated successfully');
   }
 
   @Delete('timelines/:timelineId')
@@ -168,11 +152,7 @@ export class AnimationsController {
   ): Promise<ApiResponseDto<null>> {
     await this.animationsService.deleteTimeline(timelineId, req.user.id);
 
-    return {
-      success: true,
-      data: null,
-      message: 'Timeline deleted successfully',
-    };
+    return ApiResponseDto.success(null, 'Timeline deleted successfully');
   }
 
   @Post('timelines/:timelineId/tracks')
@@ -202,11 +182,7 @@ export class AnimationsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: track,
-      message: 'Track added successfully',
-    };
+    return ApiResponseDto.success(track, 'Track added successfully');
   }
 
   @Put('tracks/:trackId')
@@ -236,11 +212,7 @@ export class AnimationsController {
       req.user.id,
     );
 
-    return {
-      success: true,
-      data: track,
-      message: 'Track updated successfully',
-    };
+    return ApiResponseDto.success(track, 'Track updated successfully');
   }
 
   @Delete('tracks/:trackId')
@@ -260,11 +232,7 @@ export class AnimationsController {
   ): Promise<ApiResponseDto<null>> {
     await this.animationsService.deleteTrack(trackId, req.user.id);
 
-    return {
-      success: true,
-      data: null,
-      message: 'Track deleted successfully',
-    };
+    return ApiResponseDto.success(null, 'Track deleted successfully');
   }
 
   @Get('timelines/:timelineId/export')
@@ -339,11 +307,7 @@ export class AnimationsController {
       };
     }
 
-    return {
-      success: true,
-      data: exportData,
-      message: `Timeline exported as ${format.toUpperCase()} successfully`,
-    };
+    return ApiResponseDto.success(exportData, `Timeline exported as ${format.toUpperCase()} successfully`);
   }
 
   @Post('timelines/:timelineId/preview')
@@ -431,10 +395,6 @@ export class AnimationsController {
       previewFrames.push(frameData);
     }
 
-    return {
-      success: true,
-      data: previewFrames,
-      message: 'Preview frames generated successfully',
-    };
+    return ApiResponseDto.success(previewFrames, 'Preview frames generated successfully');
   }
 }

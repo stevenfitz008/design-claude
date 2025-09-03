@@ -53,7 +53,7 @@ export interface ImageElement extends BaseCanvasElement {
 
 export interface ShapeElement extends BaseCanvasElement {
   type: 'shape';
-  shapeType: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'arrow';
+  shapeType: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'arrow' | 'line' | 'path' | 'diamond' | 'hexagon' | 'octagon';
   fill: string;
   stroke?: string;
   strokeWidth?: number;
@@ -61,6 +61,8 @@ export interface ShapeElement extends BaseCanvasElement {
   cornerRadius?: number;
   sides?: number; // For polygons and stars
   innerRadius?: number; // For stars
+  pathData?: string; // For custom paths
+  closePath?: boolean; // Whether to close the path
 }
 
 export interface VideoElement extends BaseCanvasElement {
@@ -204,4 +206,65 @@ export interface Layer {
 export interface LayerState {
   layers: Layer[];
   activeLayerId: string;
+}
+
+// Enhanced Resize Panel Types
+export interface ResizePreset {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  category: string;
+  platform?: string;
+  format?: string;
+  type?: string;
+  device?: string;
+  isFavorite?: boolean;
+  usageCount?: number;
+  createdAt?: number;
+}
+
+export interface ResizeHistory {
+  id: string;
+  fromSize: { width: number; height: number };
+  toSize: { width: number; height: number };
+  preset?: ResizePreset;
+  timestamp: number;
+  elementsAffected: number;
+  preservedPositions: boolean;
+}
+
+export interface ResizePanelState {
+  selectedCategory: string;
+  searchQuery: string;
+  favoritePresets: Set<string>;
+  recentSizes: Array<{
+    width: number;
+    height: number;
+    name: string;
+    timestamp: number;
+  }>;
+  customPresets: ResizePreset[];
+  usageStats: Map<string, number>;
+  isResizing: boolean;
+  magicResizeEnabled: boolean;
+  maintainAspectRatio: boolean;
+}
+
+export interface SmartResizeOptions {
+  animate?: boolean;
+  duration?: number;
+  preserveElementPositions?: boolean;
+  zoomToFit?: boolean;
+  maintainAspectRatio?: boolean;
+  centerContent?: boolean;
+  optimizeForPlatform?: string;
+}
+
+export interface ResizeAnalytics {
+  mostUsedPresets: Array<{ preset: ResizePreset; count: number }>;
+  resizeHistory: ResizeHistory[];
+  averageResizeTime: number;
+  favoriteCategories: string[];
+  platformUsage: Map<string, number>;
 }

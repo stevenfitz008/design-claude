@@ -31,7 +31,7 @@ const CanvasContainer: React.FC<{
       position: 'relative',
       width: '100%',
       height: '100%',
-      padding: 0, // Remove padding - frame expands to edges
+      padding: 20, // Add small gap around canvas
       margin: 0,
       overflow: 'hidden',
       cursor: 'default',
@@ -571,6 +571,7 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
     handleStageMouseDown,
     handleWheel,
     fitStageIntoParentContainer,
+    zoomToFit,
   } = useCanvas();
   
   const { 
@@ -644,12 +645,16 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
       fitCanvasToContainer(width, height); // Update canvas content size for autofit
       calculateCanvasSize();
       
-      // Delay fitting to ensure canvas size is updated first
+      // Delay fitting to ensure canvas size is updated first, then zoom to fit
       requestAnimationFrame(() => {
         fitStageIntoParentContainer();
+        // Ensure the entire canvas is visible after resizing
+        requestAnimationFrame(() => {
+          zoomToFit();
+        });
       });
     }
-  }, [fitStageIntoParentContainer, calculateCanvasSize, fitCanvasToContainer]);
+  }, [fitStageIntoParentContainer, calculateCanvasSize, fitCanvasToContainer, zoomToFit]);
 
   useEffect(() => {
     // Initial resize calculation

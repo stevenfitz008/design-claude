@@ -1,7 +1,8 @@
 import React from 'react';
 import { observer } from "mobx-react-lite";
 import { PhotosPanelPremium } from '@components/panels/PhotosPanelPremium';
-import { PhotosPanelSimple } from '@components/PhotosPanelSimple';
+import { PhotosPanelSimple } from '@components/panels/PhotosPanelSimple';
+import { VideosPanel } from '@components/panels/VideosPanel';
 
 interface RightPanelProps {
   activePanel?: string;
@@ -13,7 +14,8 @@ interface RightPanelProps {
 const PANEL_NAMES: Record<string, string> = {
   'templates': 'Templates',
   'text': 'Text Tools',
-  'photos': 'Photos'
+  'photos': 'Photos',
+  'videos': 'Videos'
 };
 
 // we need observer to update component automatically on any store changes
@@ -30,6 +32,8 @@ export const RightPanel: React.FC<RightPanelProps> = observer(({
     switch (activePanel) {
       case 'photos':
         return <PhotosPanelSimple />;
+      case 'videos':
+        return <VideosPanel />;
       default:
         return (
           <div style={{ 
@@ -78,7 +82,7 @@ export const RightPanel: React.FC<RightPanelProps> = observer(({
         overflow: 'hidden'
       }}
     >
-      {activePanel !== 'photos' && (
+      {activePanel !== 'photos' && activePanel !== 'videos' && (
         <div style={{ 
           padding: '16px',
           borderBottom: '1px solid #495563',

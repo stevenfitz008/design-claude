@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { observer } from "mobx-react-lite";
 import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
 
@@ -15,9 +16,17 @@ const LayoutContainer = styled.div<{ theme: any }>`
   flex-direction: column;
   height: 100vh;
   width: 100vw;
+  max-height: 100vh; /* Ensure no overflow beyond viewport */
+  max-width: 100vw;  /* Ensure no overflow beyond viewport */
+  min-height: 0;     /* Allow flex shrinking */
   background-color: ${props => props.theme.colors.canvasBg};
   color: ${props => props.theme.colors.textPrimary};
   overflow: hidden;
+  position: fixed;   /* Fix to viewport for browser fitting */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 `;
 
 const TopNavigationContainer = styled.div<{ theme: any }>`
@@ -32,6 +41,8 @@ const MainContainer = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0; /* Allow flex shrinking for proper browser fit */
+  position: relative;
 `;
 
 const LeftToolbarContainer = styled.div<{ theme: any; isVisible: boolean }>`
@@ -49,19 +60,24 @@ const MainCanvasContainer = styled.div<{ theme: any }>`
   background-color: ${props => props.theme.colors.canvasBg};
   position: relative;
   overflow: hidden;
+  min-height: 0; /* Allow flex shrinking for proper browser fit */
+  min-width: 0;  /* Allow flex shrinking for proper browser fit */
+  /* Canvas is now on the right side */
 `;
 
 const RightPanelContainer = styled.div<{ theme: any; isVisible: boolean }>`
   width: ${props => props.isVisible ? props.theme.layout.rightPanelWidth : '0'};
   background-color: ${props => props.theme.colors.panelBg};
   border-left: 1px solid ${props => props.theme.colors.borderColor};
+  border-right: 1px solid ${props => props.theme.colors.borderColor};
   flex-shrink: 0;
   overflow: hidden;
   transition: width ${props => props.theme.transitions.normal};
   z-index: 5;
 `;
 
-export const AppLayout: React.FC<AppLayoutProps> = ({
+// we need observer to update component automatically on any store changes
+export const AppLayout: React.FC<AppLayoutProps> = observer(({
   children,
   leftToolbar,
   mainCanvas,
@@ -105,6 +121,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {children}
     </LayoutContainer>
   );
-};
+});
 
 export type { AppLayoutProps };

@@ -36,6 +36,7 @@ interface CanvasStore extends CanvasState {
   setPan: (pan: { x: number; y: number }) => void;
   setCanvasSize: (size: { width: number; height: number }) => void;
   setBackgroundColor: (color: string) => void;
+  fitCanvasToContainer: (containerWidth: number, containerHeight: number) => void;
   
   // Grid and guides
   toggleGrid: () => void;
@@ -79,13 +80,60 @@ const createHistoryState = (elements: CanvasElement[], canvasSize: { width: numb
 export const useCanvasStore = create<CanvasStore>()(
   devtools(
     (set, get) => ({
-      // Initial state
-      elements: [],
+      // Initial state with sample elements to demonstrate Konva functionality
+      elements: [
+        {
+          id: 'sample-text',
+          type: 'text',
+          x: 100,
+          y: 100,
+          width: 200,
+          height: 60,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          opacity: 1,
+          visible: true,
+          locked: false,
+          zIndex: 1,
+          text: 'Sample Text Element',
+          fontSize: 24,
+          fontFamily: 'Arial',
+          fontStyle: 'normal',
+          fontWeight: 'normal',
+          color: '#333333',
+          textAlign: 'left',
+          verticalAlign: 'top',
+          lineHeight: 1.2,
+          letterSpacing: 0,
+          textDecoration: '',
+          wordWrap: false
+        },
+        {
+          id: 'sample-rect',
+          type: 'shape',
+          x: 150,
+          y: 200,
+          width: 120,
+          height: 80,
+          rotation: 15,
+          scaleX: 1,
+          scaleY: 1,
+          opacity: 0.8,
+          visible: true,
+          locked: false,
+          zIndex: 2,
+          fill: '#48aff0',
+          stroke: '#2c5282',
+          strokeWidth: 2,
+          cornerRadius: 8
+        }
+      ] as CanvasElement[],
       selection: [],
       clipboard: [],
       zoom: 1,
       pan: { x: 0, y: 0 },
-      canvasSize: { width: 800, height: 600 },
+      canvasSize: { width: 1200, height: 800 }, // Start larger - will be replaced by autofit
       backgroundColor: '#ffffff',
       showGrid: false,
       gridSize: 20,
@@ -350,6 +398,34 @@ export const useCanvasStore = create<CanvasStore>()(
 
       setBackgroundColor: (backgroundColor) => {
         set((state) => ({ ...state, backgroundColor }));
+      },
+
+      fitCanvasToContainer: (containerWidth, containerHeight) => {
+        // AUTOFIT: Use maximum available container space
+        const margin = 0.05; // Minimal 5% margin for autofit
+        const availableWidth = containerWidth * (1 - margin);
+        const availableHeight = containerHeight * (1 - margin);
+        
+        // Remove size limits for true autofit - only minimum constraints
+        let canvasWidth = Math.max(300, availableWidth);  // Minimum 300px width
+        let canvasHeight = Math.max(200, availableHeight); // Minimum 200px height
+        
+        // Remove the restrictive ratio calculations - let it fill the space
+        // Just ensure it doesn't exceed available space
+        if (canvasWidth > availableWidth) {
+          canvasWidth = availableWidth;
+        }
+        
+        if (canvasHeight > availableHeight) {
+          canvasHeight = availableHeight;
+        }
+        
+        const newSize = {
+          width: Math.round(canvasWidth),
+          height: Math.round(canvasHeight)
+        };
+        
+        set((state) => ({ ...state, canvasSize: newSize }));
       },
 
       // Grid and guides

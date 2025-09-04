@@ -47,6 +47,35 @@ body,
   bottom: 0;
 }
 
+/* Icon color consistency - force all icons to be white */
+.icon-white,
+.icon-white svg,
+.icon-white path,
+.icon-white circle,
+.icon-white rect,
+.icon-white polygon,
+.icon-white polyline,
+.icon-white line {
+  color: #f5f8fa !important;
+  fill: #f5f8fa !important;
+  stroke: #f5f8fa !important;
+}
+
+/* Lucide React icons specific */
+.icon-white[data-lucide] {
+  color: #f5f8fa !important;
+  stroke: #f5f8fa !important;
+}
+
+/* Blueprint.js icons specific */
+.icon-white.bp5-icon {
+  color: #f5f8fa !important;
+}
+
+.icon-white.bp5-icon svg {
+  fill: #f5f8fa !important;
+}
+
 /* Ensure browser chrome doesn't interfere */
 html {
   box-sizing: border-box;
@@ -128,6 +157,29 @@ input, textarea, select {
 
 [data-testid="photos-scroll-container"] {
   scrollbar-gutter: stable !important; /* Reserve space for scrollbar */
+}
+
+/* Enhanced Icons Panel Scrolling */
+.icons-panel-container ::-webkit-scrollbar {
+  width: 6px !important;
+  height: 4px !important;
+}
+
+.icons-panel-container ::-webkit-scrollbar-track {
+  background: #2f343c;
+}
+
+.icons-panel-container ::-webkit-scrollbar-thumb {
+  background: #495563;
+  border-radius: 4px;
+}
+
+.icons-panel-container ::-webkit-scrollbar-thumb:hover {
+  background: #48aff0;
+}
+
+.icons-panel-container ::-webkit-scrollbar:horizontal {
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {

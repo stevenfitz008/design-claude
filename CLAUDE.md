@@ -309,6 +309,17 @@ design-studio-backend/
 - **API Integration Working**: Photos panel now successfully connects to backend API
 - **Comprehensive Debugging**: Added detailed logging to mediaService and components
 
+#### Permanent Port Configuration System (September 4, 2025)
+- **Package.json Script Enforcement**: 
+  - Frontend: `"dev": "vite --port 3000"` (explicit port flag)
+  - Backend: `"start:dev": "PORT=3001 nest start --watch"` (environment variable)
+- **Vite Configuration**: Hardcoded `server.port: 3000` and `preview.port: 4173`
+- **Environment Validation**: Comprehensive validation scripts for both projects
+  - `npm run env:validate` - Individual project validation
+  - `./validate-ports.sh` - Complete system validation
+- **Documentation**: Complete `PORT_CONFIGURATION.md` guide with troubleshooting
+- **Multiple Protection Layers**: Script enforcement + config files + validation + documentation
+
 #### UI/UX Enhancements
 - **Hover Overlays**: Added smooth hover effects to Photos, Videos, and Icons panels
 - **Visual Feedback**: Enhanced component interactions with transitions and shadows
@@ -510,7 +521,7 @@ cd design-studio-clone
 # Install dependencies
 npm install
 
-# Start development server (port 5173)
+# Start development server (port 3000)
 npm run dev
 
 # Run tests
@@ -534,7 +545,7 @@ npm install
 # Generate Prisma client
 npm run db:generate
 
-# Start development server (port 3002)
+# Start development server (port 3001)
 npm run start:dev
 
 # Run database migrations
@@ -569,14 +580,19 @@ cd design-studio-clone && npm run dev
 # Frontend testing
 cd design-studio-clone
 npm run test:scroll        # Test scroll functionality
-npm run test:photos        # Debug photo panels
-npm run test:components    # Component testing
+npm run env:validate       # Validate environment configuration
+npm run env:check          # Quick port configuration check
 
 # Backend testing
 cd design-studio-backend
+npm run env:validate      # Validate environment configuration
+npm run env:check         # Quick port configuration check
 npm run test              # Unit tests
 npm run test:e2e          # Integration tests
 npm run test:cov          # Coverage report
+
+# Full system validation
+./validate-ports.sh       # Comprehensive port configuration validation
 ```
 
 ### 🐛 Known Issues & Solutions
@@ -584,6 +600,11 @@ npm run test:cov          # Coverage report
 #### Fixed Issues (September 4, 2025)
 - ✅ **Environment Configuration**: Resolved conflicting .env files causing API connection failures
 - ✅ **Port Conflicts**: Fixed wrong port 3002 vs correct port 3001 in environment variables
+- ✅ **Permanent Port Configuration**: Implemented comprehensive best practices system
+  - Package.json scripts enforce correct ports with explicit flags
+  - Vite configuration hardcoded to prevent override issues  
+  - Environment validation scripts detect configuration problems
+  - Complete documentation and troubleshooting guide created
 - ✅ **API Integration**: Photos panel now successfully connects to backend API
 - ✅ **Service Architecture**: mediaService properly configured for backend communication
 - ✅ **Scroll Not Working**: Fixed ResizePanel scroll container height calculation
@@ -596,11 +617,68 @@ npm run test:cov          # Coverage report
 - **Vite Environment**: Proper VITE_ prefixed variables for client-side access
 - **Priority Management**: Removed conflicting `.env.local` that was overriding settings
 - **Development Workflow**: Environment changes trigger automatic server restarts
+- **Permanent Configuration**: Implemented bulletproof port standardization system
+  - Multiple enforcement layers prevent accidental port conflicts
+  - Validation scripts catch configuration issues before deployment
+  - Complete documentation with troubleshooting guides
 
 #### Monitoring
 - 🔍 **Performance**: Large photo grids may need virtualization optimization
 - 🔍 **Mobile Responsiveness**: Three-panel layout on smaller screens
 - 🔍 **Memory Usage**: Canvas element cleanup and garbage collection
+
+## Port Configuration & Environment Management
+
+### 🔒 Permanent Port Configuration System
+
+The project implements a comprehensive port standardization system with multiple protection layers:
+
+#### **Port Assignment (Enforced)**
+| Service | Port | URL | Protected By |
+|---------|------|-----|--------------|
+| Frontend (Vite) | 3000 | http://localhost:3000 | Vite config + script flags |
+| Backend (NestJS) | 3001 | http://localhost:3001/api/v1 | Environment variables + scripts |
+| WebSocket | 3002 | ws://localhost:3002 | Environment configuration |
+| Preview (Build) | 4173 | http://localhost:4173 | Vite config + script flags |
+
+#### **Protection Mechanisms**
+1. **Package.json Scripts**: Explicit port enforcement
+   - `"dev": "vite --port 3000"` (frontend)
+   - `"start:dev": "PORT=3001 nest start --watch"` (backend)
+
+2. **Configuration Files**: Hardcoded port values
+   - `vite.config.ts` enforces ports 3000 (dev) and 4173 (preview)
+   - `.env` files standardized with correct port references
+
+3. **Validation System**: Automated configuration checks
+   ```bash
+   # Individual project validation
+   npm run env:validate
+   
+   # Complete system validation  
+   ./validate-ports.sh
+   ```
+
+4. **Documentation**: Complete setup and troubleshooting guide
+   - `PORT_CONFIGURATION.md` - Comprehensive configuration guide
+   - Troubleshooting section for common port conflicts
+   - Best practices for environment management
+
+#### **Usage Commands**
+```bash
+# Validate entire system configuration
+./validate-ports.sh
+
+# Start with guaranteed correct ports
+cd design-studio-backend && npm run start:dev  # Auto-sets PORT=3001
+cd design-studio-clone && npm run dev          # Auto-sets port 3000
+
+# Quick configuration checks
+npm run env:check      # Show current port configuration
+npm run env:validate   # Comprehensive validation
+```
+
+This system prevents accidental port conflicts and ensures consistent development environment across all team members and deployment scenarios.
 
 ## Integration Points
 

@@ -6,10 +6,10 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start": "PORT=3001 nest start",
+    "start:dev": "PORT=3001 nest start --watch",
+    "start:debug": "PORT=3001 nest start --debug --watch",
+    "start:prod": "PORT=3001 node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -20,7 +20,9 @@
     "docker:down": "docker-compose down",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "env:check": "node -e \"console.log('Backend Port: ' + (process.env.PORT || '3001') + '\\nAPI Prefix: ' + (process.env.API_PREFIX || 'api/v1'))\"",
+    "env:validate": "node scripts/validate-env.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.462.0",

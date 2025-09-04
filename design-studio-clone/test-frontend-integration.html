@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend-Backend Integration Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #1a1a1a; 
+            color: #fff;
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #333; 
+            border-radius: 8px; 
+        }
+        .success { border-color: #4CAF50; background: rgba(76, 175, 80, 0.1); }
+        .error { border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
+        .loading { border-color: #2196F3; background: rgba(33, 150, 243, 0.1); }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            background: #48aff0; 
+            color: white;
+        }
+        .result { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 4px; }
+        .photo-grid, .video-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+        .photo-item, .video-item { 
+            border: 1px solid #555; 
+            border-radius: 4px; 
+            padding: 5px; 
+            text-align: center; 
+        }
+        .photo-item img, .video-item img { 
+            width: 100%; 
+            height: 100px; 
+            object-fit: cover; 
+            border-radius: 4px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Frontend-Backend Integration Test</h1>
+    <p>This page tests the connection between the React frontend and NestJS backend APIs</p>
+
+    <div class="test-section">
+        <h2>🏥 Health Checks</h2>
+        <button onclick="testPhotosHealth()">Test Photos Health</button>
+        <button onclick="testVideosHealth()">Test Videos Health</button>
+        <div id="health-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📸 Photos API Tests</h2>
+        <button onclick="testPhotosTrending()">Load Trending Photos</button>
+        <button onclick="testPhotosSearch()">Search Photos (Nature)</button>
+        <div id="photos-results"></div>
+        <div id="photos-grid" class="photo-grid"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎥 Videos API Tests</h2>
+        <button onclick="testVideosSearch()">Search Videos (Nature)</button>
+        <button onclick="testVideosTrending()">Load Trending Videos</button>
+        <div id="videos-results"></div>
+        <div id="videos-grid" class="video-grid"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Integration Summary</h2>
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/v1';
+        let testResults = [];
+
+        function updateSummary() {
+            const total = testResults.length;
+            const passed = testResults.filter(r => r.success).length;
+            const failed = total - passed;
+            
+            document.getElementById('summary').innerHTML = `
+                <div class="${failed === 0 ? 'success' : 'error'}">
+                    <strong>Total Tests: ${total}</strong><br>
+                    ✅ Passed: ${passed}<br>
+                    ❌ Failed: ${failed}<br>
+                    ${failed === 0 ? '🎉 All tests passing! Frontend-Backend integration is working.' : '⚠️ Some tests failed. Check console for details.'}
+                </div>
+            `;
+        }
+
+        async function testPhotosHealth() {
+            const resultDiv = document.getElementById('health-results');
+            try {
+                const response = await fetch(`${API_BASE}/photos/health/status`);
+                const data = await response.json();
+                testResults.push({ test: 'Photos Health', success: response.ok });
+                
+                resultDiv.innerHTML += `
+                    <div class="result success">
+                        ✅ Photos Health: ${data.healthy ? 'Healthy' : 'Unhealthy'} (${response.status})
+                        <br>Timestamp: ${data.timestamp}
+                    </div>
+                `;
+            } catch (error) {
+                testResults.push({ test: 'Photos Health', success: false, error: error.message });
+                resultDiv.innerHTML += `<div class="result error">❌ Photos Health: ${error.message}</div>`;
+            }
+            updateSummary();
+        }
+
+        async function testVideosHealth() {
+            const resultDiv = document.getElementById('health-results');
+            try {
+                const response = await fetch(`${API_BASE}/videos/health/status`);
+                const data = await response.json();
+                testResults.push({ test: 'Videos Health', success: response.ok });
+                
+                resultDiv.innerHTML += `
+                    <div class="result ${data.healthy ? 'success' : 'error'}">
+                        ${data.healthy ? '✅' : '⚠️'} Videos Health: ${data.healthy ? 'Healthy' : 'Unhealthy'} (${response.status})
+                        <br>Service: ${data.service || 'Unknown'}
+                    </div>
+                `;
+            } catch (error) {
+                testResults.push({ test: 'Videos Health', success: false, error: error.message });
+                resultDiv.innerHTML += `<div class="result error">❌ Videos Health: ${error.message}</div>`;
+            }
+            updateSummary();
+        }
+
+        async function testPhotosTrending() {
+            const resultDiv = document.getElementById('photos-results');
+            const gridDiv = document.getElementById('photos-grid');
+            
+            resultDiv.innerHTML += '<div class="result loading">⏳ Loading trending photos...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/photos/trending?per_page=8`);
+                const data = await response.json();
+                testResults.push({ test: 'Photos Trending', success: response.ok });
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Trending Photos: ${data.results?.length || data.length || 0} photos loaded
+                        <br>Total Available: ${data.total || 'Unknown'}
+                    </div>
+                `;
+
+                const photos = data.results || data;
+                gridDiv.innerHTML = photos.slice(0, 8).map(photo => `
+                    <div class="photo-item">
+                        <img src="${photo.urls.thumb}" alt="${photo.alt_description || 'Photo'}" />
+                        <small>by ${photo.user.name}</small>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                testResults.push({ test: 'Photos Trending', success: false, error: error.message });
+                resultDiv.innerHTML = `<div class="result error">❌ Trending Photos: ${error.message}</div>`;
+                gridDiv.innerHTML = '';
+            }
+            updateSummary();
+        }
+
+        async function testPhotosSearch() {
+            const resultDiv = document.getElementById('photos-results');
+            const gridDiv = document.getElementById('photos-grid');
+            
+            resultDiv.innerHTML += '<div class="result loading">⏳ Searching photos...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/photos/search?query=nature&per_page=8`);
+                const data = await response.json();
+                testResults.push({ test: 'Photos Search', success: response.ok });
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Photo Search: ${data.results?.length || 0} results for 'nature'
+                        <br>Total Available: ${data.total || 'Unknown'}
+                    </div>
+                `;
+
+                const photos = data.results || [];
+                gridDiv.innerHTML = photos.slice(0, 8).map(photo => `
+                    <div class="photo-item">
+                        <img src="${photo.urls.thumb}" alt="${photo.alt_description || 'Photo'}" />
+                        <small>by ${photo.user.name}</small>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                testResults.push({ test: 'Photos Search', success: false, error: error.message });
+                resultDiv.innerHTML = `<div class="result error">❌ Photo Search: ${error.message}</div>`;
+                gridDiv.innerHTML = '';
+            }
+            updateSummary();
+        }
+
+        async function testVideosSearch() {
+            const resultDiv = document.getElementById('videos-results');
+            const gridDiv = document.getElementById('videos-grid');
+            
+            resultDiv.innerHTML += '<div class="result loading">⏳ Searching videos...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/videos/search?query=nature&per_page=6`);
+                const data = await response.json();
+                testResults.push({ test: 'Videos Search', success: response.ok });
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Video Search: ${data.videos?.length || 0} results for 'nature'
+                        <br>Total Available: ${data.total_results || 'Unknown'}
+                    </div>
+                `;
+
+                const videos = data.videos || [];
+                gridDiv.innerHTML = videos.slice(0, 6).map(video => `
+                    <div class="video-item">
+                        <img src="${video.image}" alt="Video by ${video.user.name}" />
+                        <small>
+                            ${video.user.name}<br>
+                            ${Math.floor(video.duration/60)}:${(video.duration%60).toString().padStart(2,'0')}
+                        </small>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                testResults.push({ test: 'Videos Search', success: false, error: error.message });
+                resultDiv.innerHTML = `<div class="result error">❌ Video Search: ${error.message}</div>`;
+                gridDiv.innerHTML = '';
+            }
+            updateSummary();
+        }
+
+        async function testVideosTrending() {
+            const resultDiv = document.getElementById('videos-results');
+            const gridDiv = document.getElementById('videos-grid');
+            
+            resultDiv.innerHTML += '<div class="result loading">⏳ Loading trending videos...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/videos/trending?per_page=6`);
+                const data = await response.json();
+                testResults.push({ test: 'Videos Trending', success: response.ok });
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ Trending Videos: ${data.videos?.length || data.length || 0} videos loaded
+                    </div>
+                `;
+
+                const videos = data.videos || data;
+                if (Array.isArray(videos)) {
+                    gridDiv.innerHTML = videos.slice(0, 6).map(video => `
+                        <div class="video-item">
+                            <img src="${video.image}" alt="Video by ${video.user.name}" />
+                            <small>
+                                ${video.user.name}<br>
+                                ${Math.floor(video.duration/60)}:${(video.duration%60).toString().padStart(2,'0')}
+                            </small>
+                        </div>
+                    `).join('');
+                }
+                
+            } catch (error) {
+                testResults.push({ test: 'Videos Trending', success: false, error: error.message });
+                resultDiv.innerHTML = `<div class="result error">❌ Trending Videos: ${error.message}</div>`;
+                gridDiv.innerHTML = '';
+            }
+            updateSummary();
+        }
+
+        // Auto-run health checks on page load
+        window.onload = async function() {
+            console.log('🚀 Starting frontend-backend integration tests...');
+            await testPhotosHealth();
+            await testVideosHealth();
+        };
+    </script>
+</body>
+</html>

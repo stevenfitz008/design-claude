@@ -4,7 +4,8 @@ import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
 import { ImageExportService } from './services/image-export.service';
 import { VideoExportService } from './services/video-export.service';
-import { CreateExportDto, ExportStatus, ExportFormat } from './dto/export.dto';
+import { CreateExportDto, ExportFormat } from './dto/export.dto';
+import { ExportStatus } from '@prisma/client';
 
 @Injectable()
 export class ExportService {
@@ -225,7 +226,7 @@ export class ExportService {
     await this.prismaService.export.update({
       where: { id: exportId },
       data: {
-        status: 'CANCELLED' as any,
+        status: ExportStatus.EXPIRED,
       },
     });
 

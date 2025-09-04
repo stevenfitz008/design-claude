@@ -1,19 +1,11 @@
 import { IsNotEmpty, IsString, IsNumber, IsOptional, IsBoolean, IsEnum, IsArray, ValidateNested, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { ExportStatus, ExportFormat } from '@prisma/client';
 
-export enum ExportFormat {
-  PNG = 'PNG',
-  JPG = 'JPG',
-  JPEG = 'JPEG',
-  WEBP = 'WEBP',
-  SVG = 'SVG',
-  PDF = 'PDF',
-  MP4 = 'MP4',
-  GIF = 'GIF',
-  WEBM = 'WEBM',
-  MOV = 'MOV',
-}
+// Re-export for use in other modules
+export { ExportFormat, ExportStatus };
+
 
 export enum ExportQuality {
   LOW = 'low',
@@ -276,13 +268,6 @@ export class ExportStatsDto {
 }
 
 // Additional DTOs needed by the service
-export enum ExportStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
-}
 
 export class CreateExportDto {
   @ApiProperty({ description: 'Project ID to export' })

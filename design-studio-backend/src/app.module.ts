@@ -15,6 +15,10 @@ import { HealthModule } from './common/health/health.module';
 import { CacheModule } from './common/cache/cache.module';
 import { DAMModule } from './modules/dam/dam.module';
 import { DesignSystemModule } from './modules/design-system/design-system.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { PagesModule } from './modules/pages/pages.module';
+import { ComponentsModule } from './modules/components/components.module';
+import { RenderingModule } from './modules/rendering/rendering.module';
 
 @Module({
   imports: [
@@ -62,11 +66,17 @@ import { DesignSystemModule } from './modules/design-system/design-system.module
     PhotosModule,
     VideosModule,
     FontsModule,
-    // AnimationsModule,
+    // AnimationsModule, // Temporarily disabled due to type issues
     
     // Advanced modules
     // DAMModule, // Temporarily disabled due to dependency issue
     // DesignSystemModule, // Temporarily disabled due to compilation error
+    
+    // Report system modules
+    ReportsModule,
+    PagesModule,
+    ComponentsModule,
+    // RenderingModule, // Temporarily disabled due to Bull dependency
   ],
 })
 export class AppModule {}

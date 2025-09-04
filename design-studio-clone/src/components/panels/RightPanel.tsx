@@ -3,10 +3,12 @@ import { Button, Icon, Collapse } from '@blueprintjs/core';
 import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { usePanelStore, PanelType } from '@/stores/panelStore';
+import { useCanvasStore } from '@/stores/canvasStore';
 import { TemplatesPanel } from './TemplatesPanel';
 import { PhotosPanel } from './PhotosPanel';
 import { TextToolsPanel } from './TextToolsPanel';
 import { IconsPanel } from './IconsPanel';
+import { IconControlPanel } from './IconControlPanel';
 import { ShapesPanel } from './ShapesPanel';
 import { UploadPanel } from './UploadPanel';
 import { VideosPanel } from './VideosPanel';
@@ -16,6 +18,7 @@ import { ResizePanel } from './ResizePanel';
 import { QuotesPanel } from './QuotesPanel';
 import { QRCodePanel } from './QRCodePanel';
 import { AIImagePanel } from './AIImagePanel';
+import type { IconElement } from '@/types/canvas';
 
 interface RightPanelProps {
   className?: string;
@@ -99,8 +102,18 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
     goBack, 
     canGoBack 
   } = usePanelStore();
+  const { selection, elements } = useCanvasStore();
+  
+  // Check if icons are selected
+  const selectedElements = elements.filter(el => selection.includes(el.id));
+  const selectedIcons = selectedElements.filter(el => el.type === 'icon') as IconElement[];
 
   const panelComponent = useMemo(() => {
+    // If icons are selected, show the icon control panel regardless of active panel
+    if (selectedIcons.length > 0) {
+      return <IconControlPanel selectedElements={selectedIcons} />;
+    }
+    
     switch (activePanel) {
       case 'templates':
         return <TemplatesPanel />;
@@ -131,7 +144,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
       default:
         return <div>Unknown Panel</div>;
     }
-  }, [activePanel]);
+  }, [activePanel, selectedIcons]);
 
   if (isCollapsed) {
     return (
@@ -162,21 +175,23 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
       role="complementary"
       aria-label={`${PANEL_NAMES[activePanel]} Panel`}
     >
-      <PanelHeader theme={theme}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {canGoBack() && (
-            <BackButton
-              icon="arrow-left"
-              minimal
-              onClick={goBack}
-              title="Go Back"
-              theme={theme}
-            />
-          )}
-          <Icon icon={getPanelIcon(activePanel)} size={16} />
-          <span className="panel-title">
-            {PANEL_NAMES[activePanel]}
-          </span>
+      {/* All panel headers removed for clean design consistency across all panels */}
+      {false && (
+        <PanelHeader theme={theme}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {canGoBack() && (
+              <BackButton
+                icon="arrow-left"
+                minimal
+                onClick={goBack}
+                title="Go Back"
+                theme={theme}
+              />
+            )}
+            <Icon icon={getPanelIcon(activePanel)} size={16} />
+            <span className="panel-title">
+              {PANEL_NAMES[activePanel]}
+            </span>
         </div>
         
         <div className="panel-actions">
@@ -184,11 +199,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
             icon="menu-close"
             minimal
             onClick={toggleCollapsed}
-            title="Collapse Panel"
+            title="Collapse Panel"  
             aria-label="Collapse Panel"
           />
         </div>
-      </PanelHeader>
+        </PanelHeader>
+      )}
 
       <PanelContent theme={theme}>
         <Collapse isOpen={!isCollapsed} keepChildrenMounted>

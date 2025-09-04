@@ -383,7 +383,7 @@ export class AnimationsService {
           data: {
             time: keyframeData.time,
             value: keyframeData.value,
-            easing: keyframeData.easing || 'LINEAR',
+            easing: keyframeData.easing || EasingType.LINEAR,
             easingParams: keyframeData.easingParams || null,
           },
         });
@@ -393,7 +393,7 @@ export class AnimationsService {
           data: {
             time: keyframeData.time,
             value: keyframeData.value,
-            easing: keyframeData.easing || 'LINEAR',
+            easing: keyframeData.easing || EasingType.LINEAR,
             easingParams: keyframeData.easingParams || null,
             trackId: trackId,
           },

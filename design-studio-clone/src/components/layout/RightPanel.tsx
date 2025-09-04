@@ -3,6 +3,10 @@ import { observer } from "mobx-react-lite";
 import { PhotosPanelPremium } from '@components/panels/PhotosPanelPremium';
 import { PhotosPanelSimple } from '@components/panels/PhotosPanelSimple';
 import { VideosPanel } from '@components/panels/VideosPanel';
+import { ReportsPanel } from '@components/panels/ReportsPanel';
+import { PagesPanel } from '@components/panels/PagesPanel';
+import { ComponentsPanel } from '@components/panels/ComponentsPanel';
+import { HierarchicalPanel } from '@components/panels/HierarchicalPanel';
 
 interface RightPanelProps {
   activePanel?: string;
@@ -15,7 +19,11 @@ const PANEL_NAMES: Record<string, string> = {
   'templates': 'Templates',
   'text': 'Text Tools',
   'photos': 'Photos',
-  'videos': 'Videos'
+  'videos': 'Videos',
+  'reports': 'Reports',
+  'pages': 'Pages',
+  'components': 'Components',
+  'hierarchy': 'Project Hierarchy'
 };
 
 // we need observer to update component automatically on any store changes
@@ -34,6 +42,14 @@ export const RightPanel: React.FC<RightPanelProps> = observer(({
         return <PhotosPanelSimple />;
       case 'videos':
         return <VideosPanel />;
+      case 'reports':
+        return <ReportsPanel />;
+      case 'pages':
+        return <PagesPanel />;
+      case 'components':
+        return <ComponentsPanel />;
+      case 'hierarchy':
+        return <HierarchicalPanel />;
       default:
         return (
           <div style={{ 
@@ -82,7 +98,7 @@ export const RightPanel: React.FC<RightPanelProps> = observer(({
         overflow: 'hidden'
       }}
     >
-      {activePanel !== 'photos' && activePanel !== 'videos' && (
+      {!['photos', 'videos', 'reports', 'pages', 'components', 'hierarchy'].includes(activePanel) && (
         <div style={{ 
           padding: '16px',
           borderBottom: '1px solid #495563',

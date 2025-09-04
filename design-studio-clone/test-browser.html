@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Browser - Design Studio</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #fff;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .iframe-container {
+            border: 2px solid #495563;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+        .info {
+            background: #2f343c;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #48aff0;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: rgba(34, 197, 94, 0.2); border: 1px solid rgb(34, 197, 94); }
+        .error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgb(239, 68, 68); }
+        .warning { background: rgba(251, 191, 36, 0.2); border: 1px solid rgb(251, 191, 36); }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Design Studio App Test</h1>
+        
+        <div class="info">
+            <h3>Testing localhost:3000 in iframe</h3>
+            <p>This page loads the Design Studio app in an iframe to test if it's working properly.</p>
+            <div id="status" class="status warning">Loading...</div>
+        </div>
+
+        <div class="iframe-container">
+            <iframe 
+                id="app-frame" 
+                src="http://localhost:3000" 
+                onload="handleIframeLoad()"
+                onerror="handleIframeError()">
+            </iframe>
+        </div>
+        
+        <div>
+            <button onclick="reloadIframe()">Reload App</button>
+            <button onclick="openInNewTab()">Open in New Tab</button>
+            <button onclick="checkConsoleErrors()">Check Console</button>
+        </div>
+        
+        <div id="console-output" style="margin-top: 20px; background: #252a30; padding: 16px; border-radius: 6px; display: none;">
+            <h4>Console Messages:</h4>
+            <div id="console-messages"></div>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const iframe = document.getElementById('app-frame');
+        
+        function handleIframeLoad() {
+            console.log('Iframe loaded successfully');
+            statusEl.textContent = 'App loaded successfully!';
+            statusEl.className = 'status success';
+            
+            // Try to access iframe content to check for errors
+            try {
+                setTimeout(() => {
+                    checkIframeContent();
+                }, 2000);
+            } catch (e) {
+                console.log('Cannot access iframe content due to cross-origin restrictions');
+            }
+        }
+        
+        function handleIframeError() {
+            console.log('Iframe failed to load');
+            statusEl.textContent = 'Failed to load app - check if server is running';
+            statusEl.className = 'status error';
+        }
+        
+        function checkIframeContent() {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const title = iframeDoc.title;
+                const bodyContent = iframeDoc.body?.textContent || '';
+                
+                if (title.includes('Design Studio')) {
+                    statusEl.textContent = `App loaded: ${title}`;
+                    statusEl.className = 'status success';
+                } else if (bodyContent.includes('error') || bodyContent.includes('Error')) {
+                    statusEl.textContent = 'App loaded but contains errors';
+                    statusEl.className = 'status error';
+                }
+            } catch (e) {
+                // This is expected due to CORS, but iframe still loads
+                console.log('Cross-origin access restricted (normal behavior)');
+            }
+        }
+        
+        function reloadIframe() {
+            statusEl.textContent = 'Reloading...';
+            statusEl.className = 'status warning';
+            iframe.src = iframe.src;
+        }
+        
+        function openInNewTab() {
+            window.open('http://localhost:3000', '_blank');
+        }
+        
+        function checkConsoleErrors() {
+            const consoleDiv = document.getElementById('console-output');
+            const messagesDiv = document.getElementById('console-messages');
+            
+            // Show captured console messages
+            consoleDiv.style.display = 'block';
+            messagesDiv.innerHTML = 'Console monitoring started. Check browser DevTools for detailed errors.';
+        }
+        
+        // Monitor for iframe errors
+        iframe.addEventListener('error', handleIframeError);
+        
+        // Set timeout for loading
+        setTimeout(() => {
+            if (statusEl.textContent === 'Loading...') {
+                statusEl.textContent = 'App taking longer than expected to load';
+                statusEl.className = 'status warning';
+            }
+        }, 10000);
+        
+        // Capture console errors
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        let consoleMessages = [];
+        
+        console.error = function(...args) {
+            consoleMessages.push('ERROR: ' + args.join(' '));
+            originalConsoleError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            consoleMessages.push('WARN: ' + args.join(' '));
+            originalConsoleWarn.apply(console, args);
+        };
+    </script>
+</body>
+</html>

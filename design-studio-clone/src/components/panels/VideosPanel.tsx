@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { observer } from "mobx-react-lite";
 import { Spinner } from '@blueprintjs/core';
 import { pexelsService } from '../../services/pexelsService';
@@ -13,6 +13,8 @@ export const VideosPanel: React.FC = observer(() => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [hoveredVideoId, setHoveredVideoId] = useState<number | null>(null);
+  const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
 
   const handleSearch = async (query: string, isLoadMore = false) => {
     if (!isLoadMore) {
@@ -101,6 +103,19 @@ export const VideosPanel: React.FC = observer(() => {
     loadTrendingVideos();
   }, []);
 
+  // Cleanup video refs when component unmounts
+  useEffect(() => {
+    return () => {
+      Object.values(videoRefs.current).forEach(video => {
+        if (video) {
+          video.pause();
+          video.src = '';
+        }
+      });
+      videoRefs.current = {};
+    };
+  }, []);
+
   // Infinite scroll observer
   useEffect(() => {
     let observer: IntersectionObserver | null = null;
@@ -174,6 +189,28 @@ export const VideosPanel: React.FC = observer(() => {
 
   const formatDimensions = (video: PexelsVideo): string => {
     return `${video.width}×${video.height}`;
+  };
+
+  const handleVideoMouseEnter = async (video: PexelsVideo) => {
+    setHoveredVideoId(video.id);
+    const videoElement = videoRefs.current[video.id];
+    if (videoElement && video.preview_url) {
+      try {
+        videoElement.currentTime = 0; // Start from beginning
+        await videoElement.play();
+      } catch (error) {
+        console.warn('Failed to play video preview:', error);
+      }
+    }
+  };
+
+  const handleVideoMouseLeave = (video: PexelsVideo) => {
+    setHoveredVideoId(null);
+    const videoElement = videoRefs.current[video.id];
+    if (videoElement) {
+      videoElement.pause();
+      videoElement.currentTime = 0; // Reset to first frame
+    }
   };
 
   return (
@@ -300,6 +337,8 @@ export const VideosPanel: React.FC = observer(() => {
                   // Show overlay
                   const overlay = e.currentTarget.querySelector('.video-overlay') as HTMLElement;
                   if (overlay) overlay.style.opacity = '1';
+                  // Start video preview
+                  handleVideoMouseEnter(video);
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = '#495563';
@@ -308,8 +347,41 @@ export const VideosPanel: React.FC = observer(() => {
                   // Hide overlay
                   const overlay = e.currentTarget.querySelector('.video-overlay') as HTMLElement;
                   if (overlay) overlay.style.opacity = '0';
+                  // Stop video preview
+                  handleVideoMouseLeave(video);
                 }}
               >
+                {/* Video element for preview (shown on hover) */}
+                {video.preview_url && (
+                  <video
+                    ref={(el) => {
+                      if (el) {
+                        videoRefs.current[video.id] = el;
+                      }
+                    }}
+                    src={video.preview_url}
+                    poster={video.image}
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    draggable={false}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: hoveredVideoId === video.id ? 'block' : 'none',
+                      pointerEvents: 'none'
+                    }}
+                    onLoadedMetadata={(e) => {
+                      // Ensure video shows first frame when loaded
+                      const videoEl = e.target as HTMLVideoElement;
+                      videoEl.currentTime = 0;
+                    }}
+                  />
+                )}
+                
+                {/* Thumbnail image (shown when not hovered) */}
                 <img
                   src={video.image}
                   alt={`Video by ${video.user.name}`}
@@ -318,7 +390,7 @@ export const VideosPanel: React.FC = observer(() => {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    display: 'block',
+                    display: hoveredVideoId === video.id ? 'none' : 'block',
                     pointerEvents: 'none'
                   }}
                 />

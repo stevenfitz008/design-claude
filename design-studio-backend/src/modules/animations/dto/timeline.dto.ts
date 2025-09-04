@@ -1,14 +1,8 @@
 import { IsNotEmpty, IsString, IsNumber, IsArray, IsOptional, IsEnum, ValidateNested, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { EasingType } from '@prisma/client';
 
-export enum EasingType {
-  LINEAR = 'linear',
-  EASE_IN = 'ease-in',
-  EASE_OUT = 'ease-out',
-  EASE_IN_OUT = 'ease-in-out',
-  CUBIC_BEZIER = 'cubic-bezier',
-}
 
 export class KeyframeDto {
   @ApiProperty({ description: 'Keyframe ID' })

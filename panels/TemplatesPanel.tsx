@@ -1,0 +1,443 @@
+import React, { useState, useMemo } from 'react';
+import { observer } from "mobx-react-lite";
+// we need observer to update component automatically on any store changes  
+import { Button, InputGroup, MenuItem, ButtonGroup, Tag } from '@blueprintjs/core';
+import { Select, ItemRenderer } from '@blueprintjs/select';
+import { styled } from '@styles/goober-setup';
+import { useTheme } from '@/contexts/ThemeProvider';
+import { usePanelStore } from '@/stores/panelStore';
+import { useCanvasStore } from '@/stores/canvasStore';
+
+interface Template {
+  id: string;
+  title: string;
+  category: string;
+  thumbnail: string;
+  width: number;
+  height: number;
+  elements: any[];
+  tags: string[];
+  premium: boolean;
+  author: string;
+  downloads: number;
+}
+
+const PanelContainer = styled.div<{ theme: any }>`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const SearchSection = styled.div<{ theme: any }>`
+  padding: 16px;
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+  
+  .search-input {
+    margin-bottom: 12px;
+  }
+  
+  .filters {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .filter-label {
+    font-size: 12px;
+    color: ${props => props.theme.colors.textSecondary};
+    margin-right: 4px;
+  }
+`;
+
+const TemplateGrid = styled.div<{ theme: any }>`
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${props => props.theme.colors.bg};
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.border};
+    border-radius: 3px;
+  }
+`;
+
+const TemplateCard = styled.div<{ theme: any }>`
+  background: ${props => props.theme.colors.cardBg};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: ${props => props.theme.colors.primary};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .template-thumbnail {
+    width: 100%;
+    height: 100px;
+    background: ${props => props.theme.colors.canvasBg};
+    border-bottom: 1px solid ${props => props.theme.colors.border};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .placeholder {
+      color: ${props => props.theme.colors.textSecondary};
+      font-size: 12px;
+    }
+  }
+  
+  .template-info {
+    padding: 12px;
+    
+    .template-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: ${props => props.theme.colors.textPrimary};
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .template-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .template-category {
+        font-size: 10px;
+        color: ${props => props.theme.colors.textSecondary};
+        text-transform: uppercase;
+      }
+      
+      .template-downloads {
+        font-size: 10px;
+        color: ${props => props.theme.colors.textSecondary};
+      }
+    }
+  }
+  
+  .premium-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+`;
+
+const LoadingState = styled.div<{ theme: any }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: ${props => props.theme.colors.textSecondary};
+  font-size: 14px;
+`;
+
+const categories = [
+  { value: 'all', label: 'All Categories' },
+  { value: 'social', label: 'Social Media' },
+  { value: 'presentation', label: 'Presentations' },
+  { value: 'flyer', label: 'Flyers' },
+  { value: 'poster', label: 'Posters' },
+  { value: 'logo', label: 'Logos' },
+  { value: 'business', label: 'Business Cards' },
+  { value: 'invitation', label: 'Invitations' },
+];
+
+// Mock template data
+const mockTemplates: Template[] = [
+  {
+    id: 'tmpl_1',
+    title: 'Modern Business Card',
+    category: 'business',
+    thumbnail: '/api/placeholder/140/100',
+    width: 350,
+    height: 200,
+    elements: [],
+    tags: ['business', 'professional', 'modern'],
+    premium: false,
+    author: 'Design Studio',
+    downloads: 1247,
+  },
+  {
+    id: 'tmpl_2', 
+    title: 'Instagram Story Template',
+    category: 'social',
+    thumbnail: '/api/placeholder/140/100',
+    width: 400,
+    height: 600,
+    elements: [],
+    tags: ['instagram', 'story', 'social'],
+    premium: true,
+    author: 'Creative Co',
+    downloads: 2891,
+  },
+  {
+    id: 'tmpl_3',
+    title: 'Event Flyer',
+    category: 'flyer',
+    thumbnail: '/api/placeholder/140/100', 
+    width: 600,
+    height: 800,
+    elements: [],
+    tags: ['event', 'flyer', 'promotion'],
+    premium: false,
+    author: 'Event Pro',
+    downloads: 956,
+  },
+  {
+    id: 'tmpl_4',
+    title: 'Presentation Slide',
+    category: 'presentation',
+    thumbnail: '/api/placeholder/140/100',
+    width: 800,
+    height: 600,
+    elements: [],
+    tags: ['presentation', 'business', 'slide'],
+    premium: true,
+    author: 'Slide Master',
+    downloads: 1543,
+  },
+  {
+    id: 'tmpl_5',
+    title: 'Wedding Invitation',
+    category: 'invitation',
+    thumbnail: '/api/placeholder/140/100',
+    width: 400,
+    height: 600,
+    elements: [],
+    tags: ['wedding', 'invitation', 'elegant'],
+    premium: false,
+    author: 'Wedding Designs',
+    downloads: 789,
+  },
+  {
+    id: 'tmpl_6',
+    title: 'Logo Design',
+    category: 'logo',
+    thumbnail: '/api/placeholder/140/100',
+    width: 300,
+    height: 300,
+    elements: [],
+    tags: ['logo', 'branding', 'identity'],
+    premium: true,
+    author: 'Brand Studio',
+    downloads: 2156,
+  },
+];
+
+const CategorySelect = Select.ofType<{ value: string; label: string }>();
+
+const renderCategory: ItemRenderer<{ value: string; label: string }> = (
+  category,
+  { handleClick, modifiers }
+) => {
+  return (
+    <MenuItem
+      active={modifiers.active}
+      key={category.value}
+      onClick={handleClick}
+      text={category.label}
+    />
+  );
+};
+
+export const TemplatesPanel: React.FC = observer(() => {
+  const { theme } = useTheme();
+  const { searchQuery, setSearchQuery, filters, setFilter } = usePanelStore();
+  const { addElement, setCanvasSize } = useCanvasStore();
+  const [selectedCategory, setSelectedCategory] = useState(categories[0]);
+  const [showPremiumOnly, setShowPremiumOnly] = useState(false);
+
+  const filteredTemplates = useMemo(() => {
+    return mockTemplates.filter(template => {
+      // Category filter
+      if (selectedCategory.value !== 'all' && template.category !== selectedCategory.value) {
+        return false;
+      }
+      
+      // Premium filter
+      if (showPremiumOnly && !template.premium) {
+        return false;
+      }
+      
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          template.title.toLowerCase().includes(query) ||
+          template.category.toLowerCase().includes(query) ||
+          template.tags.some(tag => tag.toLowerCase().includes(query))
+        );
+      }
+      
+      return true;
+    });
+  }, [selectedCategory, showPremiumOnly, searchQuery]);
+
+  const handleTemplateClick = (template: Template) => {
+    // Set canvas size to template dimensions
+    setCanvasSize({ width: template.width, height: template.height });
+    
+    // TODO: Load template elements to canvas
+    // For now, just add a placeholder text element
+    const element = {
+      id: `template_${template.id}_${Date.now()}`,
+      type: 'text' as const,
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 40,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      zIndex: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      text: `Template: ${template.title}`,
+      fontFamily: 'Inter, Arial, sans-serif',
+      fontSize: 18,
+      fontWeight: 'normal' as const,
+      fontStyle: 'normal' as const,
+      textAlign: 'left' as const,
+      verticalAlign: 'top' as const,
+      color: '#000000',
+      lineHeight: 1.2,
+      letterSpacing: 0,
+      textDecoration: 'none' as const,
+      textTransform: 'none' as const,
+      wordWrap: true,
+    };
+    
+    addElement(element);
+  };
+
+  return (
+    <PanelContainer theme={theme}>
+      <SearchSection theme={theme}>
+        <InputGroup
+          className="search-input"
+          leftIcon="search"
+          placeholder="Search templates..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          rightElement={
+            searchQuery ? (
+              <Button
+                icon="cross"
+                minimal
+                onClick={() => setSearchQuery('')}
+              />
+            ) : undefined
+          }
+        />
+        
+        <div className="filters">
+          <span className="filter-label">Category:</span>
+          <CategorySelect
+            items={categories}
+            itemRenderer={renderCategory}
+            onItemSelect={(category) => setSelectedCategory(category)}
+            filterable={false}
+          >
+            <Button
+              text={selectedCategory.label}
+              rightIcon="caret-down"
+              minimal
+              small
+            />
+          </CategorySelect>
+          
+          <Button
+            text="Premium"
+            icon={showPremiumOnly ? 'tick' : undefined}
+            intent={showPremiumOnly ? 'primary' : undefined}
+            minimal
+            small
+            onClick={() => setShowPremiumOnly(!showPremiumOnly)}
+          />
+        </div>
+      </SearchSection>
+
+      <TemplateGrid theme={theme} data-testid="templates-grid">
+        {filteredTemplates.length === 0 ? (
+          <LoadingState theme={theme}>
+            No templates found
+          </LoadingState>
+        ) : (
+          filteredTemplates.map((template) => (
+            <TemplateCard
+              key={template.id}
+              theme={theme}
+              onClick={() => handleTemplateClick(template)}
+              data-testid={`template-${template.id}`}
+              role="button"
+              tabIndex={0}
+              aria-label={`Apply ${template.title} template`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleTemplateClick(template);
+                }
+              }}
+            >
+              <div className="template-thumbnail">
+                <div className="placeholder">
+                  {template.width} × {template.height}
+                </div>
+                {template.premium && (
+                  <div className="premium-badge">PRO</div>
+                )}
+              </div>
+              
+              <div className="template-info">
+                <div className="template-title">{template.title}</div>
+                <div className="template-meta">
+                  <div className="template-category">{template.category}</div>
+                  <div className="template-downloads">
+                    {template.downloads.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </TemplateCard>
+          ))
+        )}
+      </TemplateGrid>
+    </PanelContainer>
+  );
+});
+
+TemplatesPanel.displayName = 'TemplatesPanel';

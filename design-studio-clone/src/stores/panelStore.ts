@@ -14,7 +14,10 @@ export type PanelType =
   | 'resize'
   | 'quotes'
   | 'qrcode'
-  | 'ai-image';
+  | 'ai-image'
+  | 'reports'
+  | 'pages'
+  | 'components';
 
 export interface PanelState {
   activePanel: PanelType;
@@ -42,6 +45,8 @@ export interface PanelStore extends PanelState {
   // Panel-specific state getters
   getTemplateFilters: () => { category?: string; premium?: boolean; };
   getPhotoFilters: () => { category?: string; color?: string; orientation?: string; };
+  getReportFilters: () => { category?: string; published?: boolean; public?: boolean; };
+  getComponentFilters: () => { type?: string; category?: string; published?: boolean; };
 }
 
 export const usePanelStore = create<PanelStore>()(
@@ -124,6 +129,24 @@ export const usePanelStore = create<PanelStore>()(
           category: filters.photoCategory,
           color: filters.photoColor,
           orientation: filters.photoOrientation,
+        };
+      },
+
+      getReportFilters: () => {
+        const { filters } = get();
+        return {
+          category: filters.reportCategory,
+          published: filters.reportPublished,
+          public: filters.reportPublic,
+        };
+      },
+
+      getComponentFilters: () => {
+        const { filters } = get();
+        return {
+          type: filters.componentType,
+          category: filters.componentCategory,
+          published: filters.componentPublished,
         };
       },
     }),

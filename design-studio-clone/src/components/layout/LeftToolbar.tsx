@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { observer } from "mobx-react-lite";
-import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaTh as FaDots, FaLayerGroup, FaExpandArrowsAlt } from '@meronex/icons/fa';
+import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaTh as FaDots, FaLayerGroup, FaExpandArrowsAlt, FaFileAlt, FaFile, FaCubes, FaSitemap } from '@meronex/icons/fa';
 import { useTheme } from '../../../contexts/ThemeProvider';
 import { usePanelStore } from '../../stores/panelStore';
 import { TOOLS, Tool } from '../../types/tools';
@@ -153,6 +153,10 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = observer(({
       'quotes': FaFont,
       'qr-code': FaTh,
       'ai-img': FaStar,
+      'reports': FaFileAlt,        // Document/report icon
+      'pages': FaFile,             // File page icon
+      'components': FaCubes,       // Building blocks icon
+      'hierarchy': FaSitemap,      // Tree/hierarchy icon
     };
     return iconMap[toolId] || FaTh;
   };

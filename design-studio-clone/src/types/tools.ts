@@ -31,7 +31,11 @@ export type PanelType =
   | 'resize'
   | 'quotes'
   | 'qrcode'
-  | 'ai-image';
+  | 'ai-image'
+  | 'reports'
+  | 'pages'
+  | 'components'
+  | 'hierarchy';
 
 export interface ToolState {
   activeTool: string;
@@ -191,6 +195,15 @@ export const TOOLS: Tool[] = [
     description: 'Access your saved designs and projects'
   },
   { 
+    id: 'reports', 
+    name: 'Reports', 
+    icon: 'document', 
+    panel: 'reports', 
+    category: 'design',
+    description: 'Create and manage hierarchical reports',
+    shortcut: 'R'
+  },
+  { 
     id: 'templates', 
     name: 'Templates', 
     icon: 'layout', 
@@ -295,6 +308,33 @@ export const TOOLS: Tool[] = [
     category: 'ai',
     description: 'Generate images with AI',
     premium: true
+  },
+  { 
+    id: 'pages', 
+    name: 'Pages', 
+    icon: 'document-duplicate', 
+    panel: 'pages', 
+    category: 'design',
+    description: 'Manage report pages and layouts',
+    shortcut: 'P'
+  },
+  { 
+    id: 'components', 
+    name: 'Components', 
+    icon: 'template', 
+    panel: 'components', 
+    category: 'design',
+    description: 'Reusable design components library',
+    shortcut: 'C'
+  },
+  { 
+    id: 'hierarchy', 
+    name: 'Hierarchy', 
+    icon: 'sitemap', 
+    panel: 'hierarchy', 
+    category: 'design',
+    description: 'Navigate Reports → Pages → Components',
+    shortcut: 'H'
   }
 ];
 

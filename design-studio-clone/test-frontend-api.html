@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend API Connection</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #fff; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #0d5016; }
+        .error { background: #501616; }
+        .info { background: #162950; }
+        button { padding: 10px 20px; margin: 5px; background: #48aff0; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #357abd; }
+        #results { margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+        .photo-item { border: 1px solid #495563; border-radius: 4px; overflow: hidden; }
+        .photo-item img { width: 100%; height: 150px; object-fit: cover; }
+        .photo-info { padding: 8px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Design Studio Frontend API Test</h1>
+    
+    <div class="info status">
+        <strong>Testing API Connection:</strong> http://localhost:3001/api/v1
+    </div>
+
+    <button onclick="testHealthCheck()">Test Health Check</button>
+    <button onclick="testTrendingPhotos()">Test Trending Photos</button>
+    <button onclick="testSearchPhotos()">Test Search Photos</button>
+    <button onclick="testMediaService()">Test MediaService Module</button>
+    <button onclick="clearResults()">Clear Results</button>
+
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/v1';
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testHealthCheck() {
+            addResult('🔍 Testing health check...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/photos/health/status`);
+                const data = await response.json();
+                
+                if (response.ok && data.healthy) {
+                    addResult(`✅ Health check successful: ${data.timestamp}`, 'success');
+                } else {
+                    addResult(`❌ Health check failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Health check error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTrendingPhotos() {
+            addResult('🔍 Testing trending photos...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/photos/trending?per_page=8&page=1`);
+                const data = await response.json();
+                
+                if (response.ok && data.results) {
+                    addResult(`✅ Trending photos loaded: ${data.results.length} photos`, 'success');
+                    
+                    // Display photos in a grid
+                    const photoGrid = document.createElement('div');
+                    photoGrid.className = 'photo-grid';
+                    
+                    data.results.slice(0, 8).forEach(photo => {
+                        const photoItem = document.createElement('div');
+                        photoItem.className = 'photo-item';
+                        photoItem.innerHTML = \`
+                            <img src="\${photo.urls.small}" alt="\${photo.alt_description || 'Photo'}" />
+                            <div class="photo-info">
+                                <strong>\${photo.user.name}</strong><br>
+                                \${photo.width}x\${photo.height}
+                            </div>
+                        \`;
+                        photoGrid.appendChild(photoItem);
+                    });
+                    
+                    document.getElementById('results').appendChild(photoGrid);
+                } else {
+                    addResult(`❌ Trending photos failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Trending photos error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSearchPhotos() {
+            addResult('🔍 Testing search photos...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/photos/search?query=nature&per_page=4&page=1`);
+                const data = await response.json();
+                
+                if (response.ok && data.results) {
+                    addResult(`✅ Search photos loaded: ${data.results.length} photos for "nature"`, 'success');
+                    
+                    // Display sample photo data
+                    const samplePhoto = data.results[0];
+                    if (samplePhoto) {
+                        addResult(`📊 Sample photo data: ID=${samplePhoto.id}, User=${samplePhoto.user.name}, Size=${samplePhoto.width}x${samplePhoto.height}`, 'info');
+                    }
+                } else {
+                    addResult(`❌ Search photos failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Search photos error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMediaService() {
+            addResult('🔍 Testing MediaService import...', 'info');
+            
+            try {
+                // Try to import and test the actual mediaService module
+                const mediaServiceModule = await import('/src/services/mediaService.js');
+                const { mediaService } = mediaServiceModule;
+                
+                addResult('✅ MediaService module loaded successfully', 'success');
+                
+                // Test getTrendingPhotos method
+                const photos = await mediaService.getTrendingPhotos({ page: 1, per_page: 5 });
+                
+                if (photos && photos.length > 0) {
+                    addResult(`✅ MediaService.getTrendingPhotos() returned ${photos.length} photos`, 'success');
+                    addResult(`📊 First photo: ${photos[0].user.name} - ${photos[0].id}`, 'info');
+                } else {
+                    addResult('❌ MediaService.getTrendingPhotos() returned no photos', 'error');
+                }
+                
+            } catch (error) {
+                addResult(`❌ MediaService test error: ${error.message}`, 'error');
+                addResult('💡 This might be expected in a static HTML test. Try opening the actual React app.', 'info');
+            }
+        }
+
+        // Auto-run health check on page load
+        window.addEventListener('load', () => {
+            addResult('🚀 Frontend API Test Loaded', 'info');
+            testHealthCheck();
+        });
+    </script>
+</body>
+</html>

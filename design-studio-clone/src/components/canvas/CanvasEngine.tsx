@@ -2,15 +2,18 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { observer } from "mobx-react-lite";
 // we need observer to update component automatically on any store changes
-import { Stage, Layer, Rect, Text, Image, Group, Circle, Ellipse, RegularPolygon, Star, Arrow, Line } from 'react-konva';
+import { Stage, Layer, Rect, Text, Image, Group, Circle, Ellipse, RegularPolygon, Star, Arrow, Line, Transformer } from 'react-konva';
 import { useCanvas } from '@/hooks/useCanvas';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useMobileTouch } from '@/hooks/useMobileTouch';
 import { TransformControls } from './TransformControls';
+import { VisualFeedback } from './VisualFeedback';
 // Temporarily simplified - complex selection tools disabled
 // import { LassoSelection, useLassoSelection } from './LassoSelection';
 // import { SelectionBox, useSelectionBox } from './SelectionBox';
 // import { styled } from '@styles/goober-setup';
-import type { CanvasElement, TextElement, ImageElement, ShapeElement } from '@/types/canvas';
+import type { CanvasElement, TextElement, ImageElement, ShapeElement, IconElement } from '@/types/canvas';
 
 interface CanvasEngineProps {
   className?: string;
@@ -67,7 +70,7 @@ const GridBackground: React.FC<{ visible: boolean; size: number; zoom: number }>
 
 // Konva element renderer components
 const CanvasTextElement: React.FC<{ element: TextElement; isSelected: boolean }> = React.memo(({ element, isSelected }) => {
-  const { updateElement } = useCanvasStore();
+  const { updateElement, selectElement } = useCanvasStore();
   
   return (
     <Text
@@ -94,31 +97,28 @@ const CanvasTextElement: React.FC<{ element: TextElement; isSelected: boolean }>
       textDecoration={element.textDecoration}
       wrap={element.wordWrap ? 'word' : 'none'}
       listening={!element.locked}
-      draggable={!element.locked && isSelected}
-      stroke={isSelected ? '#007bff' : undefined}
+      draggable={!element.locked}
+      stroke={isSelected ? '#48aff0' : undefined}
       strokeWidth={isSelected ? 1 : 0}
+      onClick={(e) => {
+        e.cancelBubble = true;
+        const isMultiSelect = e.evt.ctrlKey || e.evt.metaKey;
+        selectElement(element.id, isMultiSelect);
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true;
+        selectElement(element.id, false);
+      }}
+      onDragStart={() => {
+        if (!isSelected) {
+          selectElement(element.id, false);
+        }
+      }}
       onDragEnd={(e) => {
         updateElement(element.id, {
           x: e.target.x(),
           y: e.target.y(),
         });
-      }}
-      onTransformEnd={(e) => {
-        const node = e.target;
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
-        
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-          width: Math.max(5, node.width() * scaleX),
-          height: Math.max(5, node.height() * scaleY),
-          rotation: node.rotation(),
-        });
-        
-        // Reset scale
-        node.scaleX(1);
-        node.scaleY(1);
       }}
       perfectDrawEnabled={false} // Performance optimization
       shadowForStrokeEnabled={false} // Performance optimization
@@ -208,30 +208,13 @@ const CanvasImageElement: React.FC<{ element: ImageElement; isSelected: boolean 
           y: e.target.y(),
         });
       }}
-      onTransformEnd={(e) => {
-        const node = e.target;
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
-        
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-          width: Math.max(5, node.width() * scaleX),
-          height: Math.max(5, node.height() * scaleY),
-          rotation: node.rotation(),
-        });
-        
-        // Reset scale
-        node.scaleX(1);
-        node.scaleY(1);
-      }}
       perfectDrawEnabled={false} // Performance optimization
     />
   );
 });
 
 const CanvasIconElement: React.FC<{ element: IconElement; isSelected: boolean }> = React.memo(({ element, isSelected }) => {
-  const { updateElement } = useCanvasStore();
+  const { updateElement, selectElement } = useCanvasStore();
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -277,31 +260,43 @@ const CanvasIconElement: React.FC<{ element: IconElement; isSelected: boolean }>
       visible={element.visible}
       image={image}
       listening={!element.locked}
-      draggable={!element.locked && isSelected}
-      stroke={isSelected ? '#007bff' : undefined}
+      draggable={!element.locked}
+      stroke={isSelected ? '#48aff0' : undefined}
       strokeWidth={isSelected ? 2 : 0}
+      shadowColor={isSelected ? '#48aff0' : undefined}
+      shadowBlur={isSelected ? 8 : 0}
+      shadowOpacity={isSelected ? 0.3 : 0}
+      onClick={(e) => {
+        e.cancelBubble = true;
+        const isMultiSelect = e.evt.ctrlKey || e.evt.metaKey;
+        selectElement(element.id, isMultiSelect);
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true;
+        selectElement(element.id, false);
+      }}
+      onDragStart={() => {
+        if (!isSelected) {
+          selectElement(element.id, false);
+        }
+      }}
       onDragEnd={(e) => {
         updateElement(element.id, {
           x: e.target.x(),
           y: e.target.y(),
         });
       }}
-      onTransformEnd={(e) => {
-        const node = e.target;
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
-        
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-          width: Math.max(5, node.width() * scaleX),
-          height: Math.max(5, node.height() * scaleY),
-          rotation: node.rotation(),
-        });
-        
-        // Reset scale
-        node.scaleX(1);
-        node.scaleY(1);
+      onMouseEnter={(e) => {
+        const stage = e.target.getStage();
+        if (stage && !element.locked) {
+          stage.container().style.cursor = 'pointer';
+        }
+      }}
+      onMouseLeave={(e) => {
+        const stage = e.target.getStage();
+        if (stage) {
+          stage.container().style.cursor = 'default';
+        }
       }}
       perfectDrawEnabled={false}
     />
@@ -332,15 +327,210 @@ const generateIconSVG = (iconName: string, fill: string, stroke?: string, stroke
   const strokeProps = stroke ? `stroke="${stroke}" stroke-width="${strokeWidth || 2}"` : '';
   
   const icons: Record<string, string> = {
-    heart: `<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${fill}" ${strokeProps}/>`,
-    star: `<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="${fill}" ${strokeProps}/>`,
-    circle: `<circle cx="${center}" cy="${center}" r="${center - 2}" fill="${fill}" ${strokeProps}/>`,
-    square: `<rect x="2" y="2" width="${size - 4}" height="${size - 4}" fill="${fill}" ${strokeProps}/>`,
-    triangle: `<path d="M12 2 L22 20 L2 20 Z" fill="${fill}" ${strokeProps}/>`,
-    arrow: `<path d="M5 12h14m-7-7l7 7-7 7" fill="none" stroke="${fill}" stroke-width="${strokeWidth || 2}" stroke-linecap="round" stroke-linejoin="round"/>`,
-    home: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="${fill}" ${strokeProps}/><polyline points="9,22 9,12 15,12 15,22" fill="none" stroke="${stroke || fill}" stroke-width="${strokeWidth || 2}"/>`,
-    user: `<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="${fill}" stroke-width="${strokeWidth || 2}" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="${fill}" stroke-width="${strokeWidth || 2}" stroke-linecap="round" stroke-linejoin="round"/>`,
-    mail: `<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" fill="${fill}" ${strokeProps}/><polyline points="22,6 12,13 2,6" fill="none" stroke="${stroke || '#fff'}" stroke-width="${strokeWidth || 2}"/>`,
+    // Business icons
+    'chart': `<path d="M3 3v18h18M7 12l4-4 4 4 4-4" stroke="${fill}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    'dollar': `<line x1="12" y1="1" x2="12" y2="23" stroke="${fill}" stroke-width="2" stroke-linecap="round"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'office': `<rect x="2" y="3" width="20" height="18" fill="${fill}"/><rect x="8" y="6" width="2" height="2" fill="white"/><rect x="14" y="6" width="2" height="2" fill="white"/>`,
+    'briefcase': `<rect x="2" y="7" width="20" height="14" rx="2" fill="${fill}"/><path d="m16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="white" stroke-width="2" fill="none"/>`,
+    
+    // Communication icons  
+    'envelope': `<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" fill="${fill}"/><polyline points="22,6 12,13 2,6" stroke="white" stroke-width="2" fill="none"/>`,
+    'phone': `<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" fill="${fill}"/>`,
+    'chat': `<path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" fill="${fill}"/>`,
+    'comment': `<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="${fill}"/>`,
+    
+    // Media icons
+    'camera': `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" fill="${fill}"/><circle cx="12" cy="13" r="3" stroke="white" stroke-width="2" fill="none"/>`,
+    'video': `<polygon points="23,7 16,12 23,17" fill="${fill}"/><rect x="1" y="5" width="15" height="14" rx="2" fill="${fill}"/>`,
+    'music': `<path d="M9 18V5l12-2v13" stroke="${fill}" stroke-width="2" fill="none"/><circle cx="6" cy="18" r="3" fill="${fill}"/><circle cx="18" cy="16" r="3" fill="${fill}"/>`,
+    'play': `<polygon points="5,3 19,12 5,21" fill="${fill}"/>`,
+    
+    // Navigation icons
+    'arrow-up': `<path d="m18 15-6-6-6 6" stroke="${fill}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    'arrow-down': `<path d="m6 9 6 6 6-6" stroke="${fill}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    'arrow-left': `<path d="m15 18-6-6 6-6" stroke="${fill}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    'arrow-right': `<path d="m9 18 6-6-6-6" stroke="${fill}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    'menu': `<line x1="4" y1="6" x2="20" y2="6" stroke="${fill}" stroke-width="2"/><line x1="4" y1="12" x2="20" y2="12" stroke="${fill}" stroke-width="2"/><line x1="4" y1="18" x2="20" y2="18" stroke="${fill}" stroke-width="2"/>`,
+    'home': `<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="${fill}"/><polyline points="9,22 9,12 15,12 15,22" stroke="white" stroke-width="2" fill="none"/>`,
+    
+    // Social icons
+    'heart': `<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${fill}"/>`,
+    'star': `<polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="${fill}"/>`,
+    'thumbs-up': `<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" fill="${fill}"/>`,
+    'share': `<circle cx="18" cy="5" r="3" fill="${fill}"/><circle cx="6" cy="12" r="3" fill="${fill}"/><circle cx="18" cy="19" r="3" fill="${fill}"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="${fill}"/>`,
+    
+    // Technology icons
+    'desktop': `<rect width="20" height="14" x="2" y="3" rx="2" fill="${fill}"/><line x1="8" y1="21" x2="16" y2="21" stroke="${fill}" stroke-width="2"/><line x1="12" y1="17" x2="12" y2="21" stroke="${fill}" stroke-width="2"/>`,
+    'mobile-phone': `<rect width="14" height="20" x="5" y="2" rx="2" fill="${fill}"/><path d="M12 18h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>`,
+    'cloud': `<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" fill="${fill}"/>`,
+    'database': `<ellipse cx="12" cy="5" rx="9" ry="3" fill="${fill}"/><path d="m3 5 0 14c0 3 4 3 9 3s9 0 9-3V5" stroke="white" stroke-width="2" fill="none"/>`,
+    
+    // Weather icons
+    'cloud-snow': `<path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" stroke="${fill}" stroke-width="2" fill="none"/><path d="M8 16h.01M12 18h.01M16 16h.01" stroke="${fill}" stroke-width="2" stroke-linecap="round"/>`,
+    'flash': `<polygon points="13,2 3,14 12,14 11,22 21,10 12,10" fill="${fill}"/>`,
+    
+    // Editing icons  
+    'edit': `<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="${fill}" stroke-width="2" fill="none"/><path d="m18.5 2.5 3 3L12 15l-4 1 1-4z" fill="${fill}"/>`,
+    'trash': `<path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" stroke="${fill}" stroke-width="2" fill="none"/><line x1="10" y1="11" x2="10" y2="17" stroke="${fill}" stroke-width="2"/><line x1="14" y1="11" x2="14" y2="17" stroke="${fill}" stroke-width="2"/>`,
+    'duplicate': `<rect width="13" height="13" x="9" y="9" rx="2" stroke="${fill}" stroke-width="2" fill="none"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'undo': `<path d="M3 7v6h6" stroke="${fill}" stroke-width="2" fill="none"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'redo': `<path d="M21 7v6h-6" stroke="${fill}" stroke-width="2" fill="none"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'cut': `<circle cx="6" cy="6" r="3" fill="${fill}"/><circle cx="18" cy="18" r="3" fill="${fill}"/><line x1="10" y1="10" x2="14" y2="14" stroke="${fill}" stroke-width="2"/>`,
+    'copy': `<rect width="14" height="14" x="8" y="8" rx="2" fill="${fill}"/><path d="m4 16c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2" stroke="white" stroke-width="2" fill="none"/>`,
+    'paste': `<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="${fill}" stroke-width="2"/><rect width="8" height="4" x="8" y="2" rx="1" fill="${fill}"/>`,
+    
+    // File & Document icons
+    'document': `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="${fill}"/><polyline points="14,2 14,8 20,8" fill="none" stroke="white" stroke-width="2"/>`,
+    'folder': `<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="${fill}"/>`,
+    'folder-open': `<path d="M12 3l7 7-7 7-7-7z" fill="${fill}"/><path d="M2 7L9 14 2 21" fill="none" stroke="white" stroke-width="2"/>`,
+    'save': `<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" fill="${fill}"/><polyline points="17,21 17,13 7,13 17,21" fill="none" stroke="white" stroke-width="2"/>`,
+    'download': `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'upload': `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'print': `<polyline points="6,9 6,2 18,2 18,9" stroke="${fill}" stroke-width="2" fill="none"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" fill="${fill}"/><rect width="12" height="8" x="6" y="14" fill="white"/>`,
+    
+    // User & People icons
+    'user': `<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="${fill}" stroke-width="2" fill="none"/><circle cx="12" cy="7" r="4" fill="${fill}"/>`,
+    'users': `<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="${fill}" stroke-width="2" fill="none"/><circle cx="9" cy="7" r="4" fill="${fill}"/>`,
+    'person': `<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="${fill}"/>`,
+    'account-circle': `<circle cx="12" cy="12" r="10" fill="${fill}"/><circle cx="12" cy="8" r="3" fill="white"/><path d="M6.62 18.91C8.24 17.31 10.95 16 12 16s3.76 1.31 5.38 2.91" stroke="white" stroke-width="2" fill="none"/>`,
+    
+    // Settings & System icons
+    'settings': `<circle cx="12" cy="12" r="3" fill="${fill}"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" fill="${fill}"/>`,
+    'cog': `<circle cx="12" cy="12" r="3" fill="${fill}"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" stroke="${fill}" stroke-width="2"/>`,
+    'lock': `<rect width="18" height="11" x="3" y="11" rx="2" fill="${fill}"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="white" stroke-width="2" fill="none"/>`,
+    'unlock': `<rect width="18" height="11" x="3" y="11" rx="2" fill="${fill}"/><path d="M7 11V7a5 5 0 0 1 9.9-.8" stroke="white" stroke-width="2" fill="none"/>`,
+    'key': `<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5 0 0l7.5 15.5 5.5-7.5z" fill="${fill}"/>`,
+    
+    // Time & Calendar icons
+    'time': `<circle cx="12" cy="12" r="10" fill="${fill}"/><polyline points="12,6 12,12 16,14" stroke="white" stroke-width="2" fill="none"/>`,
+    'clock': `<circle cx="12" cy="12" r="10" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="12,6 12,12 16,14" stroke="${fill}" stroke-width="2"/>`,
+    'calendar': `<rect width="18" height="18" x="3" y="4" rx="2" fill="${fill}"/><line x1="16" y1="2" x2="16" y2="6" stroke="white" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="white" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="white" stroke-width="2"/>`,
+    'date-range': `<path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.89-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm-5 16H7v-8h7v8z" fill="${fill}"/>`,
+    
+    // Shopping & Commerce icons
+    'shopping-cart': `<circle cx="9" cy="21" r="1" fill="${fill}"/><circle cx="20" cy="21" r="1" fill="${fill}"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'shopping-bag': `<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" fill="${fill}"/><line x1="3" y1="6" x2="21" y2="6" stroke="white" stroke-width="2"/><path d="M16 10a4 4 0 0 1-8 0" stroke="white" stroke-width="2" fill="none"/>`,
+    'credit-card': `<rect width="20" height="14" x="2" y="5" rx="2" fill="${fill}"/><line x1="2" y1="10" x2="22" y2="10" stroke="white" stroke-width="2"/>`,
+    'receipt': `<path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2l-2 2-2-2-2 2-2-2-2 2-2-2-2 2z" fill="${fill}"/><path d="M16 8h-6M16 12h-6M16 16h-6" stroke="white" stroke-width="2"/>`,
+    
+    // Location & Map icons
+    'location': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="${fill}"/><circle cx="12" cy="10" r="3" fill="white"/>`,
+    'map': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2 1,6" fill="${fill}"/><line x1="8" y1="2" x2="8" y2="18" stroke="white" stroke-width="2"/><line x1="16" y1="6" x2="16" y2="22" stroke="white" stroke-width="2"/>`,
+    'compass': `<circle cx="12" cy="12" r="10" fill="${fill}"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88 16.24,7.76" fill="white"/>`,
+    'globe': `<circle cx="12" cy="12" r="10" stroke="${fill}" stroke-width="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${fill}" stroke-width="2"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    
+    // Health & Medical icons  
+    'health': `<path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'heart-pulse': `<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7z" fill="${fill}"/><path d="M3.22 12H9.5l.5-3 2 9 1.5-6H22" stroke="white" stroke-width="2" fill="none"/>`,
+    'plus-circle': `<circle cx="12" cy="12" r="10" fill="${fill}"/><line x1="12" y1="8" x2="12" y2="16" stroke="white" stroke-width="2"/><line x1="8" y1="12" x2="16" y2="12" stroke="white" stroke-width="2"/>`,
+    'minus-circle': `<circle cx="12" cy="12" r="10" fill="${fill}"/><line x1="8" y1="12" x2="16" y2="12" stroke="white" stroke-width="2"/>`,
+    
+    // Search & Filter icons
+    'search': `<circle cx="11" cy="11" r="8" stroke="${fill}" stroke-width="2" fill="none"/><path d="M21 21l-4.35-4.35" stroke="${fill}" stroke-width="2"/>`,
+    'zoom-in': `<circle cx="11" cy="11" r="8" stroke="${fill}" stroke-width="2" fill="none"/><line x1="11" y1="8" x2="11" y2="14" stroke="${fill}" stroke-width="2"/><line x1="8" y1="11" x2="14" y2="11" stroke="${fill}" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="${fill}" stroke-width="2"/>`,
+    'zoom-out': `<circle cx="11" cy="11" r="8" stroke="${fill}" stroke-width="2" fill="none"/><line x1="8" y1="11" x2="14" y2="11" stroke="${fill}" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="${fill}" stroke-width="2"/>`,
+    'filter': `<polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" fill="${fill}"/>`,
+    
+    // Alert & Status icons
+    'info': `<circle cx="12" cy="12" r="10" fill="${fill}"/><line x1="12" y1="16" x2="12" y2="12" stroke="white" stroke-width="2"/><line x1="12" y1="8" x2="12.01" y2="8" stroke="white" stroke-width="2"/>`,
+    'warning': `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="${fill}"/><line x1="12" y1="9" x2="12" y2="13" stroke="white" stroke-width="2"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="white" stroke-width="2"/>`,
+    'error': `<circle cx="12" cy="12" r="10" fill="${fill}"/><line x1="15" y1="9" x2="9" y2="15" stroke="white" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke="white" stroke-width="2"/>`,
+    'check-circle': `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="${fill}"/><polyline points="22,4 12,14.01 9,11.01" stroke="white" stroke-width="2" fill="none"/>`,
+    'x-circle': `<circle cx="12" cy="12" r="10" fill="${fill}"/><line x1="15" y1="9" x2="9" y2="15" stroke="white" stroke-width="2"/><line x1="9" y1="9" x2="15" y2="15" stroke="white" stroke-width="2"/>`,
+    
+    // Transport icons
+    'car': `<path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M5 17H3v-6l2-5h9l4 5v6h-2" fill="${fill}"/>`,
+    'plane': `<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4s-2 2-3.5 3.5L11 16l-7.8 1.8c-.5.1-.9.6-.9 1.1V20c0 .6.4 1 1 1h1.1c.5 0 1-.4 1.1-.9L17.8 19.2z" fill="${fill}"/>`,
+    'train': `<rect width="16" height="6" x="4" y="3" rx="2" fill="${fill}"/><path d="M4 11V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" stroke="${fill}" stroke-width="2" fill="none"/><path d="M22 17.5c0 .83-.67 1.5-1.5 1.5S19 18.33 19 17.5 19.67 16 20.5 16s1.5.67 1.5 1.5zM22 17.5H2" stroke="${fill}" stroke-width="2" fill="none"/><path d="M5 17.5c0 .83-.67 1.5-1.5 1.5S2 18.33 2 17.5 2.67 16 3.5 16 5 16.67 5 17.5z" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'truck': `<rect width="16" height="13" x="1" y="6" rx="2" fill="${fill}"/><path d="M16 8h5l-5-5v5M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="white"/>`,
+    'ship': `<path d="M2 20a2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1 2.4 2.4 0 0 1 4 0 2.4 2.4 0 0 0 4 0 2.4 2.4 0 0 1 4 0 2.4 2.4 0 0 0 2 1 2.4 2.4 0 0 0 2-1" stroke="${fill}" stroke-width="2" fill="none"/><path d="M6 7.5L18 3l-8.5 13.5L6 7.5z" fill="${fill}"/><path d="M6 10.5v-3h12v3" stroke="white" stroke-width="2" fill="none"/>`,
+    'bike': `<circle cx="18.5" cy="17.5" r="3.5" stroke="${fill}" stroke-width="2" fill="none"/><circle cx="5.5" cy="17.5" r="3.5" stroke="${fill}" stroke-width="2" fill="none"/><path d="m15 6-3 3 3 3" stroke="${fill}" stroke-width="2" fill="none"/><path d="M9 12h4.5l2-3 1.5 0" stroke="${fill}" stroke-width="2" fill="none"/><path d="M17 5h-2l-2 2" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'helicopter': `<path d="M3 10v1c0 6 2 11 3 11h8.5c1 0 3-5 3-11v-1H3z" fill="${fill}"/><path d="M12 5V2h1m0 0h6v1H13v2" stroke="${fill}" stroke-width="2" fill="none"/><path d="M10 5h6l6 4-6 1" stroke="${fill}" stroke-width="2" fill="none"/><path d="M15 17h3" stroke="white" stroke-width="2" fill="none"/>`,
+    
+    // Additional Business icons
+    'trending-up': `<polyline points="22,7 13.5,15.5 8.5,10.5 2,17" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="16,7 22,7 22,13" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'trending-down': `<polyline points="22,17 13.5,8.5 8.5,13.5 2,7" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="16,17 22,17 22,11" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'bar-chart': `<line x1="18" y1="20" x2="18" y2="10" stroke="${fill}" stroke-width="2"/><line x1="12" y1="20" x2="12" y2="4" stroke="${fill}" stroke-width="2"/><line x1="6" y1="20" x2="6" y2="14" stroke="${fill}" stroke-width="2"/>`,
+    'pie-chart': `<path d="M21.21 15.89A10 10 0 1 1 8 2.83" stroke="${fill}" stroke-width="2" fill="none"/><path d="M22 12A10 10 0 0 0 12 2v10z" fill="${fill}"/>`,
+    'activity': `<polyline points="22,12 18,12 15,21 9,3 6,12 2,12" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'percent': `<line x1="19" y1="5" x2="5" y2="19" stroke="${fill}" stroke-width="2"/><circle cx="6.5" cy="6.5" r="2.5" fill="${fill}"/><circle cx="17.5" cy="17.5" r="2.5" fill="${fill}"/>`,
+    
+    // Additional Communication icons
+    'mail-open': `<path d="M21 12v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5" stroke="${fill}" stroke-width="2" fill="none"/><path d="M3 7l9 6 9-6H3z" fill="${fill}"/>`,
+    'message-circle': `<path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" fill="${fill}"/>`,
+    'message-square': `<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="${fill}"/>`,
+    'phone-call': `<path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94" stroke="${fill}" stroke-width="2" fill="none"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" fill="${fill}"/>`,
+    'voicemail': `<circle cx="5.5" cy="11.5" r="4.5" stroke="${fill}" stroke-width="2" fill="none"/><circle cx="18.5" cy="11.5" r="4.5" stroke="${fill}" stroke-width="2" fill="none"/><line x1="10" y1="11.5" x2="14" y2="11.5" stroke="${fill}" stroke-width="2"/>`,
+    'headphones': `<path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke="${fill}" stroke-width="2" fill="none"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" fill="${fill}"/>`,
+    'mic': `<path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z" fill="${fill}"/><path d="M19 10v2a7 7 0 0 1-14 0v-2m7 9v4m-4 0h8" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'speaker': `<rect x="4" y="2" width="16" height="20" rx="2" fill="${fill}"/><circle cx="12" cy="14" r="4" stroke="white" stroke-width="2" fill="none"/><line x1="12" y1="6" x2="12.01" y2="6" stroke="white" stroke-width="2"/>`,
+    
+    // Additional Media icons
+    'pause': `<rect x="6" y="4" width="4" height="16" fill="${fill}"/><rect x="14" y="4" width="4" height="16" fill="${fill}"/>`,
+    'stop': `<rect x="5" y="5" width="14" height="14" fill="${fill}"/>`,
+    'skip-back': `<polygon points="19,20 9,12 19,4 19,20" fill="${fill}"/><line x1="5" y1="19" x2="5" y2="5" stroke="${fill}" stroke-width="2"/>`,
+    'skip-forward': `<polygon points="5,4 15,12 5,20 5,4" fill="${fill}"/><line x1="19" y1="5" x2="19" y2="19" stroke="${fill}" stroke-width="2"/>`,
+    'rewind': `<polygon points="11,19 2,12 11,5 11,19" fill="${fill}"/><polygon points="22,19 13,12 22,5 22,19" fill="${fill}"/>`,
+    'fast-forward': `<polygon points="13,19 22,12 13,5 13,19" fill="${fill}"/><polygon points="2,19 11,12 2,5 2,19" fill="${fill}"/>`,
+    'volume': `<polygon points="11,5 6,9 2,9 2,15 6,15 11,19 11,5" fill="${fill}"/>`,
+    'volume-off': `<polygon points="11,5 6,9 2,9 2,15 6,15 11,19 11,5" fill="${fill}"/><line x1="23" y1="9" x2="17" y2="15" stroke="${fill}" stroke-width="2"/><line x1="17" y1="9" x2="23" y2="15" stroke="${fill}" stroke-width="2"/>`,
+    'volume-low': `<polygon points="11,5 6,9 2,9 2,15 6,15 11,19 11,5" fill="${fill}"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'volume-high': `<polygon points="11,5 6,9 2,9 2,15 6,15 11,19 11,5" fill="${fill}"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'radio': `<circle cx="12" cy="12" r="2" fill="${fill}"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.07 3.93a10 10 0 0 1 0 16.14M3.93 20.07a10 10 0 0 1 0-16.14" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'film': `<rect x="2" y="3" width="20" height="18" rx="2" fill="${fill}"/><line x1="7" y1="3" x2="7" y2="21" stroke="white" stroke-width="2"/><line x1="17" y1="3" x2="17" y2="21" stroke="white" stroke-width="2"/><line x1="2" y1="9" x2="7" y2="9" stroke="white" stroke-width="2"/><line x1="2" y1="15" x2="7" y2="15" stroke="white" stroke-width="2"/>`,
+    
+    // Additional Navigation icons
+    'navigation': `<polygon points="3,11 22,2 13,21 11,13 3,11" fill="${fill}"/>`,
+    'map-pin': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="${fill}"/><circle cx="12" cy="10" r="3" stroke="white" stroke-width="2" fill="none"/>`,
+    'map': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2" fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`,
+    'move': `<polyline points="5,9 2,12 5,15" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="9,5 12,2 15,5" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="15,19 12,22 9,19" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="19,9 22,12 19,15" stroke="${fill}" stroke-width="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${fill}" stroke-width="2"/><line x1="12" y1="2" x2="12" y2="22" stroke="${fill}" stroke-width="2"/>`,
+    'corner-down-right': `<polyline points="15,10 20,15 15,20" stroke="${fill}" stroke-width="2" fill="none"/><path d="M4 4v7a4 4 0 0 0 4 4h12" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'corner-up-left': `<polyline points="9,14 4,9 9,4" stroke="${fill}" stroke-width="2" fill="none"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'crosshair': `<circle cx="12" cy="12" r="10" stroke="${fill}" stroke-width="2" fill="none"/><line x1="22" y1="12" x2="18" y2="12" stroke="${fill}" stroke-width="2"/><line x1="6" y1="12" x2="2" y2="12" stroke="${fill}" stroke-width="2"/><line x1="12" y1="6" x2="12" y2="2" stroke="${fill}" stroke-width="2"/><line x1="12" y1="22" x2="12" y2="18" stroke="${fill}" stroke-width="2"/>`,
+    
+    // Additional Social icons  
+    'bookmark': `<path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="${fill}"/>`,
+    'gift': `<polyline points="20,12 20,22 4,22 4,12" stroke="${fill}" stroke-width="2" fill="none"/><rect x="2" y="7" width="20" height="5" fill="${fill}"/><line x1="12" y1="22" x2="12" y2="7" stroke="white" stroke-width="2"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" stroke="${fill}" stroke-width="2" fill="none"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'award': `<circle cx="12" cy="8" r="7" fill="${fill}"/><polyline points="8.21,13.89 7,23 12,20 17,23 15.79,13.88" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'trophy': `<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" stroke="${fill}" stroke-width="2" fill="none"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" stroke="${fill}" stroke-width="2" fill="none"/><path d="M4 22h16" stroke="${fill}" stroke-width="2" fill="none"/><path d="M10 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34" stroke="${fill}" stroke-width="2" fill="none"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z" fill="${fill}"/>`,
+    'medal': `<circle cx="12" cy="8" r="6" fill="${fill}"/><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47L12 18l-4.182 3.886a.5.5 0 0 1-.81-.47L8.523 12.89" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'flag': `<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="${fill}"/><line x1="4" y1="22" x2="4" y2="15" stroke="${fill}" stroke-width="2"/>`,
+    
+    // Additional Technology icons
+    'smartphone': `<rect x="5" y="2" width="14" height="20" rx="2" fill="${fill}"/><line x1="12" y1="18" x2="12" y2="18" stroke="white" stroke-width="2"/>`,
+    'tablet': `<rect x="4" y="2" width="16" height="20" rx="2" fill="${fill}"/><line x1="12" y1="18" x2="12" y2="18" stroke="white" stroke-width="2"/>`,
+    'laptop': `<path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" fill="${fill}"/>`,
+    'monitor': `<rect width="20" height="14" x="2" y="3" rx="2" fill="${fill}"/><line x1="8" y1="21" x2="16" y2="21" stroke="${fill}" stroke-width="2"/><line x1="12" y1="17" x2="12" y2="21" stroke="${fill}" stroke-width="2"/>`,
+    'server': `<rect x="2" y="2" width="20" height="8" rx="2" ry="2" fill="${fill}"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2" fill="${fill}"/><line x1="6" y1="6" x2="6.01" y2="6" stroke="white" stroke-width="2"/><line x1="6" y1="18" x2="6.01" y2="18" stroke="white" stroke-width="2"/>`,
+    'hard-drive': `<line x1="22" y1="12" x2="2" y2="12" stroke="${fill}" stroke-width="2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" fill="${fill}"/><line x1="6" y1="16" x2="6.01" y2="16" stroke="white" stroke-width="2"/><line x1="10" y1="16" x2="10.01" y2="16" stroke="white" stroke-width="2"/>`,
+    'cpu': `<rect x="4" y="4" width="16" height="16" rx="2" fill="${fill}"/><rect x="9" y="9" width="6" height="6" stroke="white" stroke-width="2" fill="none"/><line x1="9" y1="1" x2="9" y2="4" stroke="${fill}" stroke-width="2"/><line x1="15" y1="1" x2="15" y2="4" stroke="${fill}" stroke-width="2"/><line x1="9" y1="20" x2="9" y2="23" stroke="${fill}" stroke-width="2"/><line x1="15" y1="20" x2="15" y2="23" stroke="${fill}" stroke-width="2"/>`,
+    'wifi': `<path d="M1.42 9a16 16 0 0 1 21.16 0M5 12.55a11 11 0 0 1 14.08 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'bluetooth': `<path d="m6.5 6.5 11 11L12 23l-5.5-5.5 11-11L12 1l5.5 5.5-11 11" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'battery': `<rect x="1" y="6" width="18" height="12" rx="2" ry="2" fill="${fill}"/><line x1="23" y1="13" x2="23" y2="11" stroke="${fill}" stroke-width="2"/>`,
+    'power': `<path d="M18.36 6.64a9 9 0 1 1-12.73 0" stroke="${fill}" stroke-width="2" fill="none"/><line x1="12" y1="2" x2="12" y2="12" stroke="${fill}" stroke-width="2"/>`,
+    
+    // Weather & Nature icons
+    'sun': `<circle cx="12" cy="12" r="5" fill="${fill}"/><line x1="12" y1="1" x2="12" y2="3" stroke="${fill}" stroke-width="2"/><line x1="12" y1="21" x2="12" y2="23" stroke="${fill}" stroke-width="2"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="${fill}" stroke-width="2"/>`,
+    'moon': `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="${fill}"/>`,
+    'sunrise': `<path d="M17 18a5 5 0 0 0-10 0" stroke="${fill}" stroke-width="2" fill="none"/><line x1="12" y1="2" x2="12" y2="9" stroke="${fill}" stroke-width="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64" stroke="${fill}" stroke-width="2"/><line x1="1" y1="18" x2="3" y2="18" stroke="${fill}" stroke-width="2"/>`,
+    'sunset': `<path d="M17 18a5 5 0 0 0-10 0" stroke="${fill}" stroke-width="2" fill="none"/><line x1="12" y1="9" x2="12" y2="2" stroke="${fill}" stroke-width="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64" stroke="${fill}" stroke-width="2"/>`,
+    'wind': `<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" stroke="${fill}" stroke-width="2" fill="none"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2" stroke="${fill}" stroke-width="2" fill="none"/><path d="M14.6 20.6A2 2 0 1 0 16 17H2" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'umbrella': `<path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'thermometer': `<path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0z" fill="${fill}"/><circle cx="12" cy="17" r="1" fill="white"/>`,
+    'droplet': `<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" fill="${fill}"/>`,
+    'leaf': `<path d="M17 8c0-3.87-3.13-7-7-7S3 4.13 3 8a7.001 7.001 0 0 0 11.95 4.95c.38-.39.74-.81 1.05-1.26.98-1.49 1-3.42 1-3.69z" fill="${fill}"/><path d="M8.5 8c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1-1 .45-1 1z" fill="white"/>`,
+    
+    // Additional Editing icons
+    'scissors': `<circle cx="6" cy="6" r="3" stroke="${fill}" stroke-width="2" fill="none"/><circle cx="6" cy="18" r="3" stroke="${fill}" stroke-width="2" fill="none"/><line x1="20" y1="4" x2="8.12" y2="15.88" stroke="${fill}" stroke-width="2"/><line x1="14.47" y1="14.48" x2="20" y2="20" stroke="${fill}" stroke-width="2"/>`,
+    'clipboard': `<rect x="8" y="2" width="8" height="4" rx="1" ry="1" fill="${fill}"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'paperclip': `<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'link': `<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="${fill}" stroke-width="2" fill="none"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'unlink': `<path d="M18.84 12.25 21 10a5 5 0 0 0-7.07-7.07L12 4.91" stroke="${fill}" stroke-width="2" fill="none"/><path d="M5.17 11.75 3 14a5 5 0 0 0 7.07 7.07L12 19.09M15 9l-6 6m4-7 2-2m-8 10 2-2" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    'layers': `<polygon points="12,2 2,7 12,12 22,7" fill="${fill}"/><polyline points="2,17 12,22 22,17" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="2,12 12,17 22,12" stroke="${fill}" stroke-width="2" fill="none"/>`,
+    // Fallback shapes
+    'circle': `<circle cx="${center}" cy="${center}" r="${center - 2}" fill="${fill}" ${strokeProps}/>`,
+    'square': `<rect x="2" y="2" width="${size - 4}" height="${size - 4}" fill="${fill}" ${strokeProps}/>`,
+    'triangle': `<path d="M12 2 L22 20 L2 20 Z" fill="${fill}" ${strokeProps}/>`
   };
   
   const iconPath = icons[iconName] || icons.circle;
@@ -349,7 +539,7 @@ const generateIconSVG = (iconName: string, fill: string, stroke?: string, stroke
 };
 
 const CanvasShapeElement: React.FC<{ element: ShapeElement; isSelected: boolean }> = React.memo(({ element, isSelected }) => {
-  const { updateElement } = useCanvasStore();
+  const { updateElement, selectElement } = useCanvasStore();
   
   // Common properties for all shapes
   const commonProps = {
@@ -362,11 +552,25 @@ const CanvasShapeElement: React.FC<{ element: ShapeElement; isSelected: boolean 
     opacity: element.opacity,
     visible: element.visible,
     fill: element.fill,
-    stroke: element.stroke || (isSelected ? '#007bff' : undefined),
+    stroke: element.stroke || (isSelected ? '#48aff0' : undefined),
     strokeWidth: element.strokeWidth || (isSelected ? 2 : 0),
     dash: element.strokeDashArray,
     listening: !element.locked,
-    draggable: !element.locked && isSelected,
+    draggable: !element.locked,
+    onClick: (e: any) => {
+      e.cancelBubble = true;
+      const isMultiSelect = e.evt.ctrlKey || e.evt.metaKey;
+      selectElement(element.id, isMultiSelect);
+    },
+    onTap: (e: any) => {
+      e.cancelBubble = true;
+      selectElement(element.id, false);
+    },
+    onDragStart: () => {
+      if (!isSelected) {
+        selectElement(element.id, false);
+      }
+    },
     perfectDrawEnabled: false,
     shadowForStrokeEnabled: false,
     onDragEnd: (e: any) => {
@@ -374,23 +578,6 @@ const CanvasShapeElement: React.FC<{ element: ShapeElement; isSelected: boolean 
         x: e.target.x(),
         y: e.target.y(),
       });
-    },
-    onTransformEnd: (e: any) => {
-      const node = e.target;
-      const scaleX = node.scaleX();
-      const scaleY = node.scaleY();
-      
-      updateElement(element.id, {
-        x: node.x(),
-        y: node.y(),
-        width: Math.max(5, node.width() * scaleX),
-        height: Math.max(5, node.height() * scaleY),
-        rotation: node.rotation(),
-      });
-      
-      // Reset scale
-      node.scaleX(1);
-      node.scaleY(1);
     },
   };
 
@@ -575,6 +762,17 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   // const [currentTool, setCurrentTool] = useState<'select' | 'lasso' | 'box'>('select');
+  
+  // Enable keyboard shortcuts for canvas interactions
+  useKeyboardShortcuts({ enabled: true });
+  
+  // Enable mobile touch support
+  const {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleDoubleTap
+  } = useMobileTouch();
   
   const {
     stageRef,
@@ -864,6 +1062,10 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         onClick={handleStageClick}
         onMouseDown={handleStageMouseDown}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onDblTap={handleDoubleTap}
         draggable={selection.length === 0} // Only allow stage dragging when nothing is selected
         
         // Performance optimizations
@@ -1034,6 +1236,9 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
             isActive={isBoxActive}
             onSelectionComplete={handleBoxComplete}
           /> */}
+          
+          {/* Visual feedback and indicators */}
+          <VisualFeedback zoom={zoom} />
           
           {/* Multi-selection indicators */}
           {selection.length > 1 && (

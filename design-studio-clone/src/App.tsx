@@ -320,7 +320,8 @@ const AppContent: React.FC = () => {
           </div>
           
           <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {activeTool !== 'photos' && activeTool !== 'videos' && activeTool !== 'resize' && (
+            {/* All panel headings removed for clean design consistency */}
+            {false && (
               <h3 style={{ color: '#f5f8fa', marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
                 {activeTool === 'templates' ? 'Templates' : 
                  activeTool === 'uploads' ? 'Upload' :

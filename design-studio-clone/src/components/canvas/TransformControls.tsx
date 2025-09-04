@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { Group, Circle, Rect, Line, Arc } from 'react-konva';
+import { Group, Circle, Rect, Line, Arc, Text } from 'react-konva';
 import Konva from 'konva';
 import { useCanvasStore } from '@/stores/canvasStore';
 import type { SelectionBounds } from '@/types/canvas';
@@ -18,7 +18,31 @@ const ROTATION_HANDLE_DISTANCE = 30;
 const STROKE_WIDTH = 1.5;
 const TRANSFORM_COLOR = '#007bff';
 const HANDLE_FILL = '#ffffff';
+const HANDLE_HOVER_COLOR = '#48aff0';
+const HANDLE_ACTIVE_COLOR = '#2563eb';
 const SNAP_THRESHOLD = 5;
+
+// Handle cursor styles for different handle types
+const getCursor = (handleType: string, mode: 'resize' | 'rotate') => {
+  if (mode === 'rotate') return 'grab';
+  
+  switch (handleType) {
+    case 'topLeft':
+    case 'bottomRight':
+      return 'nw-resize';
+    case 'topRight':
+    case 'bottomLeft':
+      return 'ne-resize';
+    case 'topCenter':
+    case 'bottomCenter':
+      return 'ns-resize';
+    case 'leftCenter':
+    case 'rightCenter':
+      return 'ew-resize';
+    default:
+      return 'grab';
+  }
+};
 
 export const TransformControls: React.FC<TransformControlsProps> = ({
   bounds,
@@ -31,6 +55,8 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
   const { zoom, snapToGrid, gridSize, showGuides, elements, selection } = useCanvasStore();
   const [isTransforming, setIsTransforming] = useState(false);
   const [transformMode, setTransformMode] = useState<'resize' | 'rotate' | null>(null);
+  const [hoveredHandle, setHoveredHandle] = useState<string | null>(null);
+  const [activeHandle, setActiveHandle] = useState<string | null>(null);
   
   // Scale handles based on zoom level
   const scaledHandleSize = HANDLE_SIZE / zoom;
@@ -131,10 +157,48 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
     return guides;
   }, [showGuides, enableSnapping, selection, elements, bounds, zoom]);
 
+  // Helper functions for handle interactions
+  const handleMouseEnter = (handleType: string) => () => {
+    setHoveredHandle(handleType);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredHandle(null);
+  };
+
+  const getHandleStyle = (handleType: string) => {
+    const isHovered = hoveredHandle === handleType;
+    const isActive = activeHandle === handleType;
+    
+    return {
+      fill: isActive ? HANDLE_ACTIVE_COLOR : (isHovered ? HANDLE_HOVER_COLOR : HANDLE_FILL),
+      stroke: isActive ? HANDLE_ACTIVE_COLOR : TRANSFORM_COLOR,
+      scale: isActive ? 1.2 : (isHovered ? 1.1 : 1),
+    };
+  };
+
+  const getTooltipText = (handleType: string) => {
+    if (handleType === 'rotate') return 'Rotate';
+    
+    const directions: Record<string, string> = {
+      'topLeft': '↖ Resize',
+      'topCenter': '↑ Resize',
+      'topRight': '↗ Resize',
+      'rightCenter': '→ Resize',
+      'bottomRight': '↘ Resize',
+      'bottomCenter': '↓ Resize',
+      'bottomLeft': '↙ Resize',
+      'leftCenter': '← Resize',
+    };
+    
+    return directions[handleType] || 'Resize';
+  };
+
   const handleMouseDown = (handleType: string, mode: 'resize' | 'rotate') => (e: any) => {
     e.cancelBubble = true;
     setIsTransforming(true);
     setTransformMode(mode);
+    setActiveHandle(handleType);
     onTransformStart?.();
     
     const stage = e.target.getStage();
@@ -263,6 +327,7 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
       stage.off('mouseup', handleMouseUp);
       setIsTransforming(false);
       setTransformMode(null);
+      setActiveHandle(null);
       onTransformEnd?.();
     };
 
@@ -303,35 +368,54 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
       />
 
       {/* Corner resize handles */}
-      {Object.entries(handles.corners).map(([key, pos]) => (
-        <Circle
-          key={`corner-${key}`}
-          x={pos.x}
-          y={pos.y}
-          radius={scaledHandleSize / 2}
-          fill={HANDLE_FILL}
-          stroke={TRANSFORM_COLOR}
-          strokeWidth={scaledStrokeWidth}
-          onMouseDown={handleMouseDown(key, 'resize')}
-          draggable={false}
-        />
-      ))}
+      {Object.entries(handles.corners).map(([key, pos]) => {
+        const handleStyle = getHandleStyle(key);
+        return (
+          <Circle
+            key={`corner-${key}`}
+            x={pos.x}
+            y={pos.y}
+            radius={(scaledHandleSize / 2) * handleStyle.scale}
+            fill={handleStyle.fill}
+            stroke={handleStyle.stroke}
+            strokeWidth={scaledStrokeWidth}
+            onMouseDown={handleMouseDown(key, 'resize')}
+            onMouseEnter={handleMouseEnter(key)}
+            onMouseLeave={handleMouseLeave}
+            draggable={false}
+            shadowColor={hoveredHandle === key ? 'rgba(0, 123, 255, 0.3)' : ''}
+            shadowBlur={hoveredHandle === key ? 4 : 0}
+            shadowOffset={{ x: 0, y: 2 }}
+            shadowOpacity={hoveredHandle === key ? 0.5 : 0}
+          />
+        );
+      })}
 
       {/* Edge resize handles */}
-      {Object.entries(handles.edges).map(([key, pos]) => (
-        <Rect
-          key={`edge-${key}`}
-          x={pos.x - scaledHandleSize / 2}
-          y={pos.y - scaledHandleSize / 2}
-          width={scaledHandleSize}
-          height={scaledHandleSize}
-          fill={HANDLE_FILL}
-          stroke={TRANSFORM_COLOR}
-          strokeWidth={scaledStrokeWidth}
-          onMouseDown={handleMouseDown(key, 'resize')}
-          draggable={false}
-        />
-      ))}
+      {Object.entries(handles.edges).map(([key, pos]) => {
+        const handleStyle = getHandleStyle(key);
+        const scaledSize = scaledHandleSize * handleStyle.scale;
+        return (
+          <Rect
+            key={`edge-${key}`}
+            x={pos.x - scaledSize / 2}
+            y={pos.y - scaledSize / 2}
+            width={scaledSize}
+            height={scaledSize}
+            fill={handleStyle.fill}
+            stroke={handleStyle.stroke}
+            strokeWidth={scaledStrokeWidth}
+            onMouseDown={handleMouseDown(key, 'resize')}
+            onMouseEnter={handleMouseEnter(key)}
+            onMouseLeave={handleMouseLeave}
+            draggable={false}
+            shadowColor={hoveredHandle === key ? 'rgba(0, 123, 255, 0.3)' : ''}
+            shadowBlur={hoveredHandle === key ? 4 : 0}
+            shadowOffset={{ x: 0, y: 2 }}
+            shadowOpacity={hoveredHandle === key ? 0.5 : 0}
+          />
+        );
+      })}
 
       {/* Rotation handle */}
       {enableRotation && (
@@ -350,16 +434,27 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
           />
           
           {/* Rotation handle */}
-          <Circle
-            x={handles.rotationHandle.x}
-            y={handles.rotationHandle.y}
-            radius={scaledHandleSize / 2}
-            fill={HANDLE_FILL}
-            stroke={TRANSFORM_COLOR}
-            strokeWidth={scaledStrokeWidth}
-            onMouseDown={handleMouseDown('rotate', 'rotate')}
-            draggable={false}
-          />
+          {(() => {
+            const handleStyle = getHandleStyle('rotate');
+            return (
+              <Circle
+                x={handles.rotationHandle.x}
+                y={handles.rotationHandle.y}
+                radius={(scaledHandleSize / 2) * handleStyle.scale}
+                fill={handleStyle.fill}
+                stroke={handleStyle.stroke}
+                strokeWidth={scaledStrokeWidth}
+                onMouseDown={handleMouseDown('rotate', 'rotate')}
+                onMouseEnter={handleMouseEnter('rotate')}
+                onMouseLeave={handleMouseLeave}
+                draggable={false}
+                shadowColor={hoveredHandle === 'rotate' ? 'rgba(0, 123, 255, 0.3)' : ''}
+                shadowBlur={hoveredHandle === 'rotate' ? 4 : 0}
+                shadowOffset={{ x: 0, y: 2 }}
+                shadowOpacity={hoveredHandle === 'rotate' ? 0.5 : 0}
+              />
+            );
+          })()}
           
           {/* Rotation arc indicator */}
           {isTransforming && transformMode === 'rotate' && (
@@ -376,6 +471,55 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
               opacity={0.5}
             />
           )}
+        </Group>
+      )}
+
+      {/* Tooltip for hovered handle */}
+      {hoveredHandle && !isTransforming && (
+        <Group>
+          <Rect
+            x={handles.center.x - 30}
+            y={handles.center.y - bounds.height / 2 - 40}
+            width={60}
+            height={20}
+            fill="rgba(0, 0, 0, 0.8)"
+            cornerRadius={4}
+            listening={false}
+          />
+          <Text
+            x={handles.center.x - 28}
+            y={handles.center.y - bounds.height / 2 - 36}
+            text={getTooltipText(hoveredHandle)}
+            fontSize={12 / zoom}
+            fill="#ffffff"
+            fontFamily="Arial, sans-serif"
+            listening={false}
+          />
+        </Group>
+      )}
+
+      {/* Active handle indicator */}
+      {activeHandle && isTransforming && (
+        <Group>
+          <Rect
+            x={handles.center.x - 35}
+            y={handles.center.y + bounds.height / 2 + 10}
+            width={70}
+            height={22}
+            fill="rgba(72, 175, 240, 0.9)"
+            cornerRadius={6}
+            listening={false}
+          />
+          <Text
+            x={handles.center.x - 32}
+            y={handles.center.y + bounds.height / 2 + 16}
+            text={`${getTooltipText(activeHandle)} Active`}
+            fontSize={11 / zoom}
+            fill="#ffffff"
+            fontFamily="Arial, sans-serif"
+            fontStyle="bold"
+            listening={false}
+          />
         </Group>
       )}
 

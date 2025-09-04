@@ -1,58 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from "mobx-react-lite";
 import { Spinner } from '@blueprintjs/core';
+import { mediaService, type Photo } from '../../services/mediaService';
 
 interface SimpleBackground {
   id: string;
-  urls: { small: string };
+  urls: { small: string; regular: string };
   user: { name: string };
   alt_description?: string;
   description?: string;
   type: 'solid' | 'gradient' | 'pattern' | 'image';
   width?: number;
   height?: number;
+  download_url?: string;
 }
 
-// Convert background to SimpleBackground format
-const convertBackground = (bg: any): SimpleBackground => ({
-  id: bg.id,
-  urls: { small: bg.urls.small },
-  user: { name: bg.user.name },
-  alt_description: bg.alt_description,
-  description: bg.description,
-  type: bg.type || 'image',
-  width: bg.width,
-  height: bg.height
+// Convert Unsplash photo to SimpleBackground format
+const convertPhotoToBackground = (photo: Photo): SimpleBackground => ({
+  id: photo.id,
+  urls: { 
+    small: photo.urls.small || photo.urls.thumb,
+    regular: photo.urls.regular
+  },
+  user: { name: photo.user.name },
+  alt_description: photo.alt_description,
+  description: photo.description,
+  type: 'image',
+  width: photo.width,
+  height: photo.height,
+  download_url: photo.download_url
 });
 
 const fetchBackgrounds = async (endpoint: string, isLoadMore = false, page = 1): Promise<{backgrounds: SimpleBackground[], hasMore: boolean}> => {
   try {
     console.log('🎨 fetchBackgrounds called:', { endpoint, isLoadMore, page });
     
-    // For backgrounds, we'll use mock data initially
-    // In a real app, this would call a backgrounds API
+    // Use real Unsplash API through mediaService
+    const photos = await mediaService.getTrendingPhotos({ per_page: 20, page });
+    const backgrounds = photos.map(convertPhotoToBackground);
     
-    // For endless scroll testing with mock data
-    if (isLoadMore) {
-      const additionalBackgrounds = mockBackgrounds.map((bg, index) => ({
+    return {
+      backgrounds,
+      hasMore: photos.length === 20 // Assume more available if we got a full page
+    };
+  } catch (error) {
+    console.error('Failed to fetch backgrounds from API:', error);
+    // Fallback to mock data on API failure
+    const fallbackBackgrounds = isLoadMore ? 
+      mockBackgrounds.map((bg, index) => ({
         ...bg,
         id: `${bg.id}_page${page}_${index}`,
         user: { name: `${bg.user.name} (Page ${page})` }
-      }));
-      return {
-        backgrounds: additionalBackgrounds,
-        hasMore: true
-      };
-    }
+      })) : mockBackgrounds;
     
     return {
-      backgrounds: mockBackgrounds,
-      hasMore: true
-    };
-  } catch (error) {
-    console.error('Failed to fetch backgrounds:', error);
-    return {
-      backgrounds: mockBackgrounds,
+      backgrounds: fallbackBackgrounds,
       hasMore: true
     };
   }
@@ -60,81 +62,159 @@ const fetchBackgrounds = async (endpoint: string, isLoadMore = false, page = 1):
 
 const searchBackgrounds = async (query: string, page = 1): Promise<{backgrounds: SimpleBackground[], hasMore: boolean}> => {
   if (!query.trim()) return {backgrounds: [], hasMore: false};
-  return fetchBackgrounds(`/backgrounds/search?query=${encodeURIComponent(query)}&per_page=20&page=${page}`, page > 1, page);
+  
+  try {
+    console.log('🔍 searchBackgrounds called:', { query, page });
+    
+    // Use real Unsplash API search through mediaService
+    const searchResult = await mediaService.searchPhotos({ 
+      query, 
+      page, 
+      per_page: 20 
+    });
+    
+    const backgrounds = searchResult.results.map(convertPhotoToBackground);
+    
+    return {
+      backgrounds,
+      hasMore: page < searchResult.total_pages
+    };
+  } catch (error) {
+    console.error('Failed to search backgrounds:', error);
+    // Fallback to mock search results
+    const filteredMock = mockBackgrounds.filter(bg => 
+      bg.alt_description?.toLowerCase().includes(query.toLowerCase()) ||
+      bg.description?.toLowerCase().includes(query.toLowerCase())
+    );
+    return {
+      backgrounds: filteredMock,
+      hasMore: false
+    };
+  }
 };
 
 const getTrendingBackgrounds = async (page = 1): Promise<{backgrounds: SimpleBackground[], hasMore: boolean}> => {
-  return fetchBackgrounds(`/backgrounds/trending?per_page=20&page=${page}`, page > 1, page);
+  try {
+    console.log('🔍 getTrendingBackgrounds called with background filter:', { page });
+    
+    // Search specifically for "background" images to get appropriate content
+    const searchResult = await mediaService.searchPhotos({ 
+      query: 'background', 
+      page, 
+      per_page: 20 
+    });
+    
+    const backgrounds = searchResult.results.map(convertPhotoToBackground);
+    
+    return {
+      backgrounds,
+      hasMore: page < searchResult.total_pages
+    };
+  } catch (error) {
+    console.error('Failed to get background images:', error);
+    // Fallback to fetchBackgrounds (which will use mock data on API failure)
+    return fetchBackgrounds(`/backgrounds/trending?per_page=20&page=${page}`, page > 1, page);
+  }
 };
 
 // Mock backgrounds data
 const mockBackgrounds = [
   {
     id: '1',
-    urls: { small: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=400',
+      regular: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=800'
+    },
     user: { name: 'Gradients Co' },
     alt_description: 'Blue purple gradient',
     type: 'gradient' as const
   },
   {
     id: '2', 
-    urls: { small: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400',
+      regular: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800'
+    },
     user: { name: 'Color Studio' },
     alt_description: 'Solid coral background',
     type: 'solid' as const
   },
   {
     id: '3',
-    urls: { small: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=400',
+      regular: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=800'
+    },
     user: { name: 'Pattern Lab' },
     alt_description: 'Geometric pattern',
     type: 'pattern' as const
   },
   {
     id: '4',
-    urls: { small: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      regular: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800'
+    },
     user: { name: 'Nature Pics' },
     alt_description: 'Mountain landscape',
     type: 'image' as const
   },
   {
     id: '5',
-    urls: { small: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400',
+      regular: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800'
+    },
     user: { name: 'Gradient Pro' },
     alt_description: 'Pink orange gradient',
     type: 'gradient' as const
   },
   {
     id: '6',
-    urls: { small: 'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=400',
+      regular: 'https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=800'
+    },
     user: { name: 'Solid Colors' },
     alt_description: 'Deep blue background',
     type: 'solid' as const
   },
   {
     id: '7',
-    urls: { small: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400',
+      regular: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800'
+    },
     user: { name: 'Abstract Art' },
     alt_description: 'Abstract pattern',
     type: 'pattern' as const
   },
   {
     id: '8',
-    urls: { small: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400',
+      regular: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800'
+    },
     user: { name: 'Forest Studio' },
     alt_description: 'Forest background',
     type: 'image' as const
   },
   {
     id: '9',
-    urls: { small: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
+      regular: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800'
+    },
     user: { name: 'Color Wave' },
     alt_description: 'Green blue gradient',
     type: 'gradient' as const
   },
   {
     id: '10',
-    urls: { small: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400' },
+    urls: { 
+      small: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400',
+      regular: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800'
+    },
     user: { name: 'Minimalist' },
     alt_description: 'Clean white background',
     type: 'solid' as const
@@ -285,10 +365,11 @@ export const BackgroundMediaPanel: React.FC = observer(() => {
     console.log('🚀 Drag start for background:', background.id);
     const dragData = {
       type: 'background',
-      src: background.urls.small,
+      src: background.urls.regular || background.urls.small,
       alt: background.alt_description || background.description || 'Background',
       user: background.user.name,
-      backgroundType: background.type
+      backgroundType: background.type,
+      download_url: background.download_url
     };
     console.log('📦 Background drag data:', dragData);
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
@@ -297,15 +378,6 @@ export const BackgroundMediaPanel: React.FC = observer(() => {
     e.dataTransfer.setData('text/plain', background.urls.small);
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'gradient': return '🌈';
-      case 'solid': return '🎨';
-      case 'pattern': return '🔳';
-      case 'image': return '🖼️';
-      default: return '🎨';
-    }
-  };
 
   return (
     <div style={{
@@ -372,7 +444,7 @@ export const BackgroundMediaPanel: React.FC = observer(() => {
           textAlign: 'center',
           marginTop: '8px'
         }}>
-          Backgrounds by <span style={{ color: '#48aff0', fontWeight: '500' }}>Design Studio</span>
+          Photos by <span style={{ color: '#48aff0', fontWeight: '500' }}>Unsplash</span>
         </div>
       </div>
       
@@ -470,24 +542,6 @@ export const BackgroundMediaPanel: React.FC = observer(() => {
                   }}
                 />
 
-              {/* Type indicator */}
-              <div style={{
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                background: 'rgba(0, 0, 0, 0.7)',
-                color: 'white',
-                padding: '2px 6px',
-                borderRadius: '3px',
-                fontSize: '10px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <span style={{ fontSize: '12px' }}>{getTypeIcon(background.type)}</span>
-                {background.type.charAt(0).toUpperCase() + background.type.slice(1)}
-              </div>
 
               <div 
                 className="background-overlay"
@@ -518,7 +572,7 @@ export const BackgroundMediaPanel: React.FC = observer(() => {
                   marginTop: '2px',
                   lineHeight: '1.2'
                 }}>
-                  Design Studio
+                  Unsplash
                 </div>
               </div>
               </div>

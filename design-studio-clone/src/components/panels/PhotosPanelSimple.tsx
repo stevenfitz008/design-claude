@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from "mobx-react-lite";
 import { InputGroup, Spinner } from '@blueprintjs/core';
-
 import { mediaService } from '../../services/mediaService';
 import type { Photo } from '../../services/mediaService';
 
@@ -232,6 +231,11 @@ export const PhotosPanelSimple: React.FC = observer(() => {
   // Load trending photos on component mount
   useEffect(() => {
     console.log('🚀 PhotosPanelSimple mounted, loading trending photos...');
+    console.log('🔧 Environment check:', {
+      VITE_BACKEND_API_URL: import.meta.env.VITE_BACKEND_API_URL,
+      NODE_ENV: import.meta.env.NODE_ENV,
+      MODE: import.meta.env.MODE
+    });
     loadTrendingPhotos();
   }, []);
 
@@ -423,11 +427,17 @@ export const PhotosPanelSimple: React.FC = observer(() => {
                 e.currentTarget.style.borderColor = '#48aff0';
                 e.currentTarget.style.transform = 'translateY(-2px)';
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                // Show overlay
+                const overlay = e.currentTarget.querySelector('.photo-overlay') as HTMLElement;
+                if (overlay) overlay.style.opacity = '1';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#495563';
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = 'none';
+                // Hide overlay
+                const overlay = e.currentTarget.querySelector('.photo-overlay') as HTMLElement;
+                if (overlay) overlay.style.opacity = '0';
               }}
             >
                 <img
@@ -455,21 +465,36 @@ export const PhotosPanelSimple: React.FC = observer(() => {
                     }
                   }}
                 />
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.7))',
-                padding: '12px 8px 8px',
-                color: 'white'
-              }}>
+              <div 
+                className="photo-overlay"
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
+                  padding: '12px 8px 8px',
+                  color: 'white',
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease',
+                  pointerEvents: 'none'
+                }}
+              >
                 <div style={{
-                  fontSize: '10px',
-                  opacity: 0.9,
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  lineHeight: '1.2',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
+                }}>
+                  {photo.user.name}
+                </div>
+                <div style={{
+                  fontSize: '9px',
+                  opacity: 0.8,
+                  marginTop: '2px',
                   lineHeight: '1.2'
                 }}>
-                  Photo by <span style={{ fontWeight: '500' }}>{photo.user.name}</span> on Unsplash
+                  Unsplash
                 </div>
               </div>
               </div>

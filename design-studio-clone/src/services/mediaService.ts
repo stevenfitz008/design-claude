@@ -4,6 +4,13 @@ import type { AxiosResponse } from 'axios';
 // Using our backend API at port 3001  
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://127.0.0.1:3001/api/v1';
 
+// Debug logging
+console.log('🔧 MediaService Configuration:', {
+  VITE_BACKEND_API_URL: import.meta.env.VITE_BACKEND_API_URL,
+  BACKEND_API_URL: BACKEND_API_URL,
+  env_keys: Object.keys(import.meta.env)
+});
+
 // Common interfaces for both photos and videos
 export interface MediaUser {
   id: string | number;
@@ -159,13 +166,31 @@ class MediaService {
         ...params
       };
 
+      console.log('🔍 MediaService.getTrendingPhotos() called with:', {
+        baseURL: this.client.defaults.baseURL,
+        params: defaultParams,
+        fullURL: `${this.client.defaults.baseURL}/photos/trending`
+      });
+
       const response: AxiosResponse<PhotoSearchResponse> = await this.client.get('/photos/trending', {
         params: defaultParams,
       });
 
+      console.log('✅ MediaService.getTrendingPhotos() success:', {
+        status: response.status,
+        resultsCount: response.data.results?.length || 0,
+        totalPages: response.data.total_pages
+      });
+
       return response.data.results || [];
     } catch (error) {
-      console.error('Trending photos API error:', error);
+      console.error('❌ Trending photos API error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        baseURL: this.client.defaults.baseURL
+      });
       this.handleApiError(error);
     }
   }

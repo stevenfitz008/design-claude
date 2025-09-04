@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button, InputGroup, MenuItem, ButtonGroup, Icon } from '@blueprintjs/core';
-import { Select, ItemRenderer } from '@blueprintjs/select';
+import { Select } from '@blueprintjs/select';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { usePanelStore } from '@/stores/panelStore';
 import { useCanvasStore } from '@/stores/canvasStore';
@@ -226,6 +226,7 @@ export const IconsPanel: React.FC = () => {
                 key={icon.id}
                 onClick={() => handleIconClick(icon)}
                 style={{
+                  position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -235,16 +236,23 @@ export const IconsPanel: React.FC = () => {
                   transition: 'all 0.2s ease',
                   backgroundColor: 'transparent',
                   border: `1px solid ${theme.colors?.border || '#495563'}`,
+                  overflow: 'hidden'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = theme.colors?.primary || '#48aff0';
+                  e.currentTarget.style.borderColor = '#48aff0';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                  // Show overlay
+                  const overlay = e.currentTarget.querySelector('.icon-overlay') as HTMLElement;
+                  if (overlay) overlay.style.opacity = '1';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = theme.colors?.border || '#495563';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = 'none';
+                  // Hide overlay
+                  const overlay = e.currentTarget.querySelector('.icon-overlay') as HTMLElement;
+                  if (overlay) overlay.style.opacity = '0';
                 }}
                 title={`Add ${icon.name} icon`}
                 role="button"
@@ -264,6 +272,41 @@ export const IconsPanel: React.FC = () => {
                 }}>
                   {icon.name}
                 </span>
+
+                {/* Hover Overlay */}
+                <div 
+                  className="icon-overlay"
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
+                    padding: '12px 8px 8px',
+                    color: 'white',
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <div style={{
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    lineHeight: '1.2',
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
+                  }}>
+                    {icon.name}
+                  </div>
+                  <div style={{
+                    fontSize: '9px',
+                    opacity: 0.8,
+                    marginTop: '2px',
+                    lineHeight: '1.2',
+                    textTransform: 'capitalize'
+                  }}>
+                    {icon.category}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

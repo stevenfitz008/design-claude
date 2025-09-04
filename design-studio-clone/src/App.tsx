@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout, LeftToolbar, TopNavigation } from './components/basic';
 import { MainCanvas } from './components/layout/MainCanvas';
 import { PhotosPanelSimple } from './components/panels/PhotosPanelSimple';
-import { VideosPanelNew } from './components/panels/VideosPanelNew';
+import { VideosPanel } from './components/panels/VideosPanel';
+import { IconsPanel } from './components/panels/IconsPanel';
 import { TextPanel } from './components/panels/TextPanel';
 import { ShapesPanel } from './components/panels/ShapesPanel';
 import { ResizePanel } from './components/panels/ResizePanel';
@@ -339,7 +340,9 @@ const AppContent: React.FC = () => {
             {activeTool === 'photos' ? (
               <PhotosPanelSimple />
             ) : activeTool === 'videos' ? (
-              <VideosPanelNew />
+              <VideosPanel />
+            ) : activeTool === 'elements' ? (
+              <IconsPanel />
             ) : activeTool === 'text' ? (
               <TextPanel onTemplateSelect={handleTextTemplateSelect} />
             ) : activeTool === 'shapes' ? (

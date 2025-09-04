@@ -297,11 +297,17 @@ export const VideosPanel: React.FC = observer(() => {
                   e.currentTarget.style.borderColor = '#48aff0';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                  // Show overlay
+                  const overlay = e.currentTarget.querySelector('.video-overlay') as HTMLElement;
+                  if (overlay) overlay.style.opacity = '1';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = '#495563';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = 'none';
+                  // Hide overlay
+                  const overlay = e.currentTarget.querySelector('.video-overlay') as HTMLElement;
+                  if (overlay) overlay.style.opacity = '0';
                 }}
               >
                 <img
@@ -317,31 +323,6 @@ export const VideosPanel: React.FC = observer(() => {
                   }}
                 />
 
-                {/* Play Overlay */}
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: '48px',
-                  height: '48px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.8,
-                  transition: 'opacity 0.2s ease'
-                }}>
-                  <div style={{
-                    width: 0,
-                    height: 0,
-                    borderLeft: '12px solid white',
-                    borderTop: '8px solid transparent',
-                    borderBottom: '8px solid transparent',
-                    marginLeft: '3px'
-                  }} />
-                </div>
 
                 {/* Duration Badge */}
                 <div style={{
@@ -358,32 +339,38 @@ export const VideosPanel: React.FC = observer(() => {
                   {formatDuration(video.duration)}
                 </div>
 
-                {/* Video Info Overlay */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.7))',
-                  padding: '12px 8px 8px',
-                  color: 'white'
-                }}>
+                {/* Hover Overlay - Author Name */}
+                <div 
+                  className="video-overlay"
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
+                    padding: '12px 8px 8px',
+                    color: 'white',
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease',
+                    pointerEvents: 'none',
+                    zIndex: 10
+                  }}
+                >
                   <div style={{
-                    fontSize: '10px',
-                    opacity: 0.9,
+                    fontSize: '11px',
+                    fontWeight: '500',
                     lineHeight: '1.2',
-                    marginBottom: '2px'
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
                   }}>
-                    <div style={{ fontWeight: '500' }}>
-                      {formatDimensions(video)}
-                    </div>
+                    {video.user.name}
                   </div>
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: '9px',
                     opacity: 0.8,
+                    marginTop: '2px',
                     lineHeight: '1.2'
                   }}>
-                    Video by <span style={{ fontWeight: '500' }}>{video.user.name}</span> on Pexels
+                    Pexels
                   </div>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 const axios = require('axios');
 
-const BACKEND_URL = 'http://127.0.0.1:3002/api/v1';
-const FRONTEND_URL = 'http://localhost:5173';
+const BACKEND_URL = 'http://127.0.0.1:3001/api/v1';
+const FRONTEND_URL = 'http://localhost:3000';
 
 async function testVideosIntegration() {
   console.log('🎬 Testing Complete Videos Integration...\n');

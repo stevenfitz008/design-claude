@@ -6,7 +6,7 @@ async function testPhotosPanelSizing() {
   
   try {
     // Navigate to the application
-    await page.goto('http://localhost:3002');
+    await page.goto('http://localhost:3000');
     await page.waitForTimeout(2000);
     
     // Click on photos tool to activate photos panel

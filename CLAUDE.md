@@ -396,6 +396,86 @@ POST   /api/v1/export/document     # Document export
 GET    /api/v1/design-system       # Component system
 ```
 
+### 📚 **Complete API Documentation**
+
+**Interactive API Docs**: http://localhost:3001/api/docs#/
+
+The backend provides a comprehensive Swagger/OpenAPI documentation interface with all endpoints, request/response schemas, and the ability to test APIs directly in the browser.
+
+#### **🔐 Authentication Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/auth/status` | Check authentication status | ✅ |
+
+#### **📁 Projects Management** 
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/v1/projects` | Create a new project | ✅ |
+| GET | `/api/v1/projects` | Get all projects with pagination/filters | ✅ |
+| GET | `/api/v1/projects/stats` | Get user project statistics | ✅ |
+| GET | `/api/v1/projects/{id}` | Get specific project by ID | ✅ |
+| PUT | `/api/v1/projects/{id}` | Update project details | ✅ |
+| DELETE | `/api/v1/projects/{id}` | Delete a project | ✅ |
+| POST | `/api/v1/projects/{id}/duplicate` | Duplicate a project | ✅ |
+| PUT | `/api/v1/projects/{id}/open` | Update last opened timestamp | ✅ |
+| GET | `/api/v1/projects/health/status` | Projects service health check | - |
+
+#### **🎨 Templates System**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/templates` | Get templates with pagination/filters | ✅ |
+| GET | `/api/v1/templates/categories` | Get template categories with counts | ✅ |
+| GET | `/api/v1/templates/featured` | Get featured templates | ✅ |
+| GET | `/api/v1/templates/popular` | Get popular templates | ✅ |
+| GET | `/api/v1/templates/user/{userId}` | Get templates by specific user | ✅ |
+| GET | `/api/v1/templates/{id}` | Get specific template details | ✅ |
+| GET | `/api/v1/templates/{id}/similar` | Get similar templates | ✅ |
+| POST | `/api/v1/templates/{id}/use` | Track template usage/download | ✅ |
+| GET | `/api/v1/templates/health/status` | Templates service health check | - |
+
+#### **📸 Photos Integration (Unsplash)**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/photos/search` | Search photos with filters | - |
+| GET | `/api/v1/photos/trending` | Get trending/popular photos | - |
+| GET | `/api/v1/photos/collections` | Get photo collections | - |
+| GET | `/api/v1/photos/{id}` | Get specific photo details | - |
+| POST | `/api/v1/photos/{id}/download` | Track download and get URL | - |
+| GET | `/api/v1/photos/health/status` | Photos service health check | - |
+
+#### **🎬 Videos Integration (Pexels)**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/videos/search` | Search videos with filters | - |
+| GET | `/api/v1/videos/trending` | Get trending/popular videos | - |
+| GET | `/api/v1/videos/{id}` | Get specific video details | - |
+| GET | `/api/v1/videos/health/status` | Videos service health check | - |
+
+#### **🔤 Fonts Integration (Google Fonts)**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/v1/fonts` | Get all fonts with pagination | ✅ |
+| GET | `/api/v1/fonts/search` | Search fonts by name/category | ✅ |
+| GET | `/api/v1/fonts/categories` | Get font categories with counts | ✅ |
+| GET | `/api/v1/fonts/trending` | Get trending fonts | ✅ |
+| GET | `/api/v1/fonts/{family}` | Get specific font family details | ✅ |
+| GET | `/api/v1/fonts/{family}/variants` | Get font variants and download URLs | ✅ |
+| GET | `/api/v1/fonts/health/status` | Fonts service health check | - |
+
+#### **🔧 Key Features**
+
+**Search & Filtering**: Most endpoints support advanced filtering with parameters like:
+- **Pagination**: `page`, `per_page`, `limit`
+- **Search**: `search`, `query`, `family`
+- **Filters**: `category`, `tags`, `orientation`, `isPremium`
+- **Sorting**: `sortBy`, `sortOrder`
+
+**Health Monitoring**: All services provide health check endpoints for monitoring system status
+
+**Rate Limiting**: API endpoints implement proper rate limiting and error handling
+
+**Response Formats**: All endpoints return consistent JSON responses with proper error codes
+
 ### 🔄 Active Development Areas
 
 #### Currently Working On

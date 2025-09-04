@@ -313,6 +313,18 @@ const generateId = (): string => {
   return `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Helper function to generate polygon points
+const generatePolygonPoints = (sides: number, centerX: number, centerY: number, radius: number): number[] => {
+  const points: number[] = [];
+  for (let i = 0; i < sides; i++) {
+    const angle = (i * 2 * Math.PI) / sides - Math.PI / 2; // Start from top
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    points.push(x, y);
+  }
+  return points;
+};
+
 // Helper function to generate basic SVG icons
 const generateIconSVG = (iconName: string, fill: string, stroke?: string, strokeWidth?: number): string => {
   const size = 24;

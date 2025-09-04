@@ -299,52 +299,55 @@ design-studio-backend/
 
 ## Recent Development & Current Status
 
-### 🚀 Latest Improvements (Current Session)
+### 🚀 Latest Improvements (September 4, 2025)
 
-#### Enhanced Scroll System Implementation
-- **Custom Scrollbar Styling**: Implemented webkit scrollbar customization across all scroll containers
-- **Left Toolbar Scroll Fix**: Added visible scroll indicators with gradient fade effects
-- **ResizePanel Scroll Fix**: Resolved container height issues preventing scroll functionality
-  - Root cause: Parent container had `overflow: hidden` blocking child scroll
-  - Solution: Changed to `minHeight: 0` flexbox technique for proper scroll behavior
-- **Consistent UX**: All scroll containers now use themed colors and hover effects
+#### Environment Configuration & API Integration Fixed
+- **Port Standardization**: Resolved conflicting environment files causing wrong port usage
+  - **Frontend**: Now correctly running on http://localhost:3000 (Vite dev server)
+  - **Backend**: Now correctly running on http://localhost:3001/api/v1 (NestJS API)
+- **Environment File Cleanup**: Removed conflicting `.env.local` with wrong port 3002
+- **API Integration Working**: Photos panel now successfully connects to backend API
+- **Comprehensive Debugging**: Added detailed logging to mediaService and components
 
-#### Photo Panel System Updates  
-- **Import Resolution**: Fixed PhotosPanelPremium import paths and dependencies
-- **Service Integration**: Verified Unsplash API service connectivity
-- **Component Architecture**: Modular photo panel system with simple/premium variants
+#### UI/UX Enhancements
+- **Hover Overlays**: Added smooth hover effects to Photos, Videos, and Icons panels
+- **Visual Feedback**: Enhanced component interactions with transitions and shadows
+- **Consistent Styling**: Unified hover states across all media panels
+- **Component Integration**: Properly integrated IconsPanel into main App.tsx
 
-#### Technical Debt Resolution
-- **Compilation Fixes**: Resolved JSX structure and import issues
-- **Development Server**: Hot module replacement working properly
-- **Type Safety**: Full TypeScript integration without errors
+#### Technical Infrastructure Improvements
+- **Enhanced Scroll System**: Custom webkit scrollbars with themed colors and fade indicators
+- **Service Architecture**: Clean separation between frontend services and backend APIs
+- **Error Handling**: Robust fallback systems with detailed error logging
+- **Test Suite Updates**: All test files updated with correct port configurations
 
-### ✅ Backend Integration Success (Latest Update - September 3, 2025)
+### ✅ Backend Integration Success (Latest Update - September 4, 2025)
 
-#### Photos Panel API Integration FIXED
-- **Backend Successfully Running**: NestJS backend operational on port 3002
+#### Photos Panel API Integration FULLY OPERATIONAL
+- **Backend Successfully Running**: NestJS backend operational on port 3001
 - **Frontend Successfully Running**: React application on port 3000
-- **API Endpoints Active**: All photo endpoints mapped and responding
-  - `/api/v1/photos/search` - Search photos via backend
-  - `/api/v1/photos/trending` - Get trending photos  
-  - `/api/v1/photos/health/status` - Health check endpoint
-- **Configuration Fixed**: Frontend .env properly configured to connect to backend on port 3002
-- **Service Architecture**: Clean separation - frontend uses mediaService → backend API → Unsplash integration
-- **API Health Verified**: Backend health check returning `{"healthy":true}` with live timestamps
+- **API Endpoints Active**: All photo endpoints tested and responding correctly
+  - `/api/v1/photos/search` - Search photos via backend ✅
+  - `/api/v1/photos/trending` - Get trending photos ✅
+  - `/api/v1/photos/health/status` - Health check endpoint ✅
+- **Environment Configuration**: Single `.env` file with correct port 3001
+- **Service Architecture**: mediaService → backend API → Unsplash integration working perfectly
+- **API Health Verified**: Backend health check returning real photo data from Unsplash
 
-#### Recent Fixes Applied (Session)
-- **JSX Syntax Error**: Fixed missing export statement in ResizePanel.tsx
-- **Port Configuration**: Backend on 3002, Frontend on 3000, proper environment configuration
-- **Development Servers**: Both servers running stable with hot reloading enabled
-- **API Connectivity**: Confirmed backend can successfully communicate with Unsplash API
-- **Frontend Service**: mediaService.ts configured with correct backend endpoint URL
+#### Recent Critical Fixes Applied (September 4)
+- **Environment Variables**: Fixed Vite environment loading priority issues
+- **Port Configuration**: Standardized on 3001 (backend) / 3000 (frontend)
+- **Conflicting Files**: Removed duplicate `.env.local` causing port conflicts
+- **API Debugging**: Added comprehensive logging to track API calls and responses
+- **Component Updates**: Enhanced PhotosPanelSimple with environment debugging
 
-#### Technical Architecture Status
-- **mediaService.ts**: Uses backend URL `http://localhost:3002/api/v1` via environment variable
-- **PhotosPanelSimple.tsx**: Uses `mediaService.getTrendingPhotos()` for real photo data
+#### Technical Architecture Status (Current)
+- **mediaService.ts**: Uses backend URL `http://localhost:3001/api/v1` via environment variable
+- **PhotosPanelSimple.tsx**: Successfully loads real photos from Unsplash via backend API
 - **Backend Environment**: Configured with UNSPLASH_ACCESS_KEY and PEXELS_API_KEY
-- **Error Handling**: Graceful fallback systems in place for API failures
+- **Error Handling**: Graceful fallback to mock data if API fails
 - **Performance**: Infinite scroll, caching, and optimization systems active
+- **Development**: Hot module replacement and real-time debugging working
 
 ### 🏗️ Backend Infrastructure (Design Studio Backend v0.2.0-alpha.1)
 
@@ -476,9 +479,9 @@ cd design-studio-backend && npm run start:dev
 cd design-studio-clone && npm run dev
 
 # Access:
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:3002
-# API Health: http://localhost:3002/health
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:3001
+# API Health: http://localhost:3001/health
 ```
 
 #### Testing Commands
@@ -498,10 +501,21 @@ npm run test:cov          # Coverage report
 
 ### 🐛 Known Issues & Solutions
 
-#### Fixed Issues
+#### Fixed Issues (September 4, 2025)
+- ✅ **Environment Configuration**: Resolved conflicting .env files causing API connection failures
+- ✅ **Port Conflicts**: Fixed wrong port 3002 vs correct port 3001 in environment variables
+- ✅ **API Integration**: Photos panel now successfully connects to backend API
+- ✅ **Service Architecture**: mediaService properly configured for backend communication
 - ✅ **Scroll Not Working**: Fixed ResizePanel scroll container height calculation
 - ✅ **Import Errors**: Resolved PhotosPanelPremium import paths
 - ✅ **JSX Compilation**: Fixed React Fragment structure issues
+
+#### Environment File Best Practices Implemented
+- **Single Source of Truth**: Using only `.env` file with correct configuration
+- **Port Standardization**: Frontend (3000) and Backend (3001) clearly defined
+- **Vite Environment**: Proper VITE_ prefixed variables for client-side access
+- **Priority Management**: Removed conflicting `.env.local` that was overriding settings
+- **Development Workflow**: Environment changes trigger automatic server restarts
 
 #### Monitoring
 - 🔍 **Performance**: Large photo grids may need virtualization optimization

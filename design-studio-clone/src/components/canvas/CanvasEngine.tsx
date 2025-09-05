@@ -479,7 +479,7 @@ const generateIconSVG = (iconName: string, fill: string, stroke?: string, stroke
     // Additional Navigation icons
     'navigation': `<polygon points="3,11 22,2 13,21 11,13 3,11" fill="${fill}"/>`,
     'map-pin': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="${fill}"/><circle cx="12" cy="10" r="3" stroke="white" stroke-width="2" fill="none"/>`,
-    'map': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2" fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`,
+    'map-filled': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2" fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`,
     'move': `<polyline points="5,9 2,12 5,15" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="9,5 12,2 15,5" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="15,19 12,22 9,19" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="19,9 22,12 19,15" stroke="${fill}" stroke-width="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${fill}" stroke-width="2"/><line x1="12" y1="2" x2="12" y2="22" stroke="${fill}" stroke-width="2"/>`,
     'corner-down-right': `<polyline points="15,10 20,15 15,20" stroke="${fill}" stroke-width="2" fill="none"/><path d="M4 4v7a4 4 0 0 0 4 4h12" stroke="${fill}" stroke-width="2" fill="none"/>`,
     'corner-up-left': `<polyline points="9,14 4,9 9,4" stroke="${fill}" stroke-width="2" fill="none"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" stroke="${fill}" stroke-width="2" fill="none"/>`,

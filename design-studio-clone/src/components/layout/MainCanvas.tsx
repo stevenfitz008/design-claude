@@ -35,7 +35,7 @@ const CanvasContainer: React.FC<{ theme: any; className?: string; children: Reac
 );
 
 const CanvasArea: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{
+  <div className="main-canvas-area" style={{
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
@@ -68,7 +68,7 @@ export const MainCanvas: React.FC<MainCanvasProps> = observer(({ className }) =>
   };
 
   return (
-    <CanvasContainer theme={theme} className={className}>
+    <CanvasContainer theme={theme} className={`main-canvas-container ${className || ''}`}>
       <CanvasTopBar />
       <CanvasArea>
         <CanvasEngine />

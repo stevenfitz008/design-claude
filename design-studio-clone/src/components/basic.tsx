@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 // we need observer to update component automatically on any store changes
 // Import @meronex icons for proper vector icons
-import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaLayerGroup, FaExpandArrowsAlt, FaQuoteLeft, FaQrcode, FaRobot } from '@meronex/icons/fa';
+import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaLayerGroup, FaExpandArrowsAlt, FaQuoteLeft, FaQrcode, FaRobot, FaChart } from '@meronex/icons/fa';
 
 // Basic functional components for testing with minimal styling
 export const LeftToolbar: React.FC<{ activeTool?: string; onToolChange?: (tool: string) => void }> = observer(({ activeTool, onToolChange }) => {
@@ -23,7 +23,8 @@ export const LeftToolbar: React.FC<{ activeTool?: string; onToolChange?: (tool: 
     
     { id: 'quotes', name: 'Quotes', IconComponent: FaQuoteLeft, testId: 'tool-quotes' },
     { id: 'qr-code', name: 'QR Code', IconComponent: FaQrcode, testId: 'tool-qr-code' },
-    { id: 'ai-img', name: 'AI Img', IconComponent: FaRobot, testId: 'tool-ai-img' }
+    { id: 'ai-img', name: 'AI Img', IconComponent: FaRobot, testId: 'tool-ai-img' },
+    { id: 'reports', name: 'Reports', IconComponent: FaChart, testId: 'tool-reports' }
   ];
 
   return (

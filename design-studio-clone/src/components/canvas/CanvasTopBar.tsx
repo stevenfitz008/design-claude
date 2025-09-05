@@ -25,7 +25,8 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
+    clipboard
   } = useCanvasStore();
   
   const selectedElements = getSelectedElements();
@@ -159,7 +160,7 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
             minimal
             small
             onClick={handlePaste}
-            disabled={/* TODO: check if clipboard has content */ false}
+            disabled={clipboard.length === 0}
             style={{ fontSize: '11px', minWidth: '50px' }}
           />
         </>
@@ -324,14 +325,18 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
 
   return (
     <Navbar
-      className={className}
+      className={`bp5-dark canvas-top-bar ${className || ''}`}
       style={{
         backgroundColor: '#2f343c',
         borderBottom: '1px solid #495563',
         height: '36px',
         minHeight: '36px',
         boxShadow: 'none',
-        padding: '0 12px'
+        padding: '0 12px',
+        zIndex: 1000,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center'
       }}
     >
       <Navbar.Group align="left">

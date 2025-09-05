@@ -268,3 +268,97 @@ input, textarea, select {
   text-align: center;
   line-height: 1.2;
 }
+
+/* CANVAS TOP BAR VISIBILITY FIX */
+/* Ensure Canvas Top Bar is always visible and properly styled */
+.bp5-navbar {
+  z-index: 1000 !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  background-color: #2f343c !important;
+  border-bottom: 1px solid #495563 !important;
+  color: #f5f8fa !important;
+}
+
+/* Ensure Blueprint.js navbar components are visible */
+.bp5-navbar .bp5-navbar-group {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
+.bp5-navbar .bp5-button {
+  background-color: transparent !important;
+  color: #f5f8fa !important;
+  border: 1px solid transparent !important;
+}
+
+.bp5-navbar .bp5-button:hover {
+  background-color: rgba(72, 175, 240, 0.1) !important;
+  border-color: #48aff0 !important;
+}
+
+.bp5-navbar .bp5-button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.bp5-navbar .bp5-button-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.bp5-navbar .bp5-divider {
+  height: 20px !important;
+  border-left: 1px solid #495563 !important;
+  margin: 0 8px !important;
+}
+
+/* Canvas Top Bar specific styling */
+.canvas-top-bar {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+/* Ensure the Canvas Top Bar is visible in MainCanvas */
+.main-canvas-container {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  position: relative !important;
+}
+
+.main-canvas-container > .bp5-navbar {
+  flex-shrink: 0 !important;
+  order: -1 !important; /* Ensure it appears at the top */
+}
+
+.main-canvas-area {
+  flex: 1 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Force Blueprint dark theme styles */
+.bp5-dark .bp5-navbar {
+  background-color: #2f343c !important;
+  color: #f5f8fa !important;
+}
+
+.bp5-dark .bp5-button {
+  color: #f5f8fa !important;
+}
+
+.bp5-dark .bp5-button:hover {
+  background-color: rgba(72, 175, 240, 0.1) !important;
+}
+
+.bp5-dark .bp5-icon {
+  color: inherit !important;
+}

@@ -9,9 +9,12 @@ import { TextPanel } from './components/panels/TextPanel';
 import { ShapesPanel } from './components/panels/ShapesPanel';
 import { ResizePanel } from './components/panels/ResizePanel';
 import { BackgroundMediaPanel } from './components/panels/BackgroundMedia';
+import { LayersPanel } from './components/panels/LayersPanel';
+import { ReportsPanel } from './components/panels/ReportsPanel';
 import { useTextEditor } from './hooks/useTextEditor';
 import { preloadEssentialFonts } from './services/googleFonts';
 import { useCanvasStore } from './stores/canvasStore';
+import { useDragTrackingStore } from './stores/dragTrackingStore';
 import type { TextTemplate } from './components/panels/TextPanel';
 
 const AppContent: React.FC = () => {
@@ -19,7 +22,8 @@ const AppContent: React.FC = () => {
   const [projectName] = useState('Untitled Design');
   const [rightPanelVisible, setRightPanelVisible] = useState(true);
   const { createTextFromTemplate } = useTextEditor();
-  const { addElement, elements } = useCanvasStore();
+  const { addElement, elements, undo, redo, canUndo, canRedo, pushHistory } = useCanvasStore();
+  const { startDrag, endDrag, updateDrag, updateDropPreview, clearDropPreview, isDropzoneActive } = useDragTrackingStore();
 
   // Helper function to generate unique IDs
   const generateId = (): string => {
@@ -43,11 +47,11 @@ const AppContent: React.FC = () => {
   };
 
   const handleUndo = () => {
-    console.log('Undo action');
+    undo();
   };
 
   const handleRedo = () => {
-    console.log('Redo action');
+    redo();
   };
 
   const toggleRightPanel = () => {
@@ -75,12 +79,31 @@ const AppContent: React.FC = () => {
   const handleGlobalDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    console.log('🌍 Global drag over');
+    
+    // Update drop preview position
+    const target = e.target as HTMLElement;
+    const canvasElement = document.querySelector('.konvajs-content') || document.querySelector('[data-testid="main-canvas"]');
+    const isOverCanvas = canvasElement && (canvasElement.contains(target) || canvasElement === target);
+    
+    if (isOverCanvas) {
+      const canvasRect = canvasElement.getBoundingClientRect();
+      const dropX = e.clientX - canvasRect.left;
+      const dropY = e.clientY - canvasRect.top;
+      
+      updateDropPreview({
+        visible: true,
+        x: dropX,
+        y: dropY,
+        type: 'canvas-drop-zone'
+      });
+    } else {
+      clearDropPreview();
+    }
   };
 
   const handleGlobalDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    console.log('🌍 Global drop');
+    clearDropPreview();
     
     // Check if drop is on canvas area
     const target = e.target as HTMLElement;
@@ -96,21 +119,37 @@ const AppContent: React.FC = () => {
         const data = JSON.parse(dragData);
         console.log('📦 Global drop data:', data);
         
+        // Track the drop operation  
+        let resultElementId: string | null = null;
+        let success = false;
+        
         // Calculate drop position (simplified - center of canvas area)
         const canvasRect = canvasElement.getBoundingClientRect();
         const dropX = e.clientX - canvasRect.left - 100; // Center the element
         const dropY = e.clientY - canvasRect.top - 100;
         
+        // Start drag tracking
+        startDrag({
+          type: 'panel-to-canvas',
+          sourceType: data.type,
+          sourceData: data,
+          startPosition: { x: e.clientX, y: e.clientY },
+          targetType: 'canvas',
+          metadata: { dragData: data }
+        });
+
         // Handle different types of dragged items
         switch (data.type) {
           case 'test':
             alert('Global drag and drop works: ' + data.message);
+            endDrag(true);
             break;
             
           case 'photo':
             console.log('📸 Adding photo to canvas:', data.src);
+            resultElementId = generateId();
             addElement({
-              id: generateId(),
+              id: resultElementId,
               type: 'image',
               x: Math.max(0, dropX),
               y: Math.max(0, dropY),
@@ -140,12 +179,16 @@ const AppContent: React.FC = () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             });
+            pushHistory('ADD_PHOTO', 'Added photo from drag and drop');
+            success = true;
+            endDrag(true, resultElementId);
             break;
             
           case 'shape':
             console.log('🔷 Adding shape to canvas:', data.shapeType);
+            resultElementId = generateId();
             addElement({
-              id: generateId(),
+              id: resultElementId,
               type: 'shape',
               x: Math.max(0, dropX),
               y: Math.max(0, dropY),
@@ -167,12 +210,16 @@ const AppContent: React.FC = () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             });
+            pushHistory('ADD_SHAPE', `Added ${data.shapeType} from drag and drop`);
+            success = true;
+            endDrag(true, resultElementId);
             break;
             
           case 'video':
             console.log('🎬 Adding video to canvas:', data.src);
+            resultElementId = generateId();
             addElement({
-              id: generateId(),
+              id: resultElementId,
               type: 'video',
               x: Math.max(0, dropX),
               y: Math.max(0, dropY),
@@ -198,6 +245,9 @@ const AppContent: React.FC = () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             });
+            pushHistory('ADD_VIDEO', 'Added video from drag and drop');
+            success = true;
+            endDrag(true, resultElementId);
             break;
             
           case 'text':
@@ -232,6 +282,7 @@ const AppContent: React.FC = () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             });
+            endDrag(true, generateId());
             break;
 
           case 'background':
@@ -261,6 +312,10 @@ const AppContent: React.FC = () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             });
+            endDrag(true, generateId());
+            break;
+          default:
+            endDrag(false); // Unknown type
             break;
         }
       }
@@ -283,8 +338,8 @@ const AppContent: React.FC = () => {
           onShare={handleShare}
           onUndo={handleUndo}
           onRedo={handleRedo}
-          canUndo={false}
-          canRedo={false}
+          canUndo={canUndo()}
+          canRedo={canRedo()}
         />
       }
       leftToolbar={
@@ -383,6 +438,10 @@ const AppContent: React.FC = () => {
               <ResizePanel />
             ) : activeTool === 'background' ? (
               <BackgroundMediaPanel />
+            ) : activeTool === 'layers' ? (
+              <LayersPanel />
+            ) : activeTool === 'reports' ? (
+              <ReportsPanel />
             ) : (
               <div style={{ 
                 display: 'flex',
@@ -406,7 +465,9 @@ const AppContent: React.FC = () => {
                    activeTool === 'resize' ? '📐' :
                    activeTool === 'quotes' ? '💭' :
                    activeTool === 'qr-code' ? '📱' :
-                   activeTool === 'ai-img' ? '🤖' : '📋'}
+                   activeTool === 'ai-img' ? '🤖' :
+                   activeTool === 'reports' ? '📊' : 
+                   activeTool === 'photos' ? '📷' : '📋'}
                 </div>
                 <div>
                   <div style={{ fontSize: '16px', fontWeight: '500', color: '#bfccd6', marginBottom: '8px' }}>
@@ -422,7 +483,8 @@ const AppContent: React.FC = () => {
                      activeTool === 'resize' ? 'Resize' :
                      activeTool === 'quotes' ? 'Quotes' :
                      activeTool === 'qr-code' ? 'QR Code' :
-                     activeTool === 'ai-img' ? 'AI Img' : 'Panel'} Tools
+                     activeTool === 'ai-img' ? 'AI Img' :
+                     activeTool === 'reports' ? 'Reports' : 'Panel'} Tools
                   </div>
                   <div style={{ fontSize: '14px', lineHeight: '1.4', maxWidth: '250px' }}>
                     {activeTool === 'templates' ? 'Choose from thousands of professionally designed templates' :
@@ -437,6 +499,7 @@ const AppContent: React.FC = () => {
                      activeTool === 'quotes' ? 'Add inspirational quotes and text blocks' :
                      activeTool === 'qr-code' ? 'Create custom QR codes for your designs' :
                      activeTool === 'ai-img' ? 'Generate images using AI technology' :
+                     activeTool === 'reports' ? 'Manage your design reports and multi-page documents' :
                      'Select a tool from the left toolbar to get started'}
                   </div>
                 </div>

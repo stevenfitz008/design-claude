@@ -374,12 +374,30 @@ export const useCanvasStore = create<CanvasStore>()(
         set((state) => {
           const newElements = state.elements.map(element => {
             if (ids.includes(element.id)) {
-              return { ...element, ...transform, updatedAt: Date.now() };
+              // Handle flip operations by inverting scale
+              const updates = { ...transform };
+              if ('scaleX' in updates && updates.scaleX === -1) {
+                updates.scaleX = element.scaleX * -1;
+              }
+              if ('scaleY' in updates && updates.scaleY === -1) {
+                updates.scaleY = element.scaleY * -1;
+              }
+              return { ...element, ...updates, updatedAt: Date.now() };
             }
             return element;
           });
           
-          return { ...state, elements: newElements };
+          // Push to history
+          const historyState = createHistoryState(newElements, state.canvasSize, 'TRANSFORM', `Transformed ${ids.length} elements`);
+          const newHistory = state.history.slice(0, state.historyIndex + 1);
+          newHistory.push(historyState);
+          
+          return { 
+            ...state, 
+            elements: newElements,
+            history: newHistory,
+            historyIndex: newHistory.length - 1
+          };
         });
       },
 

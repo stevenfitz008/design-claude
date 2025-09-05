@@ -3,7 +3,7 @@ import { observer } from "mobx-react-lite";
 import { Button, ButtonGroup, Icon, Menu, MenuDivider, MenuItem, Popover } from '@blueprintjs/core';
 import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
-import { HistoryNavigator } from '@/components/ui/HistoryNavigator';
+import { useCanvasStore } from '@/stores/canvasStore';
 
 interface TopNavigationProps {
   projectName?: string;
@@ -38,7 +38,7 @@ const CenterSection = styled.div<{ theme: any }>`
   gap: ${props => props.theme.spacing.sm};
   flex: 1;
   justify-content: center;
-  max-width: 400px;
+  max-width: 800px;
 `;
 
 const RightSection = styled.div<{ theme: any }>`
@@ -93,6 +93,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = observer(({
   canRedo = false
 }) => {
   const { theme } = useTheme();
+  const { canUndo: storeCanUndo, canRedo: storeCanRedo, undo: storeUndo, redo: storeRedo } = useCanvasStore();
+
+  // Use canvas store methods if no external handlers provided
+  const handleUndo = onUndo || storeUndo;
+  const handleRedo = onRedo || storeRedo;
+  const isUndoDisabled = canUndo !== undefined ? !canUndo : !storeCanUndo();
+  const isRedoDisabled = canRedo !== undefined ? !canRedo : !storeCanRedo();
 
   const fileMenu = (
     <Menu>
@@ -149,39 +156,81 @@ export const TopNavigation: React.FC<TopNavigationProps> = observer(({
           <Button minimal icon="edit" className="edit-button" small />
         </ProjectName>
         
-        <HistoryNavigator />
       </CenterSection>
 
       <RightSection theme={theme}>
-        <Popover content={shareMenu} placement="bottom-end">
+        {/* Position and Layer Controls */}
+        <ButtonGroup minimal>
           <Button 
-            intent="primary" 
-            icon="share" 
-            text="Share"
-            onClick={onShare}
-            data-testid="share-button"
+            icon="layers" 
+            minimal 
+            small
+            title="Position" 
           />
-        </Popover>
+          <Button 
+            icon="bring-data" 
+            minimal 
+            small
+            title="Bring to front" 
+          />
+          <Button 
+            icon="send-to-map" 
+            minimal 
+            small
+            title="Send to back" 
+          />
+          <Button 
+            icon="duplicate" 
+            minimal 
+            small
+            title="Duplicate" 
+          />
+          <Button 
+            icon="trash" 
+            minimal 
+            small
+            title="Delete" 
+          />
+          <Button 
+            icon="more" 
+            minimal 
+            small
+            title="More options" 
+          />
+        </ButtonGroup>
         
-        <Button 
-          intent="success" 
-          icon="floppy-disk" 
-          text="Save" 
-          onClick={onSave}
-          data-testid="save-button"
-        />
-        
-        <Button 
-          intent="primary"
-          icon="export"
-          text="Export"
-          onClick={onExport}
-          data-testid="export-button"
-        />
-        
-        <Popover content={helpMenu} placement="bottom-end">
-          <Button minimal icon="help" />
-        </Popover>
+        {/* Project Actions */}
+        <ButtonGroup>
+          <Popover content={shareMenu} placement="bottom-end">
+            <Button 
+              intent="primary" 
+              icon="share" 
+              text="Share"
+              onClick={onShare}
+              data-testid="share-button"
+            />
+          </Popover>
+          
+          <Button 
+            intent="success" 
+            icon="floppy-disk" 
+            text="Save" 
+            onClick={onSave}
+            data-testid="save-button"
+          />
+          
+          <Button 
+            intent="primary"
+            icon="export"
+            text="Export"
+            onClick={onExport}
+            data-testid="export-button"
+          />
+          
+          <Popover content={helpMenu} placement="bottom-end">
+            <Button minimal icon="help" />
+          </Popover>
+        </ButtonGroup>
       </RightSection>
     </NavigationContainer>
   );

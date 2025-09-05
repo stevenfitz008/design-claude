@@ -133,7 +133,7 @@ export const useCanvasStore = create<CanvasStore>()(
       clipboard: [],
       zoom: 1,
       pan: { x: 0, y: 0 },
-      canvasSize: { width: 1200, height: 800 }, // Start larger - will be replaced by autofit
+      canvasSize: { width: 800, height: 500 }, // Default size - will be auto-fit on load
       backgroundColor: '#ffffff',
       showGrid: false,
       gridSize: 20,
@@ -401,51 +401,42 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       fitCanvasToContainer: (containerWidth, containerHeight) => {
-        // Account for the 20px padding we added around the canvas container
-        const containerPadding = 40; // 20px on each side
-        const availableWidth = containerWidth - containerPadding;
-        const availableHeight = containerHeight - containerPadding;
+        // Account for padding and bottom controls
+        const horizontalPadding = 80; // 40px padding on each side
+        const verticalPadding = 120; // Account for bottom zoom controls and page carousel
+        const availableWidth = containerWidth - horizontalPadding;
+        const availableHeight = containerHeight - verticalPadding;
         
-        // Use a good portion of available space but leave room for comfortable viewing
-        const usagePercent = 0.85; // 85% usage for better visibility
+        // Use 80% of available space for optimal viewing
+        const usagePercent = 0.8;
         const targetWidth = availableWidth * usagePercent;
         const targetHeight = availableHeight * usagePercent;
         
-        // Use a standard aspect ratio that works well for design work
-        const standardRatio = 4/3; // 4:3 aspect ratio (1.33:1)
+        // Use 16:10 aspect ratio (golden ratio for design work)
+        const aspectRatio = 16 / 10;
         let canvasWidth, canvasHeight;
         
         // Calculate dimensions based on which constraint is tighter
-        if (targetWidth / targetHeight > standardRatio) {
+        if (targetWidth / targetHeight > aspectRatio) {
           // Height is the limiting factor
           canvasHeight = targetHeight;
-          canvasWidth = canvasHeight * standardRatio;
+          canvasWidth = canvasHeight * aspectRatio;
         } else {
           // Width is the limiting factor  
           canvasWidth = targetWidth;
-          canvasHeight = canvasWidth / standardRatio;
+          canvasHeight = canvasWidth / aspectRatio;
         }
         
-        // Apply minimum sizes
-        canvasWidth = Math.max(400, canvasWidth);  // Minimum 400px width
-        canvasHeight = Math.max(300, canvasHeight); // Minimum 300px height
-        
-        // Ensure we don't exceed available space
-        if (canvasWidth > availableWidth) {
-          canvasWidth = availableWidth;
-          canvasHeight = canvasWidth / standardRatio;
-        }
-        if (canvasHeight > availableHeight) {
-          canvasHeight = availableHeight;
-          canvasWidth = canvasHeight * standardRatio;
-        }
+        // Apply sensible minimum and maximum sizes
+        canvasWidth = Math.max(600, Math.min(canvasWidth, 1400));
+        canvasHeight = Math.max(400, Math.min(canvasHeight, 1000));
         
         const newSize = {
           width: Math.round(canvasWidth),
           height: Math.round(canvasHeight)
         };
         
-        console.log(`📐 Canvas resized to ${newSize.width}x${newSize.height} (container: ${containerWidth}x${containerHeight})`);
+        console.log(`🎯 Auto-fit canvas to ${newSize.width}x${newSize.height} (container: ${containerWidth}x${containerHeight})`);
         
         set((state) => ({ ...state, canvasSize: newSize }));
       },

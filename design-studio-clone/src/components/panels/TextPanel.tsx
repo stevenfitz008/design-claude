@@ -1,9 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { observer } from "mobx-react-lite";
-// we need observer to update component automatically on any store changes  
-import { Tab, Tabs, Spinner } from '@blueprintjs/core';
-import { styled } from 'goober';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { Spinner } from '@blueprintjs/core';
 
 // Text template types
 export interface TextTemplate {
@@ -24,7 +21,7 @@ export interface TextTemplate {
   };
 }
 
-// Pre-designed text templates matching the reference image
+// Pre-designed text templates
 const TEXT_TEMPLATES: TextTemplate[] = [
   {
     id: 'header-1',
@@ -98,427 +95,505 @@ const TEXT_TEMPLATES: TextTemplate[] = [
     style: {
       fontSize: 28,
       fontFamily: 'Dancing Script',
-      fontWeight: '700',
-      color: '#ffffff',
-      textAlign: 'center',
-      lineHeight: 1.2,
-      letterSpacing: 0.5,
-      textTransform: 'none'
-    }
-  },
-  {
-    id: 'marketing-1',
-    name: 'Marketing Proposal',
-    category: 'Business',
-    preview: 'MARKETING\nPROPOSAL',
-    style: {
-      fontSize: 24,
-      fontFamily: 'Montserrat',
-      fontWeight: '800',
-      color: '#ffffff',
-      textAlign: 'left',
-      lineHeight: 1.0,
-      letterSpacing: 1,
-      textTransform: 'uppercase'
-    }
-  },
-  {
-    id: 'operations-1',
-    name: 'Operations Manager',
-    category: 'Business',
-    preview: 'OPERATIONS\nMANAGER',
-    style: {
-      fontSize: 20,
-      fontFamily: 'Inter',
-      fontWeight: '700',
-      color: '#ffffff',
-      textAlign: 'left',
-      lineHeight: 1.1,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase'
-    }
-  },
-  {
-    id: 'sale-1',
-    name: 'End of Season Sale',
-    category: 'Promotional',
-    preview: 'END OF SEASON\nSALE',
-    style: {
-      fontSize: 36,
-      fontFamily: 'Oswald',
-      fontWeight: '900',
-      color: '#ffffff',
-      textAlign: 'center',
-      lineHeight: 1.0,
-      letterSpacing: 1.5,
-      textTransform: 'uppercase'
-    }
-  },
-  {
-    id: 'minimalism-1',
-    name: 'The Future of Design Minimalism',
-    category: 'Editorial',
-    preview: 'The Future of Design\nMINIMALISM',
-    style: {
-      fontSize: 22,
-      fontFamily: 'Inter',
-      fontWeight: '500',
-      color: '#ffffff',
-      textAlign: 'left',
-      lineHeight: 1.2,
-      letterSpacing: 0.3,
-      textTransform: 'none'
-    }
-  },
-  {
-    id: 'invitation-1',
-    name: "You're Invited",
-    category: 'Events',
-    preview: "You're\nInvited",
-    style: {
-      fontSize: 32,
-      fontFamily: 'Playfair Display',
       fontWeight: '400',
       color: '#ffffff',
       textAlign: 'center',
-      lineHeight: 1.1,
-      letterSpacing: 0.8,
-      textTransform: 'none'
-    }
-  },
-  {
-    id: 'price-list-1',
-    name: 'Price List',
-    category: 'Business',
-    preview: 'PRICE LIST:\nPRICING PACKAGE\nMarketing Package\nAdvertising Package',
-    style: {
-      fontSize: 14,
-      fontFamily: 'Inter',
-      fontWeight: '400',
-      color: '#ffffff',
-      textAlign: 'left',
       lineHeight: 1.4,
       letterSpacing: 0,
       textTransform: 'none'
     }
   },
   {
-    id: 'best-way-1',
-    name: 'The Best Way To Get Started',
-    category: 'Motivational',
-    preview: '"The Best Way To\nGet Started Is To\nQuit Talking And\nBegin Doing."\n\n- Walt Disney',
+    id: 'elegant-1',
+    name: 'Elegant',
+    category: 'Stylized',
+    preview: 'Elegant',
     style: {
-      fontSize: 16,
-      fontFamily: 'Merriweather',
+      fontSize: 32,
+      fontFamily: 'Playfair Display',
       fontWeight: '400',
       color: '#ffffff',
-      textAlign: 'left',
+      textAlign: 'center',
+      lineHeight: 1.2,
+      letterSpacing: 1,
+      textTransform: 'none'
+    }
+  },
+  {
+    id: 'quote-1',
+    name: 'Quote text',
+    category: 'Quotes',
+    preview: '"Inspiring quote"',
+    style: {
+      fontSize: 24,
+      fontFamily: 'Georgia',
+      fontWeight: '400',
+      color: '#ffffff',
+      textAlign: 'center',
       lineHeight: 1.5,
       letterSpacing: 0,
       textTransform: 'none'
     }
+  },
+  {
+    id: 'modern-1',
+    name: 'Modern',
+    category: 'Modern',
+    preview: 'MODERN',
+    style: {
+      fontSize: 40,
+      fontFamily: 'Roboto',
+      fontWeight: '900',
+      color: '#ffffff',
+      textAlign: 'left',
+      lineHeight: 1.0,
+      letterSpacing: 3,
+      textTransform: 'uppercase'
+    }
   }
 ];
 
-// Extended template generator for infinite scrolling
-const generateMoreTemplates = (page: number, existingTemplates: TextTemplate[]): TextTemplate[] => {
-  const baseTemplates = TEXT_TEMPLATES;
-  const categories = ['Headers', 'Body', 'Stylized', 'Business', 'Promotional', 'Editorial', 'Events', 'Motivational'];
-  const fonts = ['Montserrat', 'Inter', 'Oswald', 'Dancing Script', 'Playfair Display', 'Merriweather', 'Roboto', 'Lato', 'Open Sans', 'Source Sans Pro'];
-  const colors = ['#ffffff', '#000000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe'];
-  const newTemplates: TextTemplate[] = [];
-
-  for (let i = 0; i < 12; i++) {
-    const templateIndex = (page - 1) * 12 + i;
-    const baseTemplate = baseTemplates[templateIndex % baseTemplates.length];
-    const font = fonts[templateIndex % fonts.length];
-    const color = colors[templateIndex % colors.length];
-    const category = categories[templateIndex % categories.length];
-
-    newTemplates.push({
-      ...baseTemplate,
-      id: `generated-${templateIndex}-${page}`,
-      name: `${category} Style ${templateIndex + 1}`,
-      category: category,
-      style: {
-        ...baseTemplate.style,
-        fontFamily: font,
-        color: color,
-        fontSize: baseTemplate.style.fontSize + (templateIndex % 3) * 4,
-      }
-    });
-  }
-
-  return newTemplates;
+// Generate more templates for infinite scroll
+const generateMoreTemplates = async (page: number, existingTemplates: TextTemplate[]): Promise<TextTemplate[]> => {
+  // Simulate loading delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  return TEXT_TEMPLATES.map((template, index) => ({
+    ...template,
+    id: `${template.id}_page${page}_${index}`,
+    name: `${template.name} (${page})`,
+    style: {
+      ...template.style,
+      color: page % 2 === 0 ? '#ffffff' : '#48aff0' // Alternate colors for variety
+    }
+  }));
 };
 
-const PanelContainer = styled('div')`
-  height: 100%;
-  background: #2f343c;
-  color: #f5f8fa;
-  display: flex;
-  flex-direction: column;
-`;
-
-const TabsContainer = styled('div')`
-  .bp4-tabs {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .bp4-tab-list {
-    background: #2f343c;
-    border-bottom: 1px solid #495563;
-    padding: 0 16px;
-    margin: 0;
-  }
-
-  .bp4-tab {
-    color: #8a9ba8;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 12px 16px;
-    border-radius: 0;
+const fetchTextTemplates = async (endpoint: string, isLoadMore = false, page = 1): Promise<{templates: TextTemplate[], hasMore: boolean}> => {
+  try {
+    console.log('📝 fetchTextTemplates called:', { endpoint, isLoadMore, page });
     
-    &[aria-selected="true"] {
-      color: #48aff0;
-      border-bottom: 2px solid #48aff0;
-      background: transparent;
+    // For endless scroll testing with generated templates
+    if (isLoadMore) {
+      const additionalTemplates = await generateMoreTemplates(page, TEXT_TEMPLATES);
+      return {
+        templates: additionalTemplates,
+        hasMore: true
+      };
     }
     
-    &:hover {
-      color: #bfccd6;
-      background: rgba(72, 175, 240, 0.1);
-    }
+    return {
+      templates: TEXT_TEMPLATES,
+      hasMore: true
+    };
+  } catch (error) {
+    console.error('Failed to fetch text templates:', error);
+    return {
+      templates: TEXT_TEMPLATES,
+      hasMore: true
+    };
   }
+};
 
-  .bp4-tab-panel {
-    flex: 1;
-    padding: 0;
-    overflow: hidden;
+const searchTextTemplates = async (query: string, page = 1): Promise<{templates: TextTemplate[], hasMore: boolean}> => {
+  if (!query.trim()) return {templates: [], hasMore: false};
+  
+  try {
+    console.log('🔍 searchTextTemplates called:', { query, page });
+    
+    // Filter templates based on query
+    const filteredTemplates = TEXT_TEMPLATES.filter(template => 
+      template.name.toLowerCase().includes(query.toLowerCase()) ||
+      template.category.toLowerCase().includes(query.toLowerCase()) ||
+      template.preview.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    // For pagination, slice the results
+    const startIndex = (page - 1) * 12;
+    const endIndex = startIndex + 12;
+    const pageTemplates = filteredTemplates.slice(startIndex, endIndex);
+    
+    return {
+      templates: pageTemplates,
+      hasMore: endIndex < filteredTemplates.length
+    };
+  } catch (error) {
+    console.error('Failed to search text templates:', error);
+    return {
+      templates: TEXT_TEMPLATES.slice(0, 12),
+      hasMore: false
+    };
   }
-`;
+};
 
-const TemplateGrid = styled('div')`
-  padding: 16px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  overflow-y: auto;
-  height: 100%;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #2f343c;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #495563;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: #5c6b77;
-  }
-`;
-
-const TemplateCard = styled('div')`
-  background: #1c2127;
-  border: 1px solid #495563;
-  border-radius: 8px;
-  padding: 16px 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-  text-align: center;
-
-  &:hover {
-    border-color: #48aff0;
-    background: #262b33;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  }
-`;
-
-const TemplatePreview = styled('div')<{ template: TextTemplate }>`
-  font-family: ${props => props.template.style.fontFamily};
-  font-size: ${props => Math.min(props.template.style.fontSize * 0.3, 14)}px;
-  font-weight: ${props => props.template.style.fontWeight};
-  color: #f5f8fa;
-  line-height: ${props => props.template.style.lineHeight};
-  letter-spacing: ${props => props.template.style.letterSpacing}px;
-  text-transform: ${props => props.template.style.textTransform || 'none'};
-  text-align: ${props => props.template.style.textAlign};
-  white-space: pre-line;
-  margin-bottom: 8px;
-  opacity: 0.9;
-  overflow: hidden;
-  max-height: 60px;
-`;
-
-const TemplateName = styled('div')`
-  font-size: 12px;
-  font-weight: 500;
-  color: #8a9ba8;
-  margin-top: auto;
-  opacity: 0.8;
-`;
-
-const LoadingIndicator = styled('div')`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  color: #8a9ba8;
-  font-size: 14px;
-  gap: 10px;
-
-  .bp4-spinner {
-    .bp4-spinner-svg-container {
-      .bp4-spinner-track {
-        stroke: #495563;
-      }
-      .bp4-spinner-head {
-        stroke: #48aff0;
-      }
-    }
-  }
-`;
-
-const MyFontsPanel = styled('div')`
-  padding: 16px;
-  color: #8a9ba8;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-`;
+const getTrendingTextTemplates = async (page = 1): Promise<{templates: TextTemplate[], hasMore: boolean}> => {
+  return fetchTextTemplates(`/text-templates/trending?per_page=12&page=${page}`, page > 1, page);
+};
 
 interface TextPanelProps {
   onTemplateSelect?: (template: TextTemplate) => void;
 }
 
-type TextPanelTab = 'text' | 'my-fonts';
-
+// we need observer to update component automatically on any store changes
 export const TextPanel: React.FC<TextPanelProps> = observer(({ onTemplateSelect }) => {
-  const [activeTab, setActiveTab] = useState<TextPanelTab>('text');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [templates, setTemplates] = useState<TextTemplate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  // Initialize infinite scroll for templates
-  const { 
-    items: templates, 
-    loading, 
-    hasMore, 
-    loadingRef 
-  } = useInfiniteScroll({
-    initialItems: TEXT_TEMPLATES,
-    itemsPerPage: 12,
-    generateItems: generateMoreTemplates,
-    hasMore: true
-  });
+  const handleSearch = async (query: string, isLoadMore = false) => {
+    if (!isLoadMore) {
+      setSearchQuery(query);
+      setPage(1);
+    }
+
+    if (query.trim()) {
+      if (!isLoadMore) setLoading(true);
+      else setLoadingMore(true);
+      setError(null);
+
+      try {
+        const currentPage = isLoadMore ? page + 1 : 1;
+        const { templates: results, hasMore: moreResults } = await searchTextTemplates(query, currentPage);
+
+        if (isLoadMore) {
+          setTemplates(prev => {
+            const existingIds = new Set(prev.map(template => template.id));
+            const newTemplates = results.filter(template => !existingIds.has(template.id));
+            return [...prev, ...newTemplates];
+          });
+          setPage(currentPage);
+        } else {
+          setTemplates(results.length > 0 ? results : TEXT_TEMPLATES);
+        }
+        setHasMore(moreResults);
+      } catch (err) {
+        console.error('Search error:', err);
+        setError('Failed to search text templates');
+        if (!isLoadMore) {
+          setTemplates(TEXT_TEMPLATES);
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    } else {
+      // Show all templates when no search query
+      setTemplates(TEXT_TEMPLATES);
+      setLoading(false);
+      setHasMore(false);
+    }
+  };
+
+  const loadTrendingTemplates = async (isLoadMore = false) => {
+    if (isLoadMore && (loadingMore || !hasMore)) return;
+
+    console.log('📝 loadTrendingTemplates called:', { isLoadMore, currentPage: isLoadMore ? page + 1 : 1 });
+    
+    if (!isLoadMore) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const currentPage = isLoadMore ? page + 1 : 1;
+      console.log('🔄 Calling getTrendingTextTemplates with page:', currentPage);
+      const { templates: results, hasMore: more } = await getTrendingTextTemplates(currentPage);
+      console.log('✅ getTrendingTextTemplates result:', { resultsCount: results.length, hasMore: more });
+      
+      if (isLoadMore) {
+        setTemplates(prev => {
+          const existingIds = new Set(prev.map(template => template.id));
+          const newTemplates = results.filter(template => !existingIds.has(template.id));
+          return [...prev, ...newTemplates];
+        });
+        setPage(currentPage);
+      } else {
+        setTemplates(results.length > 0 ? results : TEXT_TEMPLATES);
+        setPage(1);
+      }
+      setHasMore(more);
+    } catch (err) {
+      console.error('Load trending error:', err);
+      if (!isLoadMore) {
+        setTemplates(TEXT_TEMPLATES);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Load all templates by default on component mount
+  useEffect(() => {
+    console.log('🚀 TextPanel mounted, loading all templates by default...');
+    setTemplates(TEXT_TEMPLATES);
+    setLoading(false);
+    setHasMore(false); // No need for infinite scroll since we load all
+  }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+
+    const timeoutId = setTimeout(() => {
+      const sentinel = document.querySelector('#text-scroll-sentinel');
+
+      if (sentinel) {
+        observer = new IntersectionObserver(
+          (entries) => {
+            const target = entries[0];
+
+            if (target.isIntersecting && !loadingMore && !loading && hasMore) {
+              console.log('🚀 Text infinite scroll triggered, hasMore:', hasMore);
+              if (searchQuery.trim()) {
+                handleSearch(searchQuery, true);
+              } else {
+                loadTrendingTemplates(true);
+              }
+            }
+          },
+          {
+            threshold: 0.1,
+            rootMargin: '100px'
+          }
+        );
+        console.log('📍 Observing text sentinel');
+        observer.observe(sentinel);
+      } else {
+        console.log('❌ Missing text sentinel element');
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [searchQuery, hasMore, loadingMore, loading, page, templates.length]);
 
   const handleTemplateClick = (template: TextTemplate) => {
+    console.log('Text template selected:', template);
     if (onTemplateSelect) {
       onTemplateSelect(template);
     }
   };
 
   const handleDragStart = (e: React.DragEvent, template: TextTemplate) => {
+    console.log('🚀 Drag start for text template:', template.id);
     const dragData = {
       type: 'text',
       text: template.preview,
       fontSize: template.style.fontSize,
       fontFamily: template.style.fontFamily,
       fontWeight: template.style.fontWeight,
-      fontStyle: template.style.fontStyle,
       color: template.style.color,
       textAlign: template.style.textAlign,
-      verticalAlign: 'top',
       lineHeight: template.style.lineHeight,
       letterSpacing: template.style.letterSpacing,
+      textTransform: template.style.textTransform || 'none',
       textDecoration: template.style.textDecoration || 'none'
     };
+    console.log('📦 Text drag data:', dragData);
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
+    // Also set text data as fallback
+    e.dataTransfer.setData('text/plain', template.preview);
   };
 
   return (
-    <PanelContainer>
-      <TabsContainer>
-        <Tabs
-          id="text-panel-tabs"
-          selectedTabId={activeTab}
-          onChange={(tabId: TextPanelTab) => setActiveTab(tabId)}
-          animate={false}
-        >
-          <Tab
-            id="text"
-            title="Text"
-            panel={
-              <TemplateGrid>
-                {templates.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    draggable={true}
-                    onClick={() => handleTemplateClick(template)}
-                    onDragStart={(e) => handleDragStart(e, template)}
-                  >
-                    <TemplatePreview template={template}>
-                      {template.preview}
-                    </TemplatePreview>
-                    <TemplateName>{template.name}</TemplateName>
-                  </TemplateCard>
-                ))}
-                {hasMore && (
-                  <div
-                    ref={loadingRef}
-                    style={{ gridColumn: '1 / -1' }}
-                  >
-                    {loading && (
-                      <LoadingIndicator>
-                        <Spinner size={20} />
-                        Loading more templates...
-                      </LoadingIndicator>
-                    )}
-                  </div>
-                )}
-              </TemplateGrid>
-            }
+    <div style={{
+      height: '100%',
+      width: '100%',
+      background: '#2f343c',
+      color: '#f5f8fa',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Search Bar */}
+      <div style={{ 
+        padding: '16px',
+        borderBottom: '1px solid #495563'
+      }}>
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <div style={{ 
+            color: '#8a9ba8',
+            fontSize: '16px',
+            flexShrink: 0,
+            paddingLeft: '2px'
+          }}>
+            📝
+          </div>
+          <input
+            type="text"
+            placeholder="Search text templates..."
+            value={searchQuery}
+            onChange={(e) => {
+              const value = e.target.value;
+              handleSearch(value);
+            }}
+            style={{
+              flex: 1,
+              minHeight: '36px',
+              backgroundColor: 'rgba(16, 22, 26, 0.3)',
+              border: '1px solid #495563',
+              borderRadius: '3px',
+              padding: '8px 12px',
+              color: '#f5f8fa',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#48aff0';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#495563';
+            }}
           />
-          <Tab
-            id="my-fonts"
-            title="My fonts"
-            panel={
-              <MyFontsPanel>
-                <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>
-                  Aa
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px' }}>
-                  Your Custom Fonts
-                </div>
-                <div style={{ fontSize: '14px', lineHeight: 1.4, maxWidth: '250px' }}>
-                  Upload and manage your custom font files for use in designs
-                </div>
-              </MyFontsPanel>
+          {loading && (
+            <div style={{ flexShrink: 0, paddingRight: '4px' }}>
+              <Spinner size={16} />
+            </div>
+          )}
+        </div>
+        <div style={{
+          fontSize: '11px',
+          color: '#8a9ba8',
+          textAlign: 'center',
+          marginTop: '8px'
+        }}>
+          Text templates by <span style={{ color: '#48aff0', fontWeight: '500' }}>Design Studio</span>
+        </div>
+      </div>
+      
+
+      {/* Text Templates Grid */}
+      <div 
+        id="text-scroll-container"
+        style={{
+          position: 'absolute',
+          top: '76px', // Account for search bar only
+          bottom: '0px',
+          left: '0px',
+          right: '0px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: '16px',
+          boxSizing: 'border-box',
+          // Enhanced scroll styling
+          WebkitScrollbar: {
+            width: '6px'
+          }
+        }}
+        // Add CSS for webkit scrollbar
+        onMouseOver={(e) => {
+          const style = document.createElement('style');
+          style.textContent = `
+            #text-scroll-container::-webkit-scrollbar {
+              width: 6px;
             }
-          />
-        </Tabs>
-      </TabsContainer>
-    </PanelContainer>
+            #text-scroll-container::-webkit-scrollbar-track {
+              background: rgba(47, 52, 60, 0.3);
+              border-radius: 3px;
+            }
+            #text-scroll-container::-webkit-scrollbar-thumb {
+              background: #495563;
+              border-radius: 3px;
+              transition: background-color 0.2s ease;
+            }
+            #text-scroll-container::-webkit-scrollbar-thumb:hover {
+              background: #48aff0;
+            }
+          `;
+          if (!document.head.querySelector('#text-scroll-styles')) {
+            style.id = 'text-scroll-styles';
+            document.head.appendChild(style);
+          }
+        }}
+      >
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '12px'
+        }}>
+          {templates.map((template, index) => (
+            <div
+              key={template.id}
+              draggable={true}
+              onClick={() => handleTemplateClick(template)}
+              onDragStart={(e) => handleDragStart(e, template)}
+              style={{
+                position: 'relative',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                cursor: 'grab',
+                background: '#1c2127',
+                border: '1px solid #495563',
+                transition: 'all 0.2s ease',
+                userSelect: 'none',
+                padding: '16px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '120px',
+                textAlign: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#48aff0';
+                e.currentTarget.style.background = '#262b33';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#495563';
+                e.currentTarget.style.background = '#1c2127';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {/* Template preview */}
+              <div style={{
+                ...template.style,
+                fontSize: Math.min(template.style.fontSize, 24), // Scale down for preview
+                color: template.style.color,
+                fontFamily: template.style.fontFamily,
+                fontWeight: template.style.fontWeight,
+                textAlign: template.style.textAlign,
+                lineHeight: template.style.lineHeight,
+                letterSpacing: template.style.letterSpacing,
+                textTransform: template.style.textTransform,
+                textDecoration: template.style.textDecoration,
+                marginBottom: '8px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '100%'
+              }}>
+                {template.preview}
+              </div>
+
+              {/* Template name */}
+              <div style={{
+                fontSize: '12px',
+                color: '#8a9ba8',
+                fontWeight: '500',
+                marginTop: '4px'
+              }}>
+                {template.name}
+              </div>
+            </div>
+          ))}
+          
+        </div>
+      </div>
+    </div>
   );
 });
 

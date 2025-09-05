@@ -109,13 +109,23 @@ export const useCanvas = (): CanvasHookReturn => {
     
     const stageWidth = stage.width();
     const stageHeight = stage.height();
-    const scaleX = stageWidth / canvasSize.width;
-    const scaleY = stageHeight / canvasSize.height;
-    const newZoom = Math.min(scaleX, scaleY) * 0.9; // 90% to add some padding
+    
+    // Account for bottom zoom controls and some padding
+    const availableWidth = stageWidth - 40; // 20px padding on each side
+    const availableHeight = stageHeight - 80; // Account for bottom controls
+    
+    const scaleX = availableWidth / canvasSize.width;
+    const scaleY = availableHeight / canvasSize.height;
+    const newZoom = Math.min(scaleX, scaleY, 1.0); // Max 100% zoom for fitting
     
     setZoom(newZoom);
-    centerView();
-  }, [canvasSize, setZoom, centerView]);
+    
+    // Center the canvas perfectly
+    const centerX = (stageWidth - canvasSize.width * newZoom) / 2;
+    const centerY = (stageHeight - canvasSize.height * newZoom) / 2;
+    
+    setPan({ x: centerX, y: centerY });
+  }, [canvasSize, setZoom, setPan]);
 
   const zoomToSelection = useCallback(() => {
     const selectedElements = useCanvasStore.getState().getSelectedElements();

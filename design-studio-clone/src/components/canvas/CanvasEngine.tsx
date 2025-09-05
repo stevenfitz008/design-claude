@@ -34,19 +34,16 @@ const CanvasContainer: React.FC<{
       position: 'relative',
       width: '100%',
       height: '100%',
-      padding: 20, // Add small gap around canvas
+      padding: 0,
       margin: 0,
       overflow: 'hidden',
       cursor: 'default',
-      transform: 'translateZ(0)', // Force GPU acceleration
+      transform: 'translateZ(0)',
       willChange: 'transform',
       WebkitUserSelect: 'none',
       MozUserSelect: 'none',
       msUserSelect: 'none',
-      userSelect: 'none',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center'
+      userSelect: 'none'
     }}
   >
     {children}
@@ -814,57 +811,69 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
     return [...elements].sort((a, b) => a.zIndex - b.zIndex);
   }, [elements]);
 
-  // Calculate optimal canvas size based on container - FRAME EDGE-TO-EDGE
+  // Calculate optimal canvas size for auto-fit behavior
   const calculateCanvasSize = useCallback(() => {
     if (containerRef.current) {
       const { width, height } = containerRef.current.getBoundingClientRect();
       
-      // Frame goes edge-to-edge, but keep canvas content reasonably sized
-      const availableWidth = width - 40; // Keep some margin for canvas content
-      const availableHeight = height - 40;
+      // Account for padding and bottom controls
+      const availableWidth = width - 80; // 40px padding on each side
+      const availableHeight = height - 120; // Account for bottom zoom controls
       
-      // Frame fills container, canvas content stays centered and reasonably sized
-      const targetWidth = availableWidth;
-      const targetHeight = availableHeight;
+      // Use 85% of available space for comfortable viewing
+      const usableWidth = availableWidth * 0.85;
+      const usableHeight = availableHeight * 0.85;
       
-      // Keep canvas content at reasonable size (not edge-to-edge)
-      let canvasWidth = Math.max(Math.min(targetWidth, 1000), 300);
-      let canvasHeight = Math.max(Math.min(targetHeight, 700), 200);
+      // Maintain a good aspect ratio (16:10 for design work)
+      const aspectRatio = 16 / 10;
+      let canvasWidth, canvasHeight;
       
-      const newCanvasSize = { 
-        width: Math.round(canvasWidth), 
-        height: Math.round(canvasHeight) 
+      if (usableWidth / usableHeight > aspectRatio) {
+        // Height is the limiting factor
+        canvasHeight = Math.max(400, usableHeight);
+        canvasWidth = canvasHeight * aspectRatio;
+      } else {
+        // Width is the limiting factor  
+        canvasWidth = Math.max(600, usableWidth);
+        canvasHeight = canvasWidth / aspectRatio;
+      }
+      
+      // Ensure minimum sizes
+      canvasWidth = Math.max(600, Math.min(canvasWidth, 1400));
+      canvasHeight = Math.max(400, Math.min(canvasHeight, 1000));
+      
+      const newCanvasSize = {
+        width: Math.round(canvasWidth),
+        height: Math.round(canvasHeight)
       };
       
-      // Update more responsively for autofit (lower threshold)
-      if (Math.abs(newCanvasSize.width - canvasSize.width) > 10 || 
-          Math.abs(newCanvasSize.height - canvasSize.height) > 10) {
-        console.log('📐 Canvas frame edge-to-edge, content sized:', newCanvasSize, `Container: ${width}x${height}`);
+      // Update if size changed significantly
+      if (Math.abs(newCanvasSize.width - canvasSize.width) > 20 || 
+          Math.abs(newCanvasSize.height - canvasSize.height) > 20) {
+        console.log('📐 Auto-fit canvas size:', newCanvasSize, `from container: ${width}x${height}`);
         setCanvasSize(newCanvasSize);
       }
     }
   }, [canvasSize, setCanvasSize]);
 
-  // Handle container resize
+  // Handle container resize with improved auto-fit
   const handleResize = useCallback(() => {
     if (containerRef.current) {
       const { width, height } = containerRef.current.getBoundingClientRect();
       setDimensions({ width, height });
       
-      // AUTOFIT: Update both the canvas size in store AND the stage size
-      fitCanvasToContainer(width, height); // Update canvas content size for autofit
+      // Update stage size first
+      fitStageIntoParentContainer();
+      
+      // Then calculate optimal canvas size
       calculateCanvasSize();
       
-      // Delay fitting to ensure canvas size is updated first, then zoom to fit
-      requestAnimationFrame(() => {
-        fitStageIntoParentContainer();
-        // Ensure the entire canvas is visible after resizing
-        requestAnimationFrame(() => {
-          zoomToFit();
-        });
-      });
+      // Auto-fit with slight delay to ensure everything is updated
+      setTimeout(() => {
+        zoomToFit();
+      }, 100);
     }
-  }, [fitStageIntoParentContainer, calculateCanvasSize, fitCanvasToContainer, zoomToFit]);
+  }, [fitStageIntoParentContainer, calculateCanvasSize, zoomToFit]);
 
   useEffect(() => {
     // Initial resize calculation

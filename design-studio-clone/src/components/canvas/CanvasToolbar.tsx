@@ -72,7 +72,9 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = observer(({
   onEffects,
   onFitToPage,
   onApplyMask,
+  onCrop,
   onAnimate,
+  onRemoveBackground,
   onDelete,
   onDuplicate,
   onBringToFront,
@@ -157,6 +159,32 @@ const CanvasToolbar: React.FC<CanvasToolbarProps> = observer(({
             disabled={!hasSelection}
           />
         </Tooltip>
+        
+        {onCrop && (
+          <Tooltip content="Crop">
+            <ActionButton
+              theme={theme}
+              icon="crop"
+              minimal
+              small
+              onClick={onCrop}
+              disabled={!hasSelection}
+            />
+          </Tooltip>
+        )}
+        
+        {onRemoveBackground && (
+          <Tooltip content="Remove background">
+            <ActionButton
+              theme={theme}
+              icon="clean"
+              minimal
+              small
+              onClick={onRemoveBackground}
+              disabled={!hasSelection}
+            />
+          </Tooltip>
+        )}
       </ToolbarSection>
 
       <SectionDivider theme={theme} />

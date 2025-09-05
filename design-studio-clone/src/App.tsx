@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './styles/goober-setup'; // Initialize Goober CSS-in-JS setup
 import { AppLayout, LeftToolbar, TopNavigation } from './components/basic';
 import { MainCanvas } from './components/layout/MainCanvas';
 import { PhotosPanelSimple } from './components/panels/PhotosPanelSimple';
@@ -7,6 +8,7 @@ import { IconsPanel } from './components/panels/IconsPanel';
 import { TextPanel } from './components/panels/TextPanel';
 import { ShapesPanel } from './components/panels/ShapesPanel';
 import { ResizePanel } from './components/panels/ResizePanel';
+import { BackgroundMediaPanel } from './components/panels/BackgroundMedia';
 import { useTextEditor } from './hooks/useTextEditor';
 import { preloadEssentialFonts } from './services/googleFonts';
 import { useCanvasStore } from './stores/canvasStore';
@@ -231,6 +233,35 @@ const AppContent: React.FC = () => {
               updatedAt: Date.now()
             });
             break;
+
+          case 'background':
+            console.log('🎨 Setting canvas background:', data.src);
+            // For backgrounds, we could either:
+            // 1. Set as canvas background
+            // 2. Add as image element (current implementation for simplicity)
+            addElement({
+              id: generateId(),
+              type: 'image',
+              x: Math.max(0, dropX),
+              y: Math.max(0, dropY),
+              width: 300,
+              height: 200,
+              rotation: 0,
+              scaleX: 1,
+              scaleY: 1,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 0, // Background should be behind other elements
+              src: data.src,
+              alt: data.alt || 'Background',
+              originalWidth: 300,
+              originalHeight: 200,
+              cornerRadius: 0,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+            break;
         }
       }
     }
@@ -350,6 +381,8 @@ const AppContent: React.FC = () => {
               <ShapesPanel />
             ) : activeTool === 'resize' ? (
               <ResizePanel />
+            ) : activeTool === 'background' ? (
+              <BackgroundMediaPanel />
             ) : (
               <div style={{ 
                 display: 'flex',

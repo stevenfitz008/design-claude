@@ -69,7 +69,9 @@ export interface CanvasToolbarProps {
   onEffects: () => void;
   onFitToPage: () => void;
   onApplyMask: () => void;
+  onCrop?: () => void;
   onAnimate: () => void;
+  onRemoveBackground?: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
   onBringToFront: () => void;

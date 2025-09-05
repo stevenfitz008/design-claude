@@ -3,7 +3,11 @@ import { observer } from "mobx-react-lite";
 // import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
 import CanvasEngine from '../canvas/CanvasEngine';
-import { usePageStore } from '@/stores/pageStore';
+import { BottomZoomControls } from '../canvas/BottomZoomControls';
+import { CanvasTopBar } from '../canvas/CanvasTopBar';
+// import { ActionBar } from '../navigation/ActionBar';
+import { useCanvasStore } from '@/stores/canvasStore';
+import { useCanvas } from '@/hooks/useCanvas';
 
 interface MainCanvasProps {
   className?: string;
@@ -35,135 +39,50 @@ const CanvasArea: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-    padding: 0, // Edge-to-edge for autofit
-    margin: 0,  // Edge-to-edge for autofit
-    width: '100%', // Ensure full width utilization for autofit
-    height: '100%' // Ensure full height utilization for autofit
+    padding: 0,
+    margin: 0,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    background: '#364459' // Canvas background from theme
   }}>
     {children}
   </div>
 );
 
-const PagesArea: React.FC<{ theme: any; children: React.ReactNode }> = ({ theme, children }) => (
-  <div style={{
-    height: '48px', // Reduced from 80px to give more space to canvas
-    backgroundColor: theme.colors?.toolbarBg || '#252a30',
-    borderTop: `1px solid ${theme.colors?.border || '#495563'}`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '4px 16px', // Reduced padding for more compact layout
-    flexShrink: 0 // Prevent it from shrinking
-  }}>
-    {children}
-  </div>
-);
 
 // we need observer to update component automatically on any store changes
 export const MainCanvas: React.FC<MainCanvasProps> = observer(({ className }) => {
   const { theme } = useTheme();
+  const { zoom, setZoom } = useCanvasStore();
+  const { zoomToFit } = useCanvas();
+
+  const handleZoomChange = (newZoom: number) => {
+    setZoom(newZoom);
+  };
+
+  const handleAutoFit = () => {
+    zoomToFit();
+  };
 
   return (
     <CanvasContainer theme={theme} className={className}>
+      <CanvasTopBar />
       <CanvasArea>
         <CanvasEngine />
+        <BottomZoomControls
+          zoom={zoom}
+          onZoomChange={handleZoomChange}
+          onAutoFit={handleAutoFit}
+          minZoom={0.1}
+          maxZoom={5.0}
+        />
       </CanvasArea>
-      <PagesArea theme={theme}>
-        <SimplePageCarousel />
-      </PagesArea>
     </CanvasContainer>
   );
 });
 
-// Simple page carousel component that matches Polotno Studio
-const SimplePageCarousel: React.FC = () => {
-  const { pages, currentPageId, setCurrentPageId, addPage, removePage } = usePageStore();
-  const { theme } = useTheme();
-
-  const handleAddPage = () => {
-    addPage({
-      name: `Page ${pages.length + 1}`,
-      width: 800,
-      height: 600,
-      backgroundColor: '#ffffff',
-      elements: []
-    });
-  };
-
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      height: '100%'
-    }}>
-      {/* Zoom indicator - matches Polotno */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        color: theme.colors?.text || '#f5f8fa',
-        fontSize: '12px'
-      }}>
-        <span>68%</span>
-        <div style={{
-          width: '1px',
-          height: '16px',
-          backgroundColor: theme.colors?.border || '#495563'
-        }} />
-      </div>
-
-      {/* Pages */}
-      <div style={{
-        display: 'flex',
-        gap: '4px',
-        alignItems: 'center'
-      }}>
-        {pages.map((page, index) => (
-          <div
-            key={page.id}
-            onClick={() => setCurrentPageId(page.id)}
-            style={{
-              width: '48px',
-              height: '30px',
-              backgroundColor: 'white',
-              borderRadius: '4px',
-              border: currentPageId === page.id ? '2px solid #48aff0' : '1px solid #495563',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '9px',
-              color: '#666',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}
-          >
-            {index + 1}
-          </div>
-        ))}
-        
-        {/* Add page button */}
-        <button
-          onClick={handleAddPage}
-          style={{
-            width: '32px',
-            height: '28px', // Slightly smaller to fit in reduced height area
-            backgroundColor: 'transparent',
-            border: '2px dashed #8a9ba8',
-            borderRadius: '4px',
-            color: '#8a9ba8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '14px'
-          }}
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
-};
 
 export type { MainCanvasProps };

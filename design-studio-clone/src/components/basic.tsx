@@ -2,7 +2,8 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 // we need observer to update component automatically on any store changes
 // Import @meronex icons for proper vector icons
-import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaLayerGroup, FaExpandArrowsAlt, FaQuoteLeft, FaQrcode, FaRobot, FaChart } from '@meronex/icons/fa';
+import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaLayerGroup, FaExpandArrowsAlt, FaQuoteLeft, FaQrcode, FaRobot, FaChartBar } from '@meronex/icons/fa';
+import { UserProfileDropdown } from './auth/UserProfileDropdown';
 
 // Basic functional components for testing with minimal styling
 export const LeftToolbar: React.FC<{ activeTool?: string; onToolChange?: (tool: string) => void }> = observer(({ activeTool, onToolChange }) => {
@@ -24,7 +25,7 @@ export const LeftToolbar: React.FC<{ activeTool?: string; onToolChange?: (tool: 
     { id: 'quotes', name: 'Quotes', IconComponent: FaQuoteLeft, testId: 'tool-quotes' },
     { id: 'qr-code', name: 'QR Code', IconComponent: FaQrcode, testId: 'tool-qr-code' },
     { id: 'ai-img', name: 'AI Img', IconComponent: FaRobot, testId: 'tool-ai-img' },
-    { id: 'reports', name: 'Reports', IconComponent: FaChart, testId: 'tool-reports' }
+    { id: 'reports', name: 'Reports', IconComponent: FaChartBar, testId: 'tool-reports' }
   ];
 
   return (
@@ -160,7 +161,9 @@ export const TopNavigation: React.FC<{
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
-}> = observer(({ projectName = 'Untitled Design' }) => (
+  reportId?: string | null;
+  onReportChange?: (reportId: string | null) => void;
+}> = observer(({ projectName = 'Untitled Design', onSave, onExport, reportId, onReportChange }) => (
   <div 
     data-testid="top-navigation" 
     style={{ 
@@ -179,9 +182,10 @@ export const TopNavigation: React.FC<{
     <span data-testid="project-name" style={{ fontWeight: '500' }}>
       {projectName}
     </span>
-    <div style={{ display: 'flex', gap: '8px' }}>
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
       <button 
         data-testid="save-button"
+        onClick={onSave}
         style={{ 
           padding: '6px 12px', 
           background: '#48aff0', 
@@ -196,6 +200,7 @@ export const TopNavigation: React.FC<{
       </button>
       <button 
         data-testid="export-button"
+        onClick={onExport}
         style={{ 
           padding: '6px 12px', 
           background: 'transparent', 
@@ -208,6 +213,7 @@ export const TopNavigation: React.FC<{
       >
         Export
       </button>
+      <UserProfileDropdown />
     </div>
   </div>
 ));

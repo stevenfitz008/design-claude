@@ -7,6 +7,7 @@ import { useCanvas } from '@/hooks/useCanvas';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useMobileTouch } from '@/hooks/useMobileTouch';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { TransformControls } from './TransformControls';
 import { VisualFeedback } from './VisualFeedback';
 // Temporarily simplified - complex selection tools disabled
@@ -124,7 +125,7 @@ const CanvasTextElement: React.FC<{ element: TextElement; isSelected: boolean }>
 });
 
 const CanvasImageElement: React.FC<{ element: ImageElement; isSelected: boolean }> = React.memo(({ element, isSelected }) => {
-  const { updateElement } = useCanvasStore();
+  const { updateElement, selectElement } = useCanvasStore();
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [filteredCanvas, setFilteredCanvas] = useState<HTMLCanvasElement | null>(null);
   
@@ -199,13 +200,47 @@ const CanvasImageElement: React.FC<{ element: ImageElement; isSelected: boolean 
       draggable={!element.locked && isSelected}
       stroke={isSelected ? '#007bff' : undefined}
       strokeWidth={isSelected ? 2 : 0}
+      strokeScaleEnabled={false} // Prevent stroke from scaling during transforms
+      onClick={(e) => {
+        e.cancelBubble = true;
+        console.log('🖼️ Image clicked:', element.id, 'Current selection:', selection);
+        selectElement(element.id);
+        console.log('📸 After selection, selection is:', selection);
+      }}
       onDragEnd={(e) => {
         updateElement(element.id, {
           x: e.target.x(),
           y: e.target.y(),
         });
       }}
+      onTransform={(e) => {
+        const node = e.target;
+        const scaleX = node.scaleX();
+        const scaleY = node.scaleY();
+        
+        // Reset scale and apply to width/height for better transform behavior
+        node.scaleX(1);
+        node.scaleY(1);
+        
+        updateElement(element.id, {
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(10, element.width * scaleX),
+          height: Math.max(10, element.height * scaleY),
+          rotation: node.rotation(),
+        });
+      }}
+      onTransformEnd={(e) => {
+        const node = e.target;
+        // Ensure proper centering after transform
+        updateElement(element.id, {
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+        });
+      }}
       perfectDrawEnabled={false} // Performance optimization
+      shadowForStrokeEnabled={false} // Performance optimization
     />
   );
 });
@@ -943,7 +978,7 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           addElement({
             id: generateId(),
             type: 'image',
-            x: canvasX - 100, // Center the image
+            x: canvasX - 100,
             y: canvasY - 100,
             width: 200,
             height: 200,
@@ -1064,10 +1099,10 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         ref={stageRef}
         width={dimensions.width}
         height={dimensions.height}
-        scaleX={zoom}
-        scaleY={zoom}
-        x={pan.x}
-        y={pan.y}
+        scaleX={1} // Fixed scale - scaling handled by layers
+        scaleY={1} // Fixed scale - scaling handled by layers  
+        x={0} // Fixed position - stage cannot move
+        y={0} // Fixed position - stage cannot move
         onClick={handleStageClick}
         onMouseDown={handleStageMouseDown}
         onWheel={handleWheel}
@@ -1075,7 +1110,7 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onDblTap={handleDoubleTap}
-        draggable={selection.length === 0} // Only allow stage dragging when nothing is selected
+        draggable={false} // Disable stage dragging - stage position is fixed, only scaling allowed
         
         // Performance optimizations
         perfectDrawEnabled={false}
@@ -1097,7 +1132,14 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         }}
       >
         {/* Main canvas background */}
-        <Layer ref={layerRef} imageSmoothingEnabled={false}>
+        <Layer 
+          ref={layerRef} 
+          imageSmoothingEnabled={false}
+          scaleX={zoom}
+          scaleY={zoom}
+          x={pan.x}
+          y={pan.y}
+        >
           <Rect
             x={0}
             y={0}
@@ -1114,6 +1156,10 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           imageSmoothingEnabled={false}
           hitGraphEnabled={true}
           perfectDrawEnabled={false}
+          scaleX={zoom}
+          scaleY={zoom}
+          x={pan.x}
+          y={pan.y}
         >
           {sortedElements.map((element) => (
             <Group
@@ -1134,10 +1180,18 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         <Layer 
           listening={false}
           perfectDrawEnabled={false}
+          scaleX={zoom}
+          scaleY={zoom}
+          x={pan.x}
+          y={pan.y}
         >
           {/* Transform controls - replaces simple selection handles */}
           {selection.length > 0 && (() => {
             const bounds = getSelectionBounds();
+            console.log('🎯 Selection:', selection, 'Bounds:', bounds);
+            if (bounds) {
+              console.log('🎛️ Rendering TransformControls for selection:', selection);
+            }
             return bounds && (
               <TransformControls
                 bounds={bounds}
@@ -1249,6 +1303,7 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           {/* Visual feedback and indicators */}
           <VisualFeedback zoom={zoom} />
           
+
           {/* Multi-selection indicators */}
           {selection.length > 1 && (
             <Group>

@@ -44,7 +44,7 @@ export class ExportController {
     @Request() req: any,
   ): Promise<ApiResponseDto<ExportDto>> {
     const result = await this.exportService.createExport(createExportDto, req.user.id);
-    return ApiResponseDto.success(result.data, result.message);
+    return ApiResponseDto.success(result.data as any, result.message);
   }
 
   @Get()
@@ -68,7 +68,7 @@ export class ExportController {
     
     return {
       success: true,
-      data: result.data,
+      data: result.data as any,
       message: 'Exports retrieved successfully',
       timestamp: Date.now(),
       ...result.pagination && { pagination: result.pagination },
@@ -92,7 +92,7 @@ export class ExportController {
     @Request() req: any,
   ): Promise<ApiResponseDto<ExportDto>> {
     const result = await this.exportService.getExportStatus(exportId, req.user.id);
-    return ApiResponseDto.success(result.data, 'Export details retrieved successfully');
+    return ApiResponseDto.success(result.data as any, 'Export details retrieved successfully');
   }
 
   @Delete(':exportId')

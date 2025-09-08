@@ -862,7 +862,10 @@ export class ComponentsService {
         styles: definition.template.styles,
       },
       propsSchema: definition.propsSchema,
-      rendering: definition.rendering,
+      rendering: {
+        ...definition.rendering,
+        supportedFormats: definition.rendering.supportedFormats as ExportFormat[]
+      },
       dataBinding: definition.dataBinding,
       interactions: definition.interactions,
     };

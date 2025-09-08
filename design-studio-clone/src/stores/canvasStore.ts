@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { CanvasState, CanvasElement, SelectionBounds, HistoryState } from '@/types/canvas';
+import type { CanvasState, CanvasElement, SelectionBounds, HistoryState } from '../types/canvas';
 
 interface CanvasStore extends CanvasState {
   // History management
@@ -133,7 +133,7 @@ export const useCanvasStore = create<CanvasStore>()(
       clipboard: [],
       zoom: 1,
       pan: { x: 0, y: 0 },
-      canvasSize: { width: 800, height: 500 }, // Default size - will be auto-fit on load
+      canvasSize: { width: 1000, height: 625 }, // Default 16:10 aspect ratio - will be auto-fit on load
       backgroundColor: '#ffffff',
       showGrid: false,
       gridSize: 20,
@@ -403,7 +403,8 @@ export const useCanvasStore = create<CanvasStore>()(
 
       // Canvas operations
       setZoom: (zoom) => {
-        set((state) => ({ ...state, zoom: Math.max(0.1, Math.min(5, zoom)) }));
+        const clampedZoom = Math.max(0.1, Math.min(5, zoom));
+        set((state) => ({ ...state, zoom: clampedZoom }));
       },
 
       setPan: (pan) => {
@@ -411,7 +412,10 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       setCanvasSize: (canvasSize) => {
-        set((state) => ({ ...state, canvasSize }));
+        set((state) => {
+          console.log(`📏 Canvas size changed from ${state.canvasSize.width}x${state.canvasSize.height} to ${canvasSize.width}x${canvasSize.height}`);
+          return { ...state, canvasSize };
+        });
       },
 
       setBackgroundColor: (backgroundColor) => {
@@ -419,42 +423,43 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       fitCanvasToContainer: (containerWidth, containerHeight) => {
-        // Account for padding and bottom controls
-        const horizontalPadding = 80; // 40px padding on each side
-        const verticalPadding = 120; // Account for bottom zoom controls and page carousel
-        const availableWidth = containerWidth - horizontalPadding;
-        const availableHeight = containerHeight - verticalPadding;
+        // Account for UI elements and provide comfortable margins
+        const horizontalPadding = 100; // Generous horizontal margins for centering
+        const verticalPadding = 140; // Account for top bar, bottom controls, and margins
         
-        // Use 80% of available space for optimal viewing
-        const usagePercent = 0.8;
+        const availableWidth = Math.max(400, containerWidth - horizontalPadding);
+        const availableHeight = Math.max(300, containerHeight - verticalPadding);
+        
+        // Use 85% of available space for better visual balance
+        const usagePercent = 0.85;
         const targetWidth = availableWidth * usagePercent;
         const targetHeight = availableHeight * usagePercent;
         
-        // Use 16:10 aspect ratio (golden ratio for design work)
-        const aspectRatio = 16 / 10;
+        // Default to 16:10 aspect ratio (excellent for design work)
+        const defaultAspectRatio = 16 / 10;
         let canvasWidth, canvasHeight;
         
-        // Calculate dimensions based on which constraint is tighter
-        if (targetWidth / targetHeight > aspectRatio) {
-          // Height is the limiting factor
+        // Calculate optimal dimensions maintaining aspect ratio
+        if (targetWidth / targetHeight > defaultAspectRatio) {
+          // Height is the constraint - fit to height
           canvasHeight = targetHeight;
-          canvasWidth = canvasHeight * aspectRatio;
+          canvasWidth = canvasHeight * defaultAspectRatio;
         } else {
-          // Width is the limiting factor  
+          // Width is the constraint - fit to width
           canvasWidth = targetWidth;
-          canvasHeight = canvasWidth / aspectRatio;
+          canvasHeight = canvasWidth / defaultAspectRatio;
         }
         
-        // Apply sensible minimum and maximum sizes
-        canvasWidth = Math.max(600, Math.min(canvasWidth, 1400));
-        canvasHeight = Math.max(400, Math.min(canvasHeight, 1000));
+        // Apply reasonable size bounds for usability
+        canvasWidth = Math.max(500, Math.min(canvasWidth, 1600));
+        canvasHeight = Math.max(300, Math.min(canvasHeight, 1200));
         
         const newSize = {
           width: Math.round(canvasWidth),
           height: Math.round(canvasHeight)
         };
         
-        console.log(`🎯 Auto-fit canvas to ${newSize.width}x${newSize.height} (container: ${containerWidth}x${containerHeight})`);
+        console.log(`🎯 Auto-fit canvas: ${newSize.width}x${newSize.height} (from container: ${containerWidth}x${containerHeight}, aspect: ${(newSize.width/newSize.height).toFixed(2)})`);
         
         set((state) => ({ ...state, canvasSize: newSize }));
       },

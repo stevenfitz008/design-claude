@@ -29,7 +29,6 @@ This project uses Python with Pydantic for data modeling. Install required packa
 ```bash
 pip install pydantic selenium pillow
 ```
-
 ## Architecture Overview
 
 ### Archon Agent System (`agents/`)

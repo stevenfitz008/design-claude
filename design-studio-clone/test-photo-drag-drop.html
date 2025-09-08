@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Drag Drop Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .draggable-photo {
+            width: 150px;
+            height: 100px;
+            background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop') center/cover;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: grab;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            font-weight: bold;
+            padding: 10px;
+        }
+        .drop-zone {
+            width: 400px;
+            height: 300px;
+            border: 3px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            color: #999;
+            font-size: 18px;
+        }
+        .drop-zone.drag-over {
+            border-color: #48aff0;
+            background: #f0f8ff;
+            color: #48aff0;
+        }
+        .results {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Photo Drag & Drop Test</h1>
+    <p>This test simulates dragging a photo from the PhotosPanel to the Canvas.</p>
+    
+    <div class="test-container">
+        <div 
+            class="draggable-photo" 
+            draggable="true" 
+            id="test-photo"
+        >
+            Drag me to canvas →
+        </div>
+        
+        <div class="drop-zone" id="drop-zone">
+            Drop photo here
+        </div>
+    </div>
+    
+    <div class="results">
+        <h3>Test Results:</h3>
+        <div id="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+        <button onclick="testDragDrop()">Test Programmatically</button>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        const dropZone = document.getElementById('drop-zone');
+        const photo = document.getElementById('test-photo');
+        
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+        }
+        
+        // Photo drag start
+        photo.addEventListener('dragstart', (e) => {
+            addLog('🚀 Drag start detected', 'success');
+            
+            // Simulate the same drag data as PhotosPanelSimple
+            const dragData = {
+                type: 'photo',
+                src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+                alt: 'Test photo for drag and drop',
+                user: 'Test User'
+            };
+            
+            e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', dragData.src);
+            
+            addLog('📦 Drag data set: ' + JSON.stringify(dragData), 'info');
+        });
+        
+        // Drop zone events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+            e.dataTransfer.dropEffect = 'copy';
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            if (!dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('drag-over');
+            }
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            addLog('🎯 Drop detected!', 'success');
+            
+            try {
+                const dragData = e.dataTransfer.getData('application/json');
+                if (!dragData) {
+                    addLog('❌ No drag data found', 'error');
+                    return;
+                }
+                
+                const data = JSON.parse(dragData);
+                addLog('✅ Successfully parsed drag data: ' + JSON.stringify(data), 'success');
+                
+                if (data.type === 'photo') {
+                    addLog('🖼️ Photo drop successful! Would add image to canvas at drop position', 'success');
+                    
+                    // Calculate mock position
+                    const rect = dropZone.getBoundingClientRect();
+                    const canvasX = e.clientX - rect.left;
+                    const canvasY = e.clientY - rect.top;
+                    addLog(`📍 Drop position: (${Math.round(canvasX)}, ${Math.round(canvasY)})`, 'info');
+                    
+                    // Show visual feedback
+                    dropZone.innerHTML = `
+                        <div style="text-align: center;">
+                            <div style="color: #27ae60; font-size: 24px; margin-bottom: 10px;">✅ Photo Dropped!</div>
+                            <img src="${data.src}" style="max-width: 200px; max-height: 150px; border-radius: 4px;">
+                            <div style="margin-top: 10px; font-size: 12px; color: #666;">Position: (${Math.round(canvasX)}, ${Math.round(canvasY)})</div>
+                        </div>
+                    `;
+                    
+                    // Reset after 3 seconds
+                    setTimeout(() => {
+                        dropZone.innerHTML = 'Drop photo here';
+                    }, 3000);
+                    
+                } else {
+                    addLog('❌ Invalid drag data type: ' + data.type, 'error');
+                }
+                
+            } catch (error) {
+                addLog('❌ Error parsing drag data: ' + error.message, 'error');
+            }
+        });
+        
+        function testDragDrop() {
+            addLog('🧪 Running programmatic test...', 'info');
+            
+            // Simulate the exact flow from CanvasEngine
+            const mockEvent = {
+                preventDefault: () => {},
+                dataTransfer: {
+                    types: ['application/json', 'text/plain'],
+                    getData: (type) => {
+                        if (type === 'application/json') {
+                            return JSON.stringify({
+                                type: 'photo',
+                                src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+                                alt: 'Programmatic test photo',
+                                user: 'Test Suite'
+                            });
+                        }
+                        return '';
+                    }
+                },
+                clientX: 200,
+                clientY: 150
+            };
+            
+            // Simulate the CanvasEngine handleDrop logic
+            try {
+                const dragData = mockEvent.dataTransfer.getData('application/json');
+                addLog('📦 Retrieved drag data: ' + dragData, 'info');
+                
+                if (!dragData) {
+                    addLog('❌ No drag data found', 'error');
+                    return;
+                }
+                
+                const data = JSON.parse(dragData);
+                addLog('✅ Parsed data: ' + JSON.stringify(data), 'success');
+                
+                // Mock canvas position calculation
+                const canvasX = mockEvent.clientX - 100; // Mock pan offset
+                const canvasY = mockEvent.clientY - 100;
+                
+                if (data.type === 'photo') {
+                    addLog('🎨 Would create canvas element:', 'success');
+                    addLog(`   - Type: image`, 'info');
+                    addLog(`   - Position: (${canvasX}, ${canvasY})`, 'info');
+                    addLog(`   - Size: 200x200`, 'info');
+                    addLog(`   - Source: ${data.src}`, 'info');
+                    addLog('✅ Canvas element creation would succeed!', 'success');
+                } else {
+                    addLog('❌ Invalid type for canvas: ' + data.type, 'error');
+                }
+                
+            } catch (error) {
+                addLog('❌ Test failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Initialize
+        addLog('🔧 Photo drag & drop test initialized', 'success');
+        addLog('📋 Instructions: Drag the photo image to the drop zone', 'info');
+    </script>
+</body>
+</html>

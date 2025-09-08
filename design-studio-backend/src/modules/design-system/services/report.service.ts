@@ -59,6 +59,41 @@ export interface UpdatePageLayoutRequest {
   };
 }
 
+export interface CanvasState {
+  elements: any[];
+  canvasSize: { width: number; height: number };
+  backgroundColor: string;
+  zoom: number;
+  pan: { x: number; y: number };
+  showGrid: boolean;
+  gridSize: number;
+  snapToGrid: boolean;
+  showGuides: boolean;
+  snapToGuides: boolean;
+}
+
+export interface SaveCanvasStateRequest {
+  canvasState: CanvasState;
+  changeDescription?: string;
+  autoSaved?: boolean;
+  thumbnail?: string; // Base64 encoded thumbnail image
+}
+
+export interface ReportVersionResponse {
+  id: string;
+  reportId: string;
+  version: number;
+  canvasState: CanvasState;
+  changeDescription?: string;
+  autoSaved: boolean;
+  canvasWidth?: number;
+  canvasHeight?: number;
+  backgroundColor?: string;
+  elementCount: number;
+  createdAt: string;
+  createdBy: string;
+}
+
 @Injectable()
 export class ReportService {
   private readonly logger = new Logger(ReportService.name);
@@ -92,6 +127,9 @@ export class ReportService {
           }
         }
       });
+
+      // Initialize with default canvas state
+      await this.initializeReportWithDefaultCanvas(report.id, userId);
 
       return report;
     } catch (error) {
@@ -410,6 +448,30 @@ export class ReportService {
   }
 
   /**
+   * Initialize a new report with default canvas state
+   */
+  private async initializeReportWithDefaultCanvas(reportId: string, userId: string): Promise<void> {
+    const defaultCanvasState: CanvasState = {
+      elements: [],
+      canvasSize: { width: 1000, height: 625 },
+      backgroundColor: '#ffffff',
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+      showGrid: false,
+      gridSize: 20,
+      snapToGrid: false,
+      showGuides: false,
+      snapToGuides: false,
+    };
+
+    await this.saveCanvasVersion(reportId, userId, {
+      canvasState: defaultCanvasState,
+      changeDescription: 'Initial version',
+      autoSaved: false,
+    });
+  }
+
+  /**
    * Add component to page
    */
   async addComponentToPage(
@@ -696,6 +758,263 @@ export class ReportService {
     return this.getReport(clonedReport.id, userId, true);
   }
 
+  /**
+   * Save canvas state as new version
+   */
+  async saveCanvasVersion(reportId: string, userId: string, data: SaveCanvasStateRequest): Promise<ReportVersionResponse> {
+    try {
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId }
+      });
+
+      if (!report) {
+        throw new NotFoundException('Report not found');
+      }
+
+      if (!this.canModifyReport(report, userId)) {
+        throw new BadRequestException('Not authorized to modify this report');
+      }
+
+      // Get next version number
+      const latestVersion = await this.prisma.reportVersion.findFirst({
+        where: { reportId },
+        orderBy: { version: 'desc' }
+      });
+
+      const nextVersion = (latestVersion?.version || 0) + 1;
+      const elementCount = data.canvasState.elements?.length || 0;
+
+      // Create new version
+      const version = await this.prisma.reportVersion.create({
+        data: {
+          reportId,
+          version: nextVersion,
+          canvasState: data.canvasState as any,
+          changeDescription: data.changeDescription,
+          autoSaved: data.autoSaved ?? true,
+          canvasWidth: data.canvasState.canvasSize?.width,
+          canvasHeight: data.canvasState.canvasSize?.height,
+          backgroundColor: data.canvasState.backgroundColor,
+          elementCount,
+          createdBy: userId,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      // Update report version and timestamp, and thumbnail if provided
+      const reportUpdateData: any = { 
+        version: nextVersion,
+        updatedAt: new Date()
+      };
+      
+      if (data.thumbnail) {
+        reportUpdateData.thumbnail = data.thumbnail;
+      }
+      
+      await this.prisma.report.update({
+        where: { id: reportId },
+        data: reportUpdateData
+      });
+
+      this.logger.log(`Canvas version ${nextVersion} saved for report ${reportId}`);
+
+      return {
+        id: version.id,
+        reportId: version.reportId,
+        version: version.version,
+        canvasState: version.canvasState as unknown as CanvasState,
+        changeDescription: version.changeDescription || undefined,
+        autoSaved: version.autoSaved,
+        canvasWidth: version.canvasWidth || undefined,
+        canvasHeight: version.canvasHeight || undefined,
+        backgroundColor: version.backgroundColor || undefined,
+        elementCount: version.elementCount,
+        createdAt: version.createdAt.toISOString(),
+        createdBy: version.createdBy,
+      };
+    } catch (error) {
+      this.logger.error('Failed to save canvas version:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all versions for a report
+   */
+  async getReportVersions(reportId: string, userId?: string): Promise<ReportVersionResponse[]> {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId }
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    if (!this.canAccessReport(report, userId)) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const versions = await this.prisma.reportVersion.findMany({
+      where: { reportId },
+      orderBy: { version: 'desc' },
+      include: {
+        user: {
+          select: { id: true, name: true }
+        }
+      }
+    });
+
+    return versions.map(version => ({
+      id: version.id,
+      reportId: version.reportId,
+      version: version.version,
+      canvasState: version.canvasState as unknown as CanvasState,
+      changeDescription: version.changeDescription || undefined,
+      autoSaved: version.autoSaved,
+      canvasWidth: version.canvasWidth || undefined,
+      canvasHeight: version.canvasHeight || undefined,
+      backgroundColor: version.backgroundColor || undefined,
+      elementCount: version.elementCount,
+      createdAt: version.createdAt.toISOString(),
+      createdBy: version.createdBy,
+    }));
+  }
+
+  /**
+   * Get specific version of a report
+   */
+  async getReportVersion(reportId: string, versionId: string, userId?: string): Promise<ReportVersionResponse> {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId }
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    if (!this.canAccessReport(report, userId)) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const version = await this.prisma.reportVersion.findUnique({
+      where: { id: versionId },
+      include: {
+        user: {
+          select: { id: true, name: true }
+        }
+      }
+    });
+
+    if (!version || version.reportId !== reportId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    return {
+      id: version.id,
+      reportId: version.reportId,
+      version: version.version,
+      canvasState: version.canvasState as unknown as CanvasState,
+      changeDescription: version.changeDescription || undefined,
+      autoSaved: version.autoSaved,
+      canvasWidth: version.canvasWidth || undefined,
+      canvasHeight: version.canvasHeight || undefined,
+      backgroundColor: version.backgroundColor || undefined,
+      elementCount: version.elementCount,
+      createdAt: version.createdAt.toISOString(),
+      createdBy: version.createdBy,
+    };
+  }
+
+  /**
+   * Get latest version of a report for loading into canvas
+   */
+  async getLatestCanvasState(reportId: string, userId?: string): Promise<CanvasState | null> {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId }
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    if (!this.canAccessReport(report, userId)) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const latestVersion = await this.prisma.reportVersion.findFirst({
+      where: { reportId },
+      orderBy: { version: 'desc' }
+    });
+
+    return latestVersion ? (latestVersion.canvasState as unknown as CanvasState) : null;
+  }
+
+  /**
+   * Delete a specific version
+   */
+  async deleteReportVersion(reportId: string, versionId: string, userId: string): Promise<void> {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId }
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    if (!this.canModifyReport(report, userId)) {
+      throw new BadRequestException('Not authorized to modify this report');
+    }
+
+    const version = await this.prisma.reportVersion.findUnique({
+      where: { id: versionId }
+    });
+
+    if (!version || version.reportId !== reportId) {
+      throw new NotFoundException('Version not found');
+    }
+
+    // Don't allow deletion of the only version
+    const versionCount = await this.prisma.reportVersion.count({
+      where: { reportId }
+    });
+
+    if (versionCount <= 1) {
+      throw new BadRequestException('Cannot delete the only version of a report');
+    }
+
+    await this.prisma.reportVersion.delete({
+      where: { id: versionId }
+    });
+
+    this.logger.log(`Deleted version ${version.version} of report ${reportId}`);
+  }
+
+  /**
+   * Update last opened timestamp for tracking activity
+   */
+  async updateLastOpened(reportId: string, userId: string): Promise<void> {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId }
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    if (!this.canAccessReport(report, userId)) {
+      throw new NotFoundException('Report not found');
+    }
+
+    await this.prisma.report.update({
+      where: { id: reportId },
+      data: { updatedAt: new Date() }
+    });
+  }
+
   // Private helper methods
 
   private async updatePageDefinitionComponents(pageId: string, version: number) {
@@ -729,7 +1048,7 @@ export class ReportService {
       {
         $set: {
           componentInstances,
-          'metadata.dependencies': this.extractDependencies(componentInstances),
+          'metadata.dependencies': this.extractDependencies(componentInstances as any),
         }
       }
     );
@@ -746,5 +1065,39 @@ export class ReportService {
 
   private canModifyReport(report: any, userId: string): boolean {
     return report.userId === userId;
+  }
+
+  /**
+   * Clean up old auto-saved versions (keep last 20 auto-saves, all manual saves)
+   */
+  async cleanupOldVersions(reportId: string): Promise<void> {
+    try {
+      // Get all auto-saved versions, ordered by creation time (newest first)
+      const autoSavedVersions = await this.prisma.reportVersion.findMany({
+        where: {
+          reportId,
+          autoSaved: true
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true }
+      });
+
+      // Keep only the latest 20 auto-saved versions
+      if (autoSavedVersions.length > 20) {
+        const versionsToDelete = autoSavedVersions.slice(20);
+        const idsToDelete = versionsToDelete.map(v => v.id);
+
+        await this.prisma.reportVersion.deleteMany({
+          where: {
+            id: { in: idsToDelete }
+          }
+        });
+
+        this.logger.log(`Cleaned up ${idsToDelete.length} old auto-saved versions for report ${reportId}`);
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to cleanup old versions for report ${reportId}:`, error);
+      // Don't throw error - cleanup is not critical
+    }
   }
 }

@@ -204,7 +204,12 @@ export class RenderingService {
       const renderContext: ComponentRenderContext = {
         component: componentDefinition,
         definition: componentDefinition.definition,
-        props: { ...componentDefinition.definition.defaultProps, ...instance.props },
+        props: { 
+          // Extract default values from propsSchema
+          ...Object.entries(componentDefinition.definition.propsSchema?.properties || {})
+            .reduce((acc, [key, prop]) => ({ ...acc, [key]: prop.default }), {}),
+          ...instance.props 
+        },
         position: instance.position,
         theme: options.theme,
         responsive: instance.responsive,
@@ -491,7 +496,10 @@ export class RenderingService {
         return {
           reportId: cached.reportId,
           format: cached.format,
-          pages: cached.renderedContent.pages,
+          pages: cached.renderedContent.pages.map(page => ({
+            ...page,
+            metadata: (page as any).metadata || {}
+          })),
           totalSize: cached.renderedContent.metadata.totalSize,
           renderTime: cached.renderedContent.metadata.renderTime,
           cacheHit: true,

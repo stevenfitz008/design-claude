@@ -1,8 +1,6 @@
 import React, { useCallback } from 'react';
-import { observer } from "mobx-react-lite";
 import { Button } from '@blueprintjs/core';
 import { useTheme } from '@/contexts/ThemeProvider';
-import { useCanvasStore } from '@/stores/canvasStore';
 
 interface BottomZoomControlsProps {
   zoom: number;
@@ -13,7 +11,7 @@ interface BottomZoomControlsProps {
   className?: string;
 }
 
-const BottomZoomControls: React.FC<BottomZoomControlsProps> = observer(({
+const BottomZoomControls: React.FC<BottomZoomControlsProps> = ({
   zoom,
   onZoomChange,
   onAutoFit,
@@ -122,7 +120,7 @@ const BottomZoomControls: React.FC<BottomZoomControlsProps> = observer(({
       />
     </div>
   );
-});
+};
 
 export { BottomZoomControls };
 export type { BottomZoomControlsProps };

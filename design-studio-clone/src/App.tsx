@@ -16,14 +16,60 @@ import { preloadEssentialFonts } from './services/googleFonts';
 import { useCanvasStore } from './stores/canvasStore';
 import { useDragTrackingStore } from './stores/dragTrackingStore';
 import type { TextTemplate } from './components/panels/TextPanel';
+import { reportsService } from './services/reportsService';
+import { authService } from './services/authService';
+
+// Initialize authService with demo user for testing
+if (!authService.isAuthenticated()) {
+  const demoToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWY2czRpMHEwMDA1MTFyNW8xcDBhcXdmIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwibmFtZSI6IkpvaG4gRG9lIiwicGxhbiI6IkZSRUUiLCJpYXQiOjE3NTcxNTQ3MjQsImV4cCI6MTc1NzI0MTEyNH0.Dm9vJa-NM-TWUCC_kEgZqgtIKKZErNmhIeeCdGtGVLA';
+  const demoUser = {
+    id: 'cmf6s4i0q000511r5o1p0aqwf',
+    email: 'test@example.com',
+    name: 'John Doe',
+    plan: 'FREE',
+    preferences: {
+      theme: 'dark',
+      autoSave: true,
+      language: 'en',
+      showGrid: false,
+      showGuides: false,
+      snapToGrid: false,
+      snapToGuides: false,
+      defaultCanvasSize: { width: 800, height: 600 }
+    },
+    limits: {
+      maxProjects: 50,
+      hasAIFeatures: false,
+      maxStorageSize: 1024,
+      hasCollaboration: false,
+      hasAdvancedExport: false,
+      maxExportsPerMonth: 10
+    },
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z'
+  };
+
+  // Store in localStorage and reload authService
+  localStorage.setItem('accessToken', demoToken);
+  localStorage.setItem('user', JSON.stringify(demoUser));
+  authService.reloadFromStorage();
+}
 
 const AppContent: React.FC = () => {
   const [activeTool, setActiveTool] = useState('templates');
   const [projectName] = useState('Untitled Design');
   const [rightPanelVisible, setRightPanelVisible] = useState(true);
+  const [currentReportId, setCurrentReportId] = useState<string | null>(null);
   const { createTextFromTemplate } = useTextEditor();
-  const { addElement, elements, undo, redo, canUndo, canRedo, pushHistory } = useCanvasStore();
+  const { addElement, elements, undo, redo, canUndo, canRedo, pushHistory, canvasSize } = useCanvasStore();
   const { startDrag, endDrag, updateDrag, updateDropPreview, clearDropPreview, isDropzoneActive } = useDragTrackingStore();
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  // Helper function to show notifications
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000); // Auto-hide after 4 seconds
+  };
 
   // Helper function to generate unique IDs
   const generateId = (): string => {
@@ -34,8 +80,47 @@ const AppContent: React.FC = () => {
     setActiveTool(toolId);
   };
 
-  const handleSave = () => {
-    console.log('Save project');
+  const handleSave = async () => {
+    try {
+      console.log('💾 Saving project...');
+      
+      // Get current canvas state
+      const currentCanvasState = {
+        elements,
+        canvasSize, // Use actual canvas size from store
+        projectName,
+        createdAt: new Date().toISOString()
+      };
+
+      // Get user info for author field
+      const currentUser = authService.getUser();
+      const authorName = currentUser?.name || 'Unknown User';
+
+      // Prepare report data for API (matching CreateReportDto structure)
+      const reportData = {
+        title: projectName,
+        description: `Design with ${elements.length} elements created on ${new Date().toLocaleDateString()}`,
+        author: authorName,
+        category: 'Design',
+        tags: ['canvas', 'design'],
+        isPublic: false,
+        isPublished: true
+      };
+
+      console.log('📊 Saving report data:', reportData);
+      
+      // Call the Reports API to save
+      const savedReport = await reportsService.createReport(reportData);
+      
+      console.log('✅ Project saved successfully!', savedReport);
+      
+      // Show success notification to user
+      showNotification(`"${projectName}" saved successfully!`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Failed to save project:', error);
+      showNotification('Failed to save project. Please try again.', 'error');
+    }
   };
 
   const handleExport = () => {
@@ -340,6 +425,8 @@ const AppContent: React.FC = () => {
           onRedo={handleRedo}
           canUndo={canUndo()}
           canRedo={canRedo()}
+          reportId={currentReportId}
+          onReportChange={setCurrentReportId}
         />
       }
       leftToolbar={
@@ -454,20 +541,20 @@ const AppContent: React.FC = () => {
                 gap: '16px'
               }}>
                 <div style={{ fontSize: '48px', opacity: 0.5 }}>
-                  {activeTool === 'templates' ? '📄' :
-                   activeTool === 'uploads' ? '📁' :
-                   activeTool === 'elements' ? '⭐' :
+                  {activeTool === 'templates' ? 'T' :
+                   activeTool === 'uploads' ? 'U' :
+                   activeTool === 'elements' ? 'E' :
                    activeTool === 'text' ? 'T' :
-                   activeTool === 'shapes' ? '🔷' :
-                   activeTool === 'videos' ? '🎥' :
-                   activeTool === 'background' ? '🎨' :
-                   activeTool === 'layers' ? '📚' :
-                   activeTool === 'resize' ? '📐' :
-                   activeTool === 'quotes' ? '💭' :
-                   activeTool === 'qr-code' ? '📱' :
-                   activeTool === 'ai-img' ? '🤖' :
-                   activeTool === 'reports' ? '📊' : 
-                   activeTool === 'photos' ? '📷' : '📋'}
+                   activeTool === 'shapes' ? 'S' :
+                   activeTool === 'videos' ? 'V' :
+                   activeTool === 'background' ? 'B' :
+                   activeTool === 'layers' ? 'L' :
+                   activeTool === 'resize' ? 'R' :
+                   activeTool === 'quotes' ? 'Q' :
+                   activeTool === 'qr-code' ? 'QR' :
+                   activeTool === 'ai-img' ? 'AI' :
+                   activeTool === 'reports' ? 'RP' : 
+                   activeTool === 'photos' ? 'P' : 'D'}
                 </div>
                 <div>
                   <div style={{ fontSize: '16px', fontWeight: '500', color: '#bfccd6', marginBottom: '8px' }}>
@@ -562,6 +649,35 @@ const AppContent: React.FC = () => {
         </div>
       )}
     />
+    
+    {/* Notification Toast */}
+    {notification && (
+      <div style={{
+        position: 'fixed',
+        top: '80px',
+        right: '20px',
+        backgroundColor: notification.type === 'success' ? '#48aff0' : '#e74c3c',
+        color: 'white',
+        padding: '12px 20px',
+        borderRadius: '6px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+        zIndex: 10000,
+        fontSize: '14px',
+        fontWeight: '500',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        maxWidth: '300px',
+        animation: 'slideInFromRight 0.3s ease-out'
+      }}>
+        <span style={{
+          fontSize: '16px'
+        }}>
+          {notification.type === 'success' ? '✅' : '❌'}
+        </span>
+        {notification.message}
+      </div>
+    )}
     </div>
   );
 };

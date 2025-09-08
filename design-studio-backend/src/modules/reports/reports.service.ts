@@ -330,7 +330,7 @@ export class ReportsService {
         orderBy: { _count: { category: 'desc' } },
         take: 5,
       }),
-      this.prisma.$queryRaw<Array<{ tag: string; count: number }>>`
+      this.prisma.$queryRaw<Array<{ tag: string; count: bigint }>>`
         SELECT tag, COUNT(*) as count
         FROM (
           SELECT UNNEST(tags) as tag
@@ -355,7 +355,10 @@ export class ReportsService {
         category: stat.category!,
         count: stat._count.category,
       })),
-      topTags: tagStats || [],
+      topTags: (tagStats || []).map(stat => ({
+        tag: stat.tag,
+        count: Number(stat.count)
+      })),
     };
   }
 

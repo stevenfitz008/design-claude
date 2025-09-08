@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Button, ButtonGroup, Divider, Navbar } from '@blueprintjs/core';
-import { useCanvasStore } from '@/stores/canvasStore';
-import type { CanvasElement, TextElement, ImageElement, ShapeElement } from '@/types/canvas';
+import { useCanvasStore } from '../../stores/canvasStore';
+import useCanvasIntegration from '../../hooks/useCanvasIntegration';
+import SaveStatusIndicator from '../reports/SaveStatusIndicator';
+import VersionHistoryPanel from '../reports/VersionHistoryPanel';
+import { reportsService, type ReportVersion } from '../../services/reportsService';
+import type { CanvasElement, TextElement, ImageElement, ShapeElement } from '../../types/canvas';
 
 interface CanvasTopBarProps {
+  reportId?: string;
+  onReportChange?: (reportId: string | null) => void;
   className?: string;
 }
 
-export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }) => {
+export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ reportId, onReportChange, className }) => {
+  // Canvas integration state
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showReportsMenu, setShowReportsMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  
   const { 
     selection, 
     getSelectedElements, 
@@ -28,6 +39,21 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
     canRedo,
     clipboard
   } = useCanvasStore();
+  
+  // Canvas integration hook
+  const canvasIntegration = useCanvasIntegration({
+    reportId,
+    autoSaveEnabled: true,
+    onVersionSaved: (version) => {
+      console.log('Version saved:', version);
+    },
+    onReportLoaded: (response) => {
+      console.log('Report loaded:', response);
+    },
+    onError: (error, context) => {
+      console.error(`Canvas integration error (${context}):`, error);
+    },
+  });
   
   const selectedElements = getSelectedElements();
   const hasSelection = selectedElements.length > 0;
@@ -49,6 +75,79 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
   };
 
   const primaryType = getPrimaryElementType();
+
+  // Reports integration handlers
+  const handleOpenReport = async () => {
+    const reportId = prompt('Enter Report ID to open:');
+    if (reportId) {
+      try {
+        await canvasIntegration.openReport(reportId);
+        onReportChange?.(reportId);
+      } catch (error) {
+        alert(`Failed to open report: ${error}`);
+      }
+    }
+  };
+
+  const handleSaveReport = async () => {
+    console.log('🔄 handleSaveReport called - hasReportOpen:', canvasIntegration.hasReportOpen, 'currentReportId:', canvasIntegration.currentReportId);
+    
+    if (!canvasIntegration.hasReportOpen) {
+      const title = prompt('Enter title for new report:');
+      if (title) {
+        try {
+          console.log('🆕 Creating new report with title:', title);
+          const { report } = await canvasIntegration.createReportFromCanvas({
+            title,
+            description: 'Created from canvas',
+            category: 'Design',
+          });
+          console.log('✅ Report created successfully:', report.id);
+          onReportChange?.(report.id);
+        } catch (error) {
+          console.error('❌ Failed to create report:', error);
+          alert(`Failed to create report: ${error}`);
+        }
+      }
+    } else {
+      const description = prompt('Version description (optional):');
+      try {
+        console.log('💾 Saving new version with description:', description);
+        await canvasIntegration.saveVersion(description || undefined, false);
+        console.log('✅ Version saved successfully');
+      } catch (error) {
+        console.error('❌ Failed to save version:', error);
+        alert(`Failed to save: ${error}`);
+      }
+    }
+  };
+
+  const handleLoadVersion = async (version: ReportVersion) => {
+    try {
+      await canvasIntegration.loadVersion(version);
+      setShowVersionHistory(false);
+    } catch (error) {
+      alert(`Failed to load version: ${error}`);
+    }
+  };
+
+  const handleDeleteVersion = (versionId: string) => {
+    console.log('Version deleted:', versionId);
+  };
+
+  // Close menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowReportsMenu(false);
+      }
+    };
+
+    if (showReportsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showReportsMenu]);
 
   // Common actions available for all states
   const handleUndo = () => {
@@ -324,6 +423,7 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
   };
 
   return (
+    <>
     <Navbar
       className={`bp5-dark canvas-top-bar ${className || ''}`}
       style={{
@@ -387,22 +487,139 @@ export const CanvasTopBar: React.FC<CanvasTopBarProps> = observer(({ className }
         </ButtonGroup>
       </Navbar.Group>
       
-      <Navbar.Group align="right">
+      <Navbar.Group align="right" style={{ gap: '8px', display: 'flex', alignItems: 'center' }}>
+        {/* Save Status Indicator */}
+        <SaveStatusIndicator
+          isSaving={canvasIntegration.autoSave.isSaving || canvasIntegration.isSavingVersion}
+          lastSaved={canvasIntegration.autoSave.lastSaved}
+          error={canvasIntegration.lastError || canvasIntegration.autoSave.error}
+          hasPendingChanges={canvasIntegration.autoSave.hasPendingChanges || canvasIntegration.hasUnsavedChanges}
+          saveCount={canvasIntegration.autoSave.saveCount}
+          onManualSave={handleSaveReport}
+        />
+        
+        <Divider style={{ height: '20px' }} />
+        
+        {/* Reports Menu */}
+        <div style={{ position: 'relative' }} ref={menuRef}>
+          <Button
+            icon="projects"
+            text="Reports"
+            minimal
+            small
+            onClick={() => setShowReportsMenu(!showReportsMenu)}
+            style={{ fontSize: '11px', minWidth: '65px' }}
+          />
+          
+          {showReportsMenu && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              background: '#2f343c',
+              border: '1px solid #495563',
+              borderRadius: '6px',
+              padding: '8px 0',
+              minWidth: '160px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              zIndex: 1100,
+            }}>
+              <button
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '8px 16px',
+                  textAlign: 'left',
+                  color: '#a7b6c2',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+                onClick={handleOpenReport}
+                onMouseOver={(e) => { (e.target as HTMLElement).style.background = '#495563'; }}
+                onMouseOut={(e) => { (e.target as HTMLElement).style.background = 'none'; }}
+              >
+                📂 Open Report
+              </button>
+              <button
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: 'none',
+                  padding: '8px 16px',
+                  textAlign: 'left',
+                  color: '#a7b6c2',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+                onClick={handleSaveReport}
+                onMouseOver={(e) => { (e.target as HTMLElement).style.background = '#495563'; }}
+                onMouseOut={(e) => { (e.target as HTMLElement).style.background = 'none'; }}
+              >
+                💾 {canvasIntegration.hasReportOpen ? 'Save Version' : 'Save as Report'} {/* Debug: hasReportOpen=${canvasIntegration.hasReportOpen}, reportId=${canvasIntegration.currentReportId} */}
+              </button>
+              {canvasIntegration.hasReportOpen && (
+                <button
+                  style={{
+                    width: '100%',
+                    background: 'none',
+                    border: 'none',
+                    padding: '8px 16px',
+                    textAlign: 'left',
+                    color: '#a7b6c2',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowVersionHistory(true)}
+                  onMouseOver={(e) => { (e.target as HTMLElement).style.background = '#495563'; }}
+                  onMouseOut={(e) => { (e.target as HTMLElement).style.background = 'none'; }}
+                >
+                  📚 Version History
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        
         {hasSelection && (
-          <div style={{ 
-            fontSize: '11px', 
-            color: '#a7b6c2',
-            padding: '0 8px',
-            minWidth: '80px',
-            textAlign: 'right'
-          }}>
-            {isMultiSelection 
-              ? `${selectedElements.length} selected`
-              : `${primaryType} selected`
-            }
-          </div>
+          <>
+            <Divider style={{ height: '20px' }} />
+            <div style={{ 
+              fontSize: '11px', 
+              color: '#a7b6c2',
+              padding: '0 8px',
+              minWidth: '80px',
+              textAlign: 'right'
+            }}>
+              {isMultiSelection 
+                ? `${selectedElements.length} selected`
+                : `${primaryType} selected`
+              }
+            </div>
+          </>
         )}
       </Navbar.Group>
     </Navbar>
+    
+    {/* Version History Panel */}
+    {showVersionHistory && canvasIntegration.currentReportId && (
+      <div style={{ 
+        position: 'fixed', 
+        top: 36, 
+        right: 0, 
+        bottom: 0, 
+        zIndex: 1500,
+        background: 'rgba(0, 0, 0, 0.3)'
+      }}>
+        <VersionHistoryPanel
+          reportId={canvasIntegration.currentReportId}
+          currentVersion={canvasIntegration.currentVersion || undefined}
+          onLoadVersion={handleLoadVersion}
+          onDeleteVersion={handleDeleteVersion}
+          onClose={() => setShowVersionHistory(false)}
+        />
+      </div>
+    )}
+    </>
   );
 });

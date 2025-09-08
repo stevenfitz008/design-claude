@@ -362,3 +362,15 @@ input, textarea, select {
 .bp5-dark .bp5-icon {
   color: inherit !important;
 }
+
+/* Notification Toast Animation */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

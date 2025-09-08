@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../../../database/prisma.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { ExportFormat } from '@prisma/client';
 import { 
   ComponentDefinitionDocument, 
   ComponentDefinitionDocumentType,
@@ -70,7 +71,7 @@ export class ComponentService {
           tags: data.tags || [],
           definitionId: '', // Will be updated after MongoDB creation
           defaultProps: data.defaultProps || {},
-          supportedFormats: data.supportedFormats || ['SVG', 'HTML'],
+          supportedFormats: (data.supportedFormats || [ExportFormat.SVG]) as any,
           createdBy: userId,
           version: 1,
         },
@@ -247,7 +248,7 @@ export class ComponentService {
           tags: data.tags,
           definitionId: definitionDoc._id.toString(),
           defaultProps: data.defaultProps,
-          supportedFormats: data.supportedFormats,
+          supportedFormats: data.supportedFormats as any,
           version: newVersion,
           usageCount: { increment: 1 },
         },

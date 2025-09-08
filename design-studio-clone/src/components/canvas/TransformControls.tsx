@@ -240,9 +240,13 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
             
             if (constrainProportions) {
               const aspectRatio = initialBounds.width / initialBounds.height;
-              const avgScale = (newWidth + newHeight / aspectRatio) / 2 / initialBounds.width;
-              newBounds.width = initialBounds.width * avgScale;
-              newBounds.height = initialBounds.height * avgScale;
+              // Use minimum scale to maintain aspect ratio from corner
+              const scaleX = newWidth / initialBounds.width;
+              const scaleY = newHeight / initialBounds.height;
+              const scale = Math.min(Math.abs(scaleX), Math.abs(scaleY));
+              
+              newBounds.width = Math.max(10, initialBounds.width * scale);
+              newBounds.height = Math.max(10, initialBounds.height * scale);
               newBounds.x = initialBounds.x + initialBounds.width - newBounds.width;
               newBounds.y = initialBounds.y + initialBounds.height - newBounds.height;
             } else {
@@ -258,9 +262,13 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
               const aspectRatio = initialBounds.width / initialBounds.height;
               const newWidthFromDelta = initialBounds.width + deltaX;
               const newHeightFromDelta = initialBounds.height - deltaY;
-              const avgScale = (newWidthFromDelta / initialBounds.width + newHeightFromDelta / initialBounds.height) / 2;
-              newBounds.width = initialBounds.width * avgScale;
-              newBounds.height = initialBounds.height * avgScale;
+              // Use minimum scale to maintain aspect ratio from corner
+              const scaleX = newWidthFromDelta / initialBounds.width;
+              const scaleY = newHeightFromDelta / initialBounds.height;
+              const scale = Math.min(Math.abs(scaleX), Math.abs(scaleY));
+              
+              newBounds.width = Math.max(10, initialBounds.width * scale);
+              newBounds.height = Math.max(10, initialBounds.height * scale);
               newBounds.y = initialBounds.y + initialBounds.height - newBounds.height;
             } else {
               newBounds.y = snapValue(initialBounds.y + deltaY);
@@ -274,9 +282,13 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
               const aspectRatio = initialBounds.width / initialBounds.height;
               const newWidthFromDelta = initialBounds.width - deltaX;
               const newHeightFromDelta = initialBounds.height + deltaY;
-              const avgScale = (newWidthFromDelta / initialBounds.width + newHeightFromDelta / initialBounds.height) / 2;
-              newBounds.width = initialBounds.width * avgScale;
-              newBounds.height = initialBounds.height * avgScale;
+              // Use minimum scale to maintain aspect ratio from corner
+              const scaleX = newWidthFromDelta / initialBounds.width;
+              const scaleY = newHeightFromDelta / initialBounds.height;
+              const scale = Math.min(Math.abs(scaleX), Math.abs(scaleY));
+              
+              newBounds.width = Math.max(10, initialBounds.width * scale);
+              newBounds.height = Math.max(10, initialBounds.height * scale);
               newBounds.x = initialBounds.x + initialBounds.width - newBounds.width;
             } else {
               newBounds.x = snapValue(initialBounds.x + deltaX);
@@ -290,9 +302,13 @@ export const TransformControls: React.FC<TransformControlsProps> = ({
               const aspectRatio = initialBounds.width / initialBounds.height;
               const newWidthFromDelta = initialBounds.width + deltaX;
               const newHeightFromDelta = initialBounds.height + deltaY;
-              const avgScale = (newWidthFromDelta / initialBounds.width + newHeightFromDelta / initialBounds.height) / 2;
-              newBounds.width = initialBounds.width * avgScale;
-              newBounds.height = initialBounds.height * avgScale;
+              // Use minimum scale to maintain aspect ratio from corner
+              const scaleX = newWidthFromDelta / initialBounds.width;
+              const scaleY = newHeightFromDelta / initialBounds.height;
+              const scale = Math.min(Math.abs(scaleX), Math.abs(scaleY));
+              
+              newBounds.width = Math.max(10, initialBounds.width * scale);
+              newBounds.height = Math.max(10, initialBounds.height * scale);
             } else {
               newBounds.width = Math.max(10, initialBounds.width + deltaX);
               newBounds.height = Math.max(10, initialBounds.height + deltaY);

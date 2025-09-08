@@ -571,6 +571,10 @@ export const ReportsPanel: React.FC<ReportsPanelProps> = observer(({ className }
     showCreateReportDialog,
     hideCreateReportDialog,
     showDeleteReportDialog,
+    hideDeleteReportDialog,
+    showDeleteDialog,
+    reportToDelete,
+    isDeleting,
     clearError
   } = useReportsStore();
 
@@ -618,6 +622,16 @@ export const ReportsPanel: React.FC<ReportsPanelProps> = observer(({ className }
   const handleDeleteReport = useCallback((report: Report) => {
     showDeleteReportDialog(report.id);
   }, [showDeleteReportDialog]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (reportToDelete) {
+      try {
+        await deleteReport(reportToDelete);
+      } catch (error) {
+        console.error('Failed to delete report:', error);
+      }
+    }
+  }, [deleteReport, reportToDelete]);
 
   return (
     <PanelContainer>
@@ -795,6 +809,86 @@ export const ReportsPanel: React.FC<ReportsPanelProps> = observer(({ className }
         onCreate={handleCreateReport}
         isCreating={isCreating}
       />
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#2f343c',
+            border: '1px solid #495563',
+            borderRadius: '8px',
+            padding: '24px',
+            width: '400px',
+            maxWidth: '90vw'
+          }}>
+            <h3 style={{
+              margin: '0 0 16px 0',
+              color: '#f5f8fa',
+              fontSize: '18px',
+              fontWeight: '600'
+            }}>
+              Delete Report
+            </h3>
+            
+            <p style={{
+              margin: '0 0 24px 0',
+              color: '#a7b6c2',
+              fontSize: '14px',
+              lineHeight: '1.4'
+            }}>
+              Are you sure you want to delete this report? This action cannot be undone and will permanently remove the report and all its versions.
+            </p>
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={hideDeleteReportDialog}
+                disabled={isDeleting}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'transparent',
+                  color: '#a7b6c2',
+                  border: '1px solid #495563',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PanelContainer>
   );
 });

@@ -1,0 +1,254 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { styled } from 'goober';
+import { useAuthStore } from '../../stores/authStore';
+import { AuthModal } from './AuthModal';
+import { UserProfileModal } from './UserProfileModal';
+
+const ProfileContainer = styled('div')`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+const ProfileButton = styled('button')`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const Avatar = styled('div')<{ $hasImage: boolean }>`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 14px;
+  background: ${props => props.$hasImage ? 'transparent' : '#48aff0'};
+  color: white;
+  overflow: hidden;
+  border: 2px solid #495563;
+  transition: border-color 0.2s ease;
+
+  ${ProfileButton}:hover & {
+    border-color: #48aff0;
+  }
+`;
+
+const AvatarImage = styled('img')`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const LoginButton = styled('button')`
+  background: #48aff0;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #3a9dd9;
+    transform: translateY(-1px);
+  }
+`;
+
+const DropdownMenu = styled('div')<{ $isOpen: boolean }>`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #2f343c;
+  border: 1px solid #495563;
+  border-radius: 8px;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  opacity: ${props => props.$isOpen ? 1 : 0};
+  visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.$isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  transition: all 0.2s ease;
+  z-index: 1000;
+`;
+
+const UserInfo = styled('div')`
+  padding: 16px;
+  border-bottom: 1px solid #495563;
+`;
+
+const UserName = styled('div')`
+  color: #f5f8fa;
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+`;
+
+const UserEmail = styled('div')`
+  color: #a7b6c2;
+  font-size: 12px;
+`;
+
+const UserPlan = styled('span')`
+  background: #48aff0;
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 6px;
+  display: inline-block;
+`;
+
+const MenuItems = styled('div')`
+  padding: 8px 0;
+`;
+
+const MenuItem = styled('button')`
+  width: 100%;
+  background: none;
+  border: none;
+  color: #a7b6c2;
+  font-size: 14px;
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: #3a3f47;
+    color: #f5f8fa;
+  }
+`;
+
+const Divider = styled('div')`
+  height: 1px;
+  background: #495563;
+  margin: 8px 0;
+`;
+
+export const UserProfileDropdown: React.FC = () => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const { user, isAuthenticated, logout, initializeAuth } = useAuthStore();
+
+  // Initialize auth state on mount
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setIsDropdownOpen(false);
+    await logout();
+  };
+
+  const openProfileModal = () => {
+    setIsDropdownOpen(false);
+    setIsProfileModalOpen(true);
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <ProfileContainer>
+          <LoginButton onClick={() => setIsAuthModalOpen(true)}>
+            Sign In
+          </LoginButton>
+        </ProfileContainer>
+        
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialMode="login"
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ProfileContainer ref={dropdownRef}>
+        <ProfileButton onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+          <Avatar $hasImage={!!user?.avatar}>
+            {user?.avatar ? (
+              <AvatarImage src={user.avatar} alt={user.name} />
+            ) : (
+              user ? getInitials(user.name) : 'U'
+            )}
+          </Avatar>
+        </ProfileButton>
+
+        <DropdownMenu $isOpen={isDropdownOpen}>
+          {user && (
+            <>
+              <UserInfo>
+                <UserName>{user.name}</UserName>
+                <UserEmail>{user.email}</UserEmail>
+                <UserPlan>{user.plan}</UserPlan>
+              </UserInfo>
+              
+              <MenuItems>
+                <MenuItem onClick={openProfileModal}>
+                  👤 Profile Settings
+                </MenuItem>
+                
+                <MenuItem onClick={() => {/* TODO: Add preferences */}}>
+                  ⚙️ Preferences
+                </MenuItem>
+                
+                <Divider />
+                
+                <MenuItem onClick={() => {/* TODO: Add help */}}>
+                  ❓ Help & Support
+                </MenuItem>
+                
+                <Divider />
+                
+                <MenuItem onClick={handleLogout}>
+                  🚪 Sign Out
+                </MenuItem>
+              </MenuItems>
+            </>
+          )}
+        </DropdownMenu>
+      </ProfileContainer>
+
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
+    </>
+  );
+};

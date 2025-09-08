@@ -1,5 +1,4 @@
 import React from 'react';
-import { observer } from "mobx-react-lite";
 // import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
 import CanvasEngine from '../canvas/CanvasEngine';
@@ -8,6 +7,7 @@ import { CanvasTopBar } from '../canvas/CanvasTopBar';
 // import { ActionBar } from '../navigation/ActionBar';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useCanvas } from '@/hooks/useCanvas';
+import { useCanvasCentering } from '@/hooks/useCanvasCentering';
 
 interface MainCanvasProps {
   className?: string;
@@ -22,7 +22,7 @@ const CanvasContainer: React.FC<{ theme: any; className?: string; children: Reac
       position: 'relative',
       width: '100%',
       height: '100%',
-      backgroundColor: theme.colors?.canvasBg || '#364459',
+      backgroundColor: theme.colors?.canvasBg || '#2f343c',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
@@ -46,18 +46,22 @@ const CanvasArea: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    background: '#364459' // Canvas background from theme
+    background: '#2f343c', // Canvas background matching Polotno Studio
+    // Account for bottom zoom controls (height ~40px + 16px bottom margin = ~56px)
+    paddingBottom: '56px' // This shifts the visual center up to account for bottom controls
   }}>
     {children}
   </div>
 );
 
 
-// we need observer to update component automatically on any store changes
-export const MainCanvas: React.FC<MainCanvasProps> = observer(({ className }) => {
+export const MainCanvas: React.FC<MainCanvasProps> = ({ className }) => {
   const { theme } = useTheme();
   const { zoom, setZoom } = useCanvasStore();
   const { zoomToFit } = useCanvas();
+  
+  // Enable automatic centering behavior
+  useCanvasCentering();
 
   const handleZoomChange = (newZoom: number) => {
     setZoom(newZoom);
@@ -82,7 +86,7 @@ export const MainCanvas: React.FC<MainCanvasProps> = observer(({ className }) =>
       </CanvasArea>
     </CanvasContainer>
   );
-});
+};
 
 
 export type { MainCanvasProps };

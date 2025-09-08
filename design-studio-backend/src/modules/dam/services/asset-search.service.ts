@@ -406,19 +406,23 @@ export class AssetSearchService {
     const assetMap = new Map(assets.map(asset => [asset.id, asset]));
 
     // Enhance results
-    return results.map(result => ({
-      assetId: result.assetId,
-      score: result.score || 0,
-      asset: assetMap.get(result.assetId),
-      searchIndex: {
-        searchableContent: result.searchableContent,
-        visualFeatures: result.visualFeatures,
-        technicalSpecs: result.technicalSpecs,
-        contentAnalysis: result.contentAnalysis,
-        usageStats: result.usageStats,
-      },
-      highlights: this.generateHighlights(result, assetMap.get(result.assetId)),
-    })).filter(result => result.asset); // Remove results where asset was not found
+    return results.map(result => {
+      const asset = assetMap.get(result.assetId);
+      return {
+        assetId: result.assetId,
+        score: result.score || 0,
+        asset: asset,
+        metadata: asset?.metadata || null,
+        searchIndex: {
+          searchableContent: result.searchableContent,
+          visualFeatures: result.visualFeatures,
+          technicalSpecs: result.technicalSpecs,
+          contentAnalysis: result.contentAnalysis,
+          usageStats: result.usageStats,
+        },
+        highlights: this.generateHighlights(result, asset),
+      };
+    }).filter(result => result.asset); // Remove results where asset was not found
   }
 
   /**
@@ -575,7 +579,7 @@ export class AssetSearchService {
             }
           }
         },
-        { $sort: { similarity: -1 } },
+        { $sort: { similarity: -1 as const } },
         { $limit: limit },
         {
           $project: {

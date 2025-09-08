@@ -138,7 +138,22 @@ export class ExportService {
         case ExportFormat.PNG:
         case ExportFormat.JPG:
         case ExportFormat.WEBP:
-          result = await this.imageExportService.exportImage(exportRecord);
+          // Get canvas data from project (placeholder for now)
+          const canvasData = {}; // TODO: Get actual canvas data from project
+          const options = {
+            format: exportRecord.format,
+            width: exportRecord.width || undefined,
+            height: exportRecord.height || undefined,
+            quality: exportRecord.quality || undefined,
+          } as ExportOptionsDto;
+          const outputPath = `./exports/${exportRecord.id}.${exportRecord.format.toLowerCase()}`;
+          
+          const exportResult = await this.imageExportService.exportImage(canvasData, options, outputPath);
+          result = {
+            url: `/exports/${exportRecord.id}.${exportRecord.format.toLowerCase()}`,
+            fileSize: exportResult.fileSize,
+            format: exportRecord.format,
+          };
           break;
         case ExportFormat.MP4:
         case ExportFormat.GIF:

@@ -48,6 +48,7 @@ model User {
   componentVersions ComponentVersion[]
   reportExports    ReportExport[]
   designThemes     DesignTheme[]
+  reportVersions   ReportVersion[]
   
   @@map("users")
 }
@@ -270,6 +271,9 @@ model Export {
   fps         Int?
   loop        Boolean @default(true)
   
+  // Export settings
+  settings    Json @default("{}")
+  
   // Job status
   status      ExportStatus @default(PENDING)
   progress    Int @default(0)
@@ -302,10 +306,13 @@ model Export {
 enum ExportFormat {
   PNG
   JPEG
+  JPG
+  WEBP
   SVG
   PDF
   GIF
   MP4
+  WEBM
   
   @@map("export_format")
 }
@@ -599,6 +606,9 @@ model Report {
   title       String
   description String?
   
+  // Visual representation
+  thumbnail   String? // URL or base64 encoded thumbnail image
+  
   // Metadata
   author      String
   tags        String[]
@@ -622,6 +632,7 @@ model Report {
   
   pages       ReportPage[]
   exports     ReportExport[]
+  versions    ReportVersion[]
   
   @@map("reports")
 }
@@ -882,4 +893,37 @@ model DesignTheme {
   user        User @relation(fields: [createdBy], references: [id])
   
   @@map("design_themes")
+}
+
+// Report version history for canvas state tracking
+model ReportVersion {
+  id          String @id @default(cuid())
+  reportId    String @map("report_id")
+  version     Int
+  
+  // Canvas state snapshot (stored as JSON)
+  canvasState Json @map("canvas_state")
+  
+  // Version metadata
+  changeDescription String? @map("change_description")
+  autoSaved   Boolean @default(true) @map("auto_saved") // true for auto-save, false for manual save
+  
+  // Canvas settings at time of version
+  canvasWidth  Int? @map("canvas_width")
+  canvasHeight Int? @map("canvas_height")
+  backgroundColor String? @map("background_color")
+  
+  // Element counts for quick overview
+  elementCount Int @default(0) @map("element_count")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  report      Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdBy   String @map("created_by")
+  user        User @relation(fields: [createdBy], references: [id])
+  
+  @@unique([reportId, version])
+  @@map("report_versions")
 }

@@ -1,5 +1,5 @@
-import axios from 'axios';
-import type { AxiosResponse } from 'axios';
+// Removed axios dependency - using authService.authenticatedFetch for all API calls
+import { authService } from './authService';
 
 // Backend API URL configuration
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://127.0.0.1:3001/api/v1';
@@ -63,6 +63,14 @@ export interface ReportListResponse {
   totalPages: number;
 }
 
+// Backend API response format (what we actually receive)
+export interface BackendReportListResponse {
+  data: Report[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface ReportStats {
   totalReports: number;
   publishedReports: number;
@@ -76,30 +84,63 @@ export interface ReportStats {
   }[];
 }
 
-class ReportsService {
-  private client = axios.create({
-    baseURL: BACKEND_API_URL,
-    timeout: 15000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+// Canvas integration types
+export interface CanvasState {
+  elements: any[];
+  canvasSize: { width: number; height: number };
+  backgroundColor: string;
+  zoom: number;
+  pan: { x: number; y: number };
+  showGrid: boolean;
+  gridSize: number;
+  snapToGrid: boolean;
+  showGuides: boolean;
+  snapToGuides: boolean;
+}
 
-  private handleApiError(error: any): never {
+export interface SaveCanvasStateRequest {
+  canvasState: CanvasState;
+  changeDescription?: string;
+  autoSaved?: boolean;
+  thumbnail?: string; // Base64 encoded thumbnail image
+}
+
+export interface ReportVersion {
+  id: string;
+  reportId: string;
+  version: number;
+  canvasState: CanvasState;
+  changeDescription?: string;
+  autoSaved: boolean;
+  canvasWidth?: number;
+  canvasHeight?: number;
+  backgroundColor?: string;
+  elementCount: number;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface OpenReportResponse {
+  reportId: string;
+  canvasState: CanvasState;
+  version: number;
+  versionId: string | null;
+}
+
+class ReportsService {
+  private handleApiError(error: any, response?: Response): never {
     console.error('Reports API error:', error);
     
-    if (error.response?.status === 401) {
+    if (response?.status === 401) {
       throw new Error('Authentication required. Please log in.');
-    } else if (error.response?.status === 403) {
+    } else if (response?.status === 403) {
       throw new Error('Access forbidden. You do not have permission.');
-    } else if (error.response?.status === 404) {
+    } else if (response?.status === 404) {
       throw new Error('Report not found.');
-    } else if (error.response?.status === 409) {
+    } else if (response?.status === 409) {
       throw new Error('Report with this name already exists.');
-    } else if (error.response?.status === 429) {
+    } else if (response?.status === 429) {
       throw new Error('Rate limit exceeded. Please try again later.');
-    } else if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. Please check your connection.');
     } else {
       throw new Error(`API request failed: ${error.message || 'Unknown error'}`);
     }
@@ -110,10 +151,22 @@ class ReportsService {
     try {
       console.log('🎯 Creating report:', data);
       
-      const response: AxiosResponse<Report> = await this.client.post('/reports', data);
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const reportData: Report = await response.json();
       
-      console.log('✅ Report created successfully:', response.data);
-      return response.data;
+      console.log('✅ Report created successfully:', reportData);
+      return reportData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -138,16 +191,40 @@ class ReportsService {
 
       console.log('🔍 Fetching reports with params:', cleanParams);
 
-      const response: AxiosResponse<ReportListResponse> = await this.client.get('/reports', {
-        params: cleanParams,
+      const queryParams = new URLSearchParams();
+      Object.entries(cleanParams).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
       });
+
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/reports?${queryParams.toString()}`
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const backendData: BackendReportListResponse = await response.json();
+
+      // Transform backend response to match frontend interface
+      const reports = backendData.data || [];
+      const totalPages = Math.ceil((backendData.total || 0) / (backendData.pageSize || 1));
+      const safeData: ReportListResponse = {
+        reports: reports,
+        total: backendData.total || 0,
+        page: backendData.page || 1,
+        limit: backendData.pageSize || 20,
+        totalPages: totalPages
+      };
 
       console.log('✅ Reports fetched successfully:', {
-        count: response.data.reports.length,
-        total: response.data.total
+        count: reports.length,
+        total: safeData.total
       });
 
-      return response.data;
+      return safeData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -158,10 +235,18 @@ class ReportsService {
     try {
       console.log('📊 Fetching report statistics...');
       
-      const response: AxiosResponse<ReportStats> = await this.client.get('/reports/stats');
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/reports/stats`
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const data: ReportStats = await response.json();
       
-      console.log('✅ Report stats fetched successfully:', response.data);
-      return response.data;
+      console.log('✅ Report stats fetched successfully:', data);
+      return data;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -172,12 +257,23 @@ class ReportsService {
     try {
       console.log('🎯 Fetching report:', { id, includePages });
       
-      const response: AxiosResponse<Report> = await this.client.get(`/reports/${id}`, {
-        params: { includePages },
-      });
+      const queryParams = new URLSearchParams();
+      if (includePages) {
+        queryParams.append('includePages', 'true');
+      }
       
-      console.log('✅ Report fetched successfully:', response.data);
-      return response.data;
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/reports/${id}?${queryParams.toString()}`
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const reportData: Report = await response.json();
+      
+      console.log('✅ Report fetched successfully:', reportData);
+      return reportData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -188,10 +284,22 @@ class ReportsService {
     try {
       console.log('📝 Updating report:', { id, data });
       
-      const response: AxiosResponse<Report> = await this.client.put(`/reports/${id}`, data);
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const reportData: Report = await response.json();
       
-      console.log('✅ Report updated successfully:', response.data);
-      return response.data;
+      console.log('✅ Report updated successfully:', reportData);
+      return reportData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -202,7 +310,13 @@ class ReportsService {
     try {
       console.log('🗑️ Deleting report:', id);
       
-      await this.client.delete(`/reports/${id}`);
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
       
       console.log('✅ Report deleted successfully');
     } catch (error) {
@@ -215,12 +329,22 @@ class ReportsService {
     try {
       console.log('📋 Duplicating report:', { id, newTitle });
       
-      const response: AxiosResponse<Report> = await this.client.post(`/reports/${id}/duplicate`, {
-        title: newTitle,
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports/${id}/duplicate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: newTitle }),
       });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const reportData: Report = await response.json();
       
-      console.log('✅ Report duplicated successfully:', response.data);
-      return response.data;
+      console.log('✅ Report duplicated successfully:', reportData);
+      return reportData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -231,12 +355,22 @@ class ReportsService {
     try {
       console.log('📢 Toggling report publish status:', { id, isPublished });
       
-      const response: AxiosResponse<Report> = await this.client.put(`/reports/${id}/publish`, {
-        isPublished,
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports/${id}/publish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isPublished }),
       });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const reportData: Report = await response.json();
       
-      console.log('✅ Report publish status updated:', response.data);
-      return response.data;
+      console.log('✅ Report publish status updated:', reportData);
+      return reportData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -247,12 +381,22 @@ class ReportsService {
     try {
       console.log('👁️ Setting report visibility:', { id, isPublic });
       
-      const response: AxiosResponse<Report> = await this.client.put(`/reports/${id}/visibility`, {
-        isPublic,
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports/${id}/visibility`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isPublic }),
       });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const reportData: Report = await response.json();
       
-      console.log('✅ Report visibility updated:', response.data);
-      return response.data;
+      console.log('✅ Report visibility updated:', reportData);
+      return reportData;
     } catch (error) {
       this.handleApiError(error);
     }
@@ -261,11 +405,214 @@ class ReportsService {
   // Health check for reports service
   async isReportsHealthy(): Promise<boolean> {
     try {
-      const response = await this.client.get('/reports/health/status');
-      return response.data.healthy === true;
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/reports/health/status`);
+      if (!response.ok) {
+        return false;
+      }
+      const data = await response.json();
+      return data.healthy === true;
     } catch {
       return false;
     }
+  }
+
+  // Canvas integration methods
+
+  // Save canvas state as new version
+  async saveCanvasVersion(reportId: string, data: SaveCanvasStateRequest): Promise<ReportVersion> {
+    try {
+      console.log('💾 Saving canvas version for report:', reportId);
+      
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/design-system/reports/${reportId}/versions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const versionData: ReportVersion = await response.json();
+      
+      console.log('✅ Canvas version saved successfully:', versionData);
+      return versionData;
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  // Auto-save canvas state (optimized for frequent saves)
+  async autoSaveCanvas(reportId: string, canvasState: CanvasState): Promise<ReportVersion> {
+    try {
+      console.log('🔄 Auto-saving canvas for report:', reportId);
+      
+      const response = await authService.authenticatedFetch(`${BACKEND_API_URL}/design-system/reports/${reportId}/auto-save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          canvasState,
+          changeDescription: 'Auto-save',
+          autoSaved: true,
+        }),
+      });
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const versionData: ReportVersion = await response.json();
+      
+      console.log('✅ Auto-save completed:', versionData.version);
+      return versionData;
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  // Load report into canvas
+  async openReportInCanvas(reportId: string, versionId?: string): Promise<OpenReportResponse> {
+    try {
+      console.log('📂 Loading report into canvas:', { reportId, versionId });
+      
+      const queryParams = new URLSearchParams();
+      if (versionId) {
+        queryParams.append('versionId', versionId);
+      }
+      
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/design-system/reports/${reportId}/open?${queryParams.toString()}`,
+        {
+          method: 'PUT',
+        }
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const data: OpenReportResponse = await response.json();
+      
+      console.log('✅ Report loaded into canvas successfully:', data);
+      return data;
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  // Get all versions of a report
+  async getReportVersions(reportId: string): Promise<ReportVersion[]> {
+    try {
+      console.log('📋 Fetching report versions:', reportId);
+      
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/design-system/reports/${reportId}/versions`
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const versions: ReportVersion[] = await response.json();
+      
+      console.log('✅ Report versions fetched:', versions.length);
+      return versions;
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  // Get specific version of a report
+  async getReportVersion(reportId: string, versionId: string): Promise<ReportVersion> {
+    try {
+      console.log('🔍 Fetching specific version:', { reportId, versionId });
+      
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/design-system/reports/${reportId}/versions/${versionId}`
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+
+      const version: ReportVersion = await response.json();
+      
+      console.log('✅ Report version fetched successfully:', version);
+      return version;
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  // Delete a specific version
+  async deleteReportVersion(reportId: string, versionId: string): Promise<void> {
+    try {
+      console.log('🗑️ Deleting report version:', { reportId, versionId });
+      
+      const response = await authService.authenticatedFetch(
+        `${BACKEND_API_URL}/design-system/reports/${reportId}/versions/${versionId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        this.handleApiError(new Error(`HTTP ${response.status}`), response);
+      }
+      
+      console.log('✅ Report version deleted successfully');
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  // Canvas state utilities
+  
+  // Check if canvas state has significant changes (for smart auto-save)
+  hasSignificantChanges(oldState: CanvasState | null, newState: CanvasState): boolean {
+    if (!oldState) return true;
+    
+    // Check element count change
+    if (oldState.elements.length !== newState.elements.length) {
+      return true;
+    }
+    
+    // Check canvas size change
+    if (oldState.canvasSize.width !== newState.canvasSize.width || 
+        oldState.canvasSize.height !== newState.canvasSize.height) {
+      return true;
+    }
+    
+    // Check background color change
+    if (oldState.backgroundColor !== newState.backgroundColor) {
+      return true;
+    }
+    
+    // Check for element modifications (basic comparison)
+    try {
+      const oldElementIds = oldState.elements.map(el => el.id).sort();
+      const newElementIds = newState.elements.map(el => el.id).sort();
+      
+      if (JSON.stringify(oldElementIds) !== JSON.stringify(newElementIds)) {
+        return true;
+      }
+    } catch {
+      return true; // Assume change if comparison fails
+    }
+    
+    return false;
+  }
+  
+  // Generate canvas state summary for version descriptions
+  generateCanvasStateSummary(canvasState: CanvasState): string {
+    const elementCount = canvasState.elements?.length || 0;
+    const { width, height } = canvasState.canvasSize || { width: 0, height: 0 };
+    
+    return `${elementCount} elements • ${width}×${height} canvas`;
   }
 
   // Utility methods
@@ -312,7 +659,44 @@ class ReportsService {
       isPublic: filters.public,
     };
   }
+
+  // Version management utilities
+  
+  // Format version display info
+  formatVersionInfo(version: ReportVersion): string {
+    const date = new Date(version.createdAt).toLocaleString();
+    const type = version.autoSaved ? 'Auto-save' : 'Manual save';
+    const description = version.changeDescription || 'No description';
+    
+    return `v${version.version} • ${type} • ${description} • ${date}`;
+  }
+  
+  // Get version age in human-readable format
+  getVersionAge(createdAt: string): string {
+    const now = Date.now();
+    const created = new Date(createdAt).getTime();
+    const diffMinutes = Math.floor((now - created) / (1000 * 60));
+    
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return new Date(createdAt).toLocaleDateString();
+  }
 }
 
 export const reportsService = new ReportsService();
 export default reportsService;
+
+// Export canvas integration types for use in components
+export type {
+  CanvasState,
+  SaveCanvasStateRequest,
+  ReportVersion,
+  OpenReportResponse,
+};

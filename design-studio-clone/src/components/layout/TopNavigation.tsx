@@ -4,6 +4,7 @@ import { Button, ButtonGroup, Icon, Menu, MenuDivider, MenuItem, Popover } from 
 import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { UserProfileDropdown } from '../auth/UserProfileDropdown';
 
 interface TopNavigationProps {
   projectName?: string;
@@ -231,6 +232,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = observer(({
             <Button minimal icon="help" />
           </Popover>
         </ButtonGroup>
+        
+        {/* User Profile Dropdown */}
+        <UserProfileDropdown />
       </RightSection>
     </NavigationContainer>
   );

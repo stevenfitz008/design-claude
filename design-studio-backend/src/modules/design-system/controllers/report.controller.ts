@@ -21,7 +21,10 @@ import {
   CreateReportRequest, 
   CreatePageRequest,
   UpdatePageLayoutRequest,
-  PageComponentInstance 
+  PageComponentInstance,
+  SaveCanvasStateRequest,
+  ReportVersionResponse,
+  CanvasState
 } from '../services/report.service';
 
 @ApiTags('Design System - Reports')
@@ -219,6 +222,131 @@ export class ReportController {
   ) {
     return this.reportService.removeComponentFromPage(pageId, componentId, req.user.id);
   }
+
+  // Canvas integration and version management endpoints
+
+  @Post(':id/versions')
+  @ApiOperation({ summary: 'Save canvas state as new version' })
+  @ApiResponse({ status: 201, description: 'Canvas version saved successfully' })
+  @ApiResponse({ status: 403, description: 'Not authorized to modify report' })
+  @ApiResponse({ status: 404, description: 'Report not found' })
+  async saveCanvasVersion(
+    @Request() req,
+    @Param('id') reportId: string,
+    @Body() saveCanvasDto: SaveCanvasStateRequest
+  ) {
+    return this.reportService.saveCanvasVersion(reportId, req.user.id, saveCanvasDto);
+  }
+
+  @Get(':id/versions')
+  @ApiOperation({ summary: 'Get all versions of a report' })
+  @ApiResponse({ status: 200, description: 'Report versions retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Report not found' })
+  async getReportVersions(
+    @Request() req,
+    @Param('id') reportId: string
+  ) {
+    return this.reportService.getReportVersions(reportId, req.user.id);
+  }
+
+  @Get(':id/versions/:versionId')
+  @ApiOperation({ summary: 'Get specific version of a report' })
+  @ApiResponse({ status: 200, description: 'Report version retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Report or version not found' })
+  async getReportVersion(
+    @Request() req,
+    @Param('id') reportId: string,
+    @Param('versionId') versionId: string
+  ) {
+    return this.reportService.getReportVersion(reportId, versionId, req.user.id);
+  }
+
+  @Delete(':id/versions/:versionId')
+  @ApiOperation({ summary: 'Delete specific version of a report' })
+  @ApiResponse({ status: 200, description: 'Report version deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Not authorized to modify report' })
+  @ApiResponse({ status: 404, description: 'Report or version not found' })
+  @ApiResponse({ status: 400, description: 'Cannot delete the only version' })
+  async deleteReportVersion(
+    @Request() req,
+    @Param('id') reportId: string,
+    @Param('versionId') versionId: string
+  ) {
+    await this.reportService.deleteReportVersion(reportId, versionId, req.user.id);
+    return { success: true };
+  }
+
+  @Put(':id/open')
+  @ApiOperation({ summary: 'Load report into canvas and update last opened timestamp' })
+  @ApiResponse({ status: 200, description: 'Report loaded successfully' })
+  @ApiResponse({ status: 404, description: 'Report not found' })
+  async openReportInCanvas(
+    @Request() req,
+    @Param('id') reportId: string,
+    @Query('versionId') versionId?: string
+  ) {
+    // Update last opened timestamp
+    await this.reportService.updateLastOpened(reportId, req.user.id);
+    
+    if (versionId) {
+      // Load specific version
+      const version = await this.reportService.getReportVersion(reportId, versionId, req.user.id);
+      return {
+        reportId,
+        canvasState: version.canvasState,
+        version: version.version,
+        versionId: version.id,
+      };
+    } else {
+      // Load latest version
+      const canvasState = await this.reportService.getLatestCanvasState(reportId, req.user.id);
+      const report = await this.reportService.getReport(reportId, req.user.id);
+      return {
+        reportId,
+        canvasState: canvasState || {
+          elements: [],
+          canvasSize: { width: 1000, height: 625 },
+          backgroundColor: '#ffffff',
+          zoom: 1,
+          pan: { x: 0, y: 0 },
+          showGrid: false,
+          gridSize: 20,
+          snapToGrid: false,
+          showGuides: false,
+          snapToGuides: false,
+        },
+        version: report.version,
+        versionId: null,
+      };
+    }
+  }
+
+  @Post(':id/auto-save')
+  @ApiOperation({ summary: 'Auto-save canvas state (creates version if significant changes)' })
+  @ApiResponse({ status: 201, description: 'Auto-save completed' })
+  @ApiResponse({ status:403, description: 'Not authorized to modify report' })
+  @ApiResponse({ status: 404, description: 'Report not found' })
+  async autoSaveCanvas(
+    @Request() req,
+    @Param('id') reportId: string,
+    @Body() saveCanvasDto: SaveCanvasStateRequest
+  ) {
+    // Force auto-save flag
+    const autoSaveData = {
+      ...saveCanvasDto,
+      autoSaved: true,
+      changeDescription: saveCanvasDto.changeDescription || 'Auto-save'
+    };
+    
+    const version = await this.reportService.saveCanvasVersion(reportId, req.user.id, autoSaveData);
+    
+    // Cleanup old versions in background
+    this.reportService.cleanupOldVersions(reportId).catch(err => 
+      console.warn('Failed to cleanup old versions:', err)
+    );
+    
+    return version;
+  }
 }
 
 // DTOs for API documentation
@@ -271,4 +399,21 @@ export class PageComponentDto implements Omit<PageComponentInstance, 'id'> {
   props: Record<string, any>;
   dataBindings?: Record<string, any>;
   responsive?: Record<string, any>;
+}
+
+export class SaveCanvasStateDto implements SaveCanvasStateRequest {
+  canvasState: {
+    elements: any[];
+    canvasSize: { width: number; height: number };
+    backgroundColor: string;
+    zoom: number;
+    pan: { x: number; y: number };
+    showGrid: boolean;
+    gridSize: number;
+    snapToGrid: boolean;
+    showGuides: boolean;
+    snapToGuides: boolean;
+  };
+  changeDescription?: string;
+  autoSaved?: boolean;
 }

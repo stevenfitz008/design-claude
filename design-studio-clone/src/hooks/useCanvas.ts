@@ -79,12 +79,49 @@ export const useCanvas = (): CanvasHookReturn => {
     
     if (!stage || !container) return;
     
+    // Get container dimensions
     const containerWidth = container.offsetWidth;
     const containerHeight = container.offsetHeight;
     
-    stage.width(containerWidth);
-    stage.height(containerHeight);
-  }, []);
+    // Account for UI elements (similar to your onResize function)
+    const availableWidth = containerWidth;
+    const availableHeight = containerHeight - 56; // Bottom zoom controls space
+    
+    // Use canvas size as virtual dimensions reference
+    const VIRTUAL_WIDTH = canvasSize.width;
+    const VIRTUAL_HEIGHT = canvasSize.height;
+    
+    // Calculate scale to fit content while maintaining aspect ratio
+    const scaleX = availableWidth / VIRTUAL_WIDTH;
+    const scaleY = availableHeight / VIRTUAL_HEIGHT;
+    const scale = Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 100%
+    
+    // Set stage dimensions (stage position is fixed at 0,0, scaling handled by layers)
+    stage.setAttrs({
+      width: availableWidth,
+      height: availableHeight,
+      scaleX: 1, // Don't scale the stage itself
+      scaleY: 1, // Don't scale the stage itself
+      x: 0, // Fixed position - no panning
+      y: 0  // Fixed position - no panning
+    });
+    
+    console.log(`🎯 Stage fitted: ${availableWidth}x${availableHeight} with ${scale.toFixed(2)}x scale`);
+    
+    // Update our zoom state to match the scale
+    setZoom(scale);
+    
+    // Calculate centering offsets for the canvas content within the stage
+    const scaledCanvasWidth = VIRTUAL_WIDTH * scale;
+    const scaledCanvasHeight = VIRTUAL_HEIGHT * scale;
+    const centerX = (availableWidth - scaledCanvasWidth) / 2;
+    const centerY = (availableHeight - scaledCanvasHeight) / 2;
+    
+    // Use pan values to offset the layers for centering (layers will use these via transform)
+    setPan({ x: centerX, y: centerY });
+    
+    stage.draw();
+  }, [canvasSize.width, canvasSize.height, setZoom, setPan]);
 
   const resetTransform = useCallback(() => {
     setZoom(1);
@@ -97,35 +134,67 @@ export const useCanvas = (): CanvasHookReturn => {
     
     const stageWidth = stage.width();
     const stageHeight = stage.height();
-    const centerX = stageWidth / 2 - (canvasSize.width * zoom) / 2;
-    const centerY = stageHeight / 2 - (canvasSize.height * zoom) / 2;
+    
+    // Perfect center calculation - canvas should be exactly in the middle, accounting for bottom controls
+    const zoomedCanvasWidth = canvasSize.width * zoom;
+    const zoomedCanvasHeight = canvasSize.height * zoom;
+    
+    const centerX = (stageWidth - zoomedCanvasWidth) / 2;
+    // Adjust centerY to account for bottom zoom controls (56px total space)
+    const bottomControlsSpace = 56; // Bottom controls height + margin
+    const availableVerticalSpace = stageHeight - bottomControlsSpace;
+    const centerY = (availableVerticalSpace - zoomedCanvasHeight) / 2;
     
     setPan({ x: centerX, y: centerY });
+    
+    console.log(`📍 Canvas centered: zoom ${zoom.toFixed(2)}x at (${centerX.toFixed(1)}, ${centerY.toFixed(1)})`);
   }, [canvasSize, zoom, setPan]);
 
   const zoomToFit = useCallback(() => {
     const stage = stageRef.current;
-    if (!stage) return;
+    if (!stage) {
+      console.log('🚫 zoomToFit: No stage reference');
+      return;
+    }
     
     const stageWidth = stage.width();
     const stageHeight = stage.height();
     
-    // Account for bottom zoom controls and some padding
-    const availableWidth = stageWidth - 40; // 20px padding on each side
-    const availableHeight = stageHeight - 80; // Account for bottom controls
+    // Account for bottom zoom controls and provide generous padding for centering
+    const horizontalPadding = 120; // 60px margin on each side for better visual balance (increased from 80)
+    const verticalPadding = 140; // Account for bottom controls + extra margin (increased from 120)
     
+    const availableWidth = stageWidth - horizontalPadding;
+    const availableHeight = stageHeight - verticalPadding;
+    
+    // Calculate zoom level that fits the canvas with margins
     const scaleX = availableWidth / canvasSize.width;
     const scaleY = availableHeight / canvasSize.height;
-    const newZoom = Math.min(scaleX, scaleY, 1.0); // Max 100% zoom for fitting
+    const fitZoom = Math.min(scaleX, scaleY);
+    
+    // Intelligent zoom limits based on canvas size and container
+    const maxZoom = canvasSize.width < 600 ? 1.5 : 1.2; // Allow larger zoom for smaller canvases
+    const minZoom = 0.1;
+    const newZoom = Math.max(minZoom, Math.min(fitZoom, maxZoom));
+    
+    console.log(`🎯 ZoomToFit: Canvas ${canvasSize.width}x${canvasSize.height} → ${newZoom.toFixed(2)}x zoom`);
     
     setZoom(newZoom);
     
-    // Center the canvas perfectly
-    const centerX = (stageWidth - canvasSize.width * newZoom) / 2;
-    const centerY = (stageHeight - canvasSize.height * newZoom) / 2;
+    // Perfect center positioning - account for the actual zoomed canvas size and bottom controls
+    const zoomedCanvasWidth = canvasSize.width * newZoom;
+    const zoomedCanvasHeight = canvasSize.height * newZoom;
+    
+    const centerX = (stageWidth - zoomedCanvasWidth) / 2;
+    // Adjust centerY to account for bottom zoom controls (56px total space)
+    const bottomControlsSpace = 56; // Bottom controls height + margin
+    const availableVerticalSpace = stageHeight - bottomControlsSpace;
+    const centerY = (availableVerticalSpace - zoomedCanvasHeight) / 2;
     
     setPan({ x: centerX, y: centerY });
-  }, [canvasSize, setZoom, setPan]);
+    
+    console.log(`🎯 Canvas auto-fit: ${newZoom.toFixed(2)}x zoom, centered at (${centerX.toFixed(1)}, ${centerY.toFixed(1)})`);
+  }, [canvasSize, setZoom, setPan, zoom]);
 
   const zoomToSelection = useCallback(() => {
     const selectedElements = useCanvasStore.getState().getSelectedElements();
@@ -297,28 +366,25 @@ export const useCanvas = (): CanvasHookReturn => {
     if (!stage) return;
     
     const oldScale = zoom;
-    const pointer = stage.getPointerPosition();
-    if (!pointer) return;
     
-    const mousePointTo = {
-      x: (pointer.x - pan.x) / oldScale,
-      y: (pointer.y - pan.y) / oldScale,
-    };
-    
-    // Zoom speed
-    const zoomSpeed = 0.1;
+    // Simple zoom behavior - only change zoom level, centering is handled by fitStageIntoParentContainer
+    const baseZoomSpeed = 0.1;
+    const adaptiveZoomSpeed = Math.max(baseZoomSpeed, oldScale * 0.05);
     const direction = e.evt.deltaY > 0 ? -1 : 1;
-    const newZoom = Math.max(0.1, Math.min(5, oldScale + direction * zoomSpeed));
+    const newZoom = Math.max(0.1, Math.min(3, oldScale + direction * adaptiveZoomSpeed));
     
     setZoom(newZoom);
     
-    const newPan = {
-      x: pointer.x - mousePointTo.x * newZoom,
-      y: pointer.y - mousePointTo.y * newZoom,
-    };
+    // Recalculate centering for the new zoom level
+    const stageWidth = stage.width();
+    const stageHeight = stage.height() - 56; // Account for bottom controls
+    const scaledCanvasWidth = canvasSize.width * newZoom;
+    const scaledCanvasHeight = canvasSize.height * newZoom;
+    const centerX = (stageWidth - scaledCanvasWidth) / 2;
+    const centerY = (stageHeight - scaledCanvasHeight) / 2;
     
-    setPan(newPan);
-  }, [zoom, pan, setZoom, setPan]);
+    setPan({ x: centerX, y: centerY });
+  }, [zoom, canvasSize, setZoom, setPan, stageRef]);
 
   // Keyboard shortcuts
   const setupKeyboardShortcuts = useCallback(() => {
@@ -488,6 +554,7 @@ export const useCanvas = (): CanvasHookReturn => {
     canUndo,
     canRedo,
     selection,
+    canvasSize,
     deleteElements,
     clearSelection,
     resetTransform,

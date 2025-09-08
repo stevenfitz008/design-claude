@@ -17,7 +17,16 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtService.validateAccessToken(token);
-      request.user = payload;
+      
+      // Map JWT payload to user object format expected by controllers
+      const user = {
+        id: payload.sub, // Map JWT 'sub' field to 'id'
+        email: payload.email,
+        name: payload.name,
+        plan: payload.plan,
+      };
+      
+      request.user = user;
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired access token');

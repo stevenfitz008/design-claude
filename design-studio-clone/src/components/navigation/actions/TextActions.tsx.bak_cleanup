@@ -1,0 +1,246 @@
+import React from 'react';
+import { Button, ButtonGroup, Icon, Popover, Menu, MenuItem, MenuDivider } from '@blueprintjs/core';
+// import { styled } from '@styles/goober-setup';
+import { useTheme } from '@/contexts/ThemeProvider';
+import { useCanvasStore } from '@/stores/canvasStore';
+import type { CanvasElement } from '@/types/canvas';
+
+interface TextActionsProps {
+  hasSelection: boolean;
+  selectedElements: CanvasElement[];
+}
+
+// // const ActionsContainer = styled.div<{ theme: any }>`
+//   display: flex;
+//   align-items: center;
+//   gap: ${props => props.theme.spacing.xs};
+// `;
+
+const ActionButton = styled(Button)<{ theme: any }>`
+  &.bp4-disabled {
+    opacity: 0.3;
+  }
+  
+  &:not(.bp4-disabled):hover {
+    background-color: ${props => props.theme.colors.hoverBg};
+    color: ${props => props.theme.colors.selectionColor};
+  }
+`;
+
+const FontSizeButton = styled(ActionButton)<{ theme: any }>`
+  min-width: 50px;
+  justify-content: center;
+`;
+
+export const TextActions: React.FC<TextActionsProps> = ({ hasSelection, selectedElements }) => {
+  const { theme } = useTheme();
+  const { updateElement } = useCanvasStore();
+  
+  // Check if selected elements include text
+  const hasTextSelection = hasSelection && selectedElements.some(el => el.type === 'text');
+  const textElement = selectedElements.find(el => el.type === 'text');
+
+  const handleFontFamily = (fontFamily: string) => {
+    if (!hasTextSelection) return;
+    
+    selectedElements.forEach(element => {
+      if (element.type === 'text') {
+        updateElement(element.id, { fontFamily });
+      }
+    });
+  };
+
+  const handleFontSize = (delta: number) => {
+    if (!hasTextSelection || !textElement) return;
+    
+    const currentSize = (textElement as any).fontSize || 16;
+    const newSize = Math.max(8, Math.min(200, currentSize + delta));
+    
+    selectedElements.forEach(element => {
+      if (element.type === 'text') {
+        updateElement(element.id, { fontSize: newSize });
+      }
+    });
+  };
+
+  const handleTextAlign = (textAlign: string) => {
+    if (!hasTextSelection) return;
+    
+    selectedElements.forEach(element => {
+      if (element.type === 'text') {
+        updateElement(element.id, { textAlign });
+      }
+    });
+  };
+
+  const handleTextStyle = (style: string, value: any) => {
+    if (!hasTextSelection) return;
+    
+    selectedElements.forEach(element => {
+      if (element.type === 'text') {
+        updateElement(element.id, { [style]: value });
+      }
+    });
+  };
+
+  const handleTextColor = (color: string) => {
+    if (!hasTextSelection) return;
+    
+    selectedElements.forEach(element => {
+      if (element.type === 'text') {
+        updateElement(element.id, { color });
+      }
+    });
+  };
+
+  const fontMenu = (
+    <Menu>
+      <MenuItem text="Arial" onClick={() => handleFontFamily('Arial')} />
+      <MenuItem text="Helvetica" onClick={() => handleFontFamily('Helvetica')} />
+      <MenuItem text="Times New Roman" onClick={() => handleFontFamily('Times New Roman')} />
+      <MenuItem text="Georgia" onClick={() => handleFontFamily('Georgia')} />
+      <MenuDivider />
+      <MenuItem text="Roboto" onClick={() => handleFontFamily('Roboto')} />
+      <MenuItem text="Open Sans" onClick={() => handleFontFamily('Open Sans')} />
+      <MenuItem text="Lato" onClick={() => handleFontFamily('Lato')} />
+      <MenuItem text="Montserrat" onClick={() => handleFontFamily('Montserrat')} />
+    </Menu>
+  );
+
+  const colorMenu = (
+    <Menu>
+      <MenuItem icon="tint" text="Black" onClick={() => handleTextColor('#000000')} />
+      <MenuItem icon="tint" text="White" onClick={() => handleTextColor('#ffffff')} />
+      <MenuItem icon="tint" text="Blue" onClick={() => handleTextColor('#48aff0')} />
+      <MenuItem icon="tint" text="Red" onClick={() => handleTextColor('#db3737')} />
+      <MenuItem icon="tint" text="Green" onClick={() => handleTextColor('#15b371')} />
+      <MenuDivider />
+      <MenuItem icon="style" text="Custom Color..." />
+    </Menu>
+  );
+
+  const getCurrentFontSize = (): number => {
+    if (!textElement) return 16;
+    return (textElement as any).fontSize || 16;
+  };
+
+  const getCurrentFontFamily = (): string => {
+    if (!textElement) return 'Arial';
+    return (textElement as any).fontFamily || 'Arial';
+  };
+
+  return (
+    <ActionsContainer theme={theme}>
+      <ButtonGroup>
+        {/* Font Family */}
+        <Popover content={fontMenu} placement="bottom" disabled={!hasTextSelection}>
+          <ActionButton
+            theme={theme}
+            icon="font"
+            text={hasTextSelection ? getCurrentFontFamily() : 'Font'}
+            minimal
+            small
+            disabled={!hasTextSelection}
+            rightIcon="caret-down"
+          />
+        </Popover>
+
+        {/* Font Size Controls */}
+        <ButtonGroup>
+          <ActionButton
+            theme={theme}
+            icon="minus"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleFontSize(-2)}
+          />
+          <FontSizeButton
+            theme={theme}
+            text={hasTextSelection ? getCurrentFontSize().toString() : '16'}
+            minimal
+            small
+            disabled={!hasTextSelection}
+          />
+          <ActionButton
+            theme={theme}
+            icon="plus"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleFontSize(2)}
+          />
+        </ButtonGroup>
+
+        {/* Text Style */}
+        <ButtonGroup>
+          <ActionButton
+            theme={theme}
+            icon="bold"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleTextStyle('fontWeight', 'bold')}
+          />
+          <ActionButton
+            theme={theme}
+            icon="italic"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleTextStyle('fontStyle', 'italic')}
+          />
+          <ActionButton
+            theme={theme}
+            icon="underline"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleTextStyle('textDecoration', 'underline')}
+          />
+        </ButtonGroup>
+
+        {/* Text Alignment */}
+        <ButtonGroup>
+          <ActionButton
+            theme={theme}
+            icon="align-left"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleTextAlign('left')}
+          />
+          <ActionButton
+            theme={theme}
+            icon="align-center"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleTextAlign('center')}
+          />
+          <ActionButton
+            theme={theme}
+            icon="align-right"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            onClick={() => handleTextAlign('right')}
+          />
+        </ButtonGroup>
+
+        {/* Text Color */}
+        <Popover content={colorMenu} placement="bottom" disabled={!hasTextSelection}>
+          <ActionButton
+            theme={theme}
+            icon="tint"
+            text="Color"
+            minimal
+            small
+            disabled={!hasTextSelection}
+            rightIcon="caret-down"
+          />
+        </Popover>
+      </ButtonGroup>
+    </ActionsContainer>
+  );
+};

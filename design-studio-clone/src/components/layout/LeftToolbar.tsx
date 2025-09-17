@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { observer } from "mobx-react-lite";
-import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaTh as FaDots, FaLayerGroup, FaExpandArrowsAlt, FaFileAlt, FaFile, FaCubes, FaSitemap } from '@meronex/icons/fa';
+import { Button } from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
 import { useTheme } from '../../../contexts/ThemeProvider';
 import { usePanelStore } from '../../stores/panelStore';
 import { TOOLS, Tool } from '../../types/tools';
@@ -25,20 +26,25 @@ const ToolbarContainer: React.FC<{ theme: any; children: React.ReactNode }> = ({
   </div>
 );
 
-const ToolButton: React.FC<{ 
-  theme: any; 
-  isActive: boolean; 
+const ToolButton: React.FC<{
+  theme: any;
+  isActive: boolean;
   onClick: () => void;
   title: string;
-  children: React.ReactNode;
+  icon: IconNames;
+  label: string;
+  shortcut?: string;
   'aria-label': string;
   'aria-pressed': boolean;
-}> = ({ isActive, onClick, title, children, ...props }) => (
-  <button 
+}> = ({ isActive, onClick, title, icon, label, shortcut, ...props }) => (
+  <Button
     onClick={onClick}
     title={title}
     aria-label={props['aria-label']}
     aria-pressed={props['aria-pressed']}
+    icon={icon}
+    minimal
+    large
     style={{
       display: 'flex',
       flexDirection: 'column',
@@ -58,36 +64,37 @@ const ToolButton: React.FC<{
       position: 'relative'
     }}
   >
-    {children}
-  </button>
+    <div style={{
+      fontSize: '11px',
+      fontWeight: '400',
+      lineHeight: '1.2',
+      textAlign: 'center',
+      maxWidth: '100%',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      marginTop: '4px'
+    }}>
+      {label}
+    </div>
+    {shortcut && (
+      <div style={{
+        position: 'absolute',
+        top: '4px',
+        right: '4px',
+        fontSize: '9px',
+        background: '#8a9ba8',
+        color: '#2f343c',
+        padding: '1px 3px',
+        borderRadius: '2px',
+        opacity: 0.7
+      }}>
+        {shortcut}
+      </div>
+    )}
+  </Button>
 );
 
-const ToolIcon: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{
-    width: '24px',
-    height: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }}>
-    {children}
-  </div>
-);
-
-const ToolLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{
-    fontSize: '11px',
-    fontWeight: '400',
-    lineHeight: '1.2',
-    textAlign: 'center',
-    maxWidth: '100%',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap'
-  }}>
-    {children}
-  </span>
-);
 
 const ToolDivider: React.FC = () => (
   <div style={{
@@ -98,21 +105,6 @@ const ToolDivider: React.FC = () => (
   }} />
 );
 
-const ShortcutHint: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{
-    position: 'absolute',
-    top: '4px',
-    right: '4px',
-    fontSize: '9px',
-    background: '#8a9ba8',
-    color: '#2f343c',
-    padding: '1px 3px',
-    borderRadius: '2px',
-    opacity: 0.7
-  }}>
-    {children}
-  </div>
-);
 
 // we need observer to update component automatically on any store changes
 export const LeftToolbar: React.FC<LeftToolbarProps> = observer(({ 
@@ -136,36 +128,35 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = observer(({
   const mediaTools = TOOLS.filter(tool => tool.category === 'media');
   const utilityTools = TOOLS.filter(tool => ['utility', 'ai'].includes(tool.category));
 
-  // Icon mapping for tools - using Font Awesome for better visual matches
-  const getToolIcon = (toolId: string) => {
-    const iconMap: Record<string, React.ElementType> = {
-      'my-designs': FaFolder,
-      'templates': FaTh,           // Grid of squares - perfect match for Templates
-      'text': FaFont,              // "Tt" text icon - perfect match
-      'photos': FaImage,           // Image/photo icon - perfect match 
-      'icons': FaStar,             // Star icon - perfect match
-      'shapes': FaShapes,          // Triangle shapes icon - perfect match
-      'upload': FaUpload,          // Upload arrow - perfect match
-      'videos': FaPlay,            // Play triangle - perfect match
-      'background': FaDots,        // Dot pattern - matches background
-      'layers': FaLayerGroup,      // Layer stack - perfect match
-      'resize': FaExpandArrowsAlt, // Expand arrows - perfect match
-      'quotes': FaFont,
-      'qr-code': FaTh,
-      'ai-img': FaStar,
-      'reports': FaFileAlt,        // Document/report icon
-      'pages': FaFile,             // File page icon
-      'components': FaCubes,       // Building blocks icon
-      'hierarchy': FaSitemap,      // Tree/hierarchy icon
+  // Icon mapping for tools - using Blueprint.js icons
+  const getToolIcon = (toolId: string): IconNames => {
+    const iconMap: Record<string, IconNames> = {
+      'my-designs': 'folder-close',
+      'templates': 'grid-view',
+      'text': 'font',
+      'photos': 'media',
+      'icons': 'symbol-circle',
+      'shapes': 'polygon-filter',
+      'upload': 'upload',
+      'videos': 'play',
+      'background': 'media',
+      'layers': 'layers',
+      'resize': 'fullscreen',
+      'quotes': 'citation',
+      'qr-code': 'grid',
+      'ai-img': 'lightbulb',
+      'reports': 'document',
+      'pages': 'document',
+      'components': 'cube',
+      'hierarchy': 'diagram-tree',
     };
-    return iconMap[toolId] || FaTh;
+    return iconMap[toolId] || 'grid-view';
   };
 
   const renderToolButton = (tool: Tool) => {
-    const IconComponent = getToolIcon(tool.id);
+    const icon = getToolIcon(tool.id);
     const isActive = activeToolId === tool.id;
-    const iconColor = isActive ? '#48aff0' : '#f5f8fa'; // Blue when active, white when inactive
-    
+
     return (
       <div key={tool.id} data-testid={`tool-${tool.id}`}>
         <ToolButton
@@ -173,25 +164,12 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = observer(({
           isActive={isActive}
           onClick={() => handleToolClick(tool)}
           title={`${tool.name}${tool.shortcut ? ` (${tool.shortcut})` : ''}`}
+          icon={icon}
+          label={tool.name}
+          shortcut={tool.shortcut}
           aria-label={tool.name}
           aria-pressed={isActive}
-        >
-          <ToolIcon>
-            <IconComponent 
-              size={24} 
-              color={iconColor}
-              style={{ color: iconColor }}
-            />
-          </ToolIcon>
-          <ToolLabel>
-            {tool.name}
-          </ToolLabel>
-          {tool.shortcut && (
-            <ShortcutHint>
-              {tool.shortcut}
-            </ShortcutHint>
-          )}
-        </ToolButton>
+        />
       </div>
     );
   };

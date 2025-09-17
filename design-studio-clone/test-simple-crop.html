@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Crop Test</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .status { 
+            padding: 10px; 
+            background: #444; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+        }
+        #canvas-container { 
+            border: 1px solid #555; 
+            background: white; 
+        }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            background: #48aff0; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background: #0056b3; 
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple Crop Integration Test</h1>
+        
+        <div class="status" id="status">
+            Testing new crop system:<br>
+            1. Click "Add Image" to load an image<br>
+            2. Select the image<br> 
+            3. Press 'C' key to start crop mode<br>
+            4. Drag handles to adjust crop area<br>
+            5. Click green button to apply or red to cancel
+        </div>
+        
+        <button onclick="addImage()">Add Image</button>
+        <button onclick="startCropMode()" id="cropBtn" disabled>Start Crop (C key)</button>
+        <button onclick="clearCanvas()">Clear Canvas</button>
+
+        <div id="canvas-container"></div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script>
+        let stage, layer, transformer, selectedImage;
+        let cropMode = false;
+        let cropOverlay = null;
+        
+        function log(message) {
+            console.log(message);
+            document.getElementById('status').innerHTML = message;
+        }
+
+        function initCanvas() {
+            stage = new Konva.Stage({
+                container: 'canvas-container',
+                width: 800,
+                height: 600
+            });
+
+            layer = new Konva.Layer();
+            stage.add(layer);
+
+            // Create transformer
+            transformer = new Konva.Transformer({
+                anchorStroke: '#48aff0',
+                anchorFill: 'white',
+                anchorSize: 10,
+                borderStroke: '#48aff0',
+                borderStrokeWidth: 2,
+                borderDash: [4, 4],
+                keepRatio: false,
+                ignoreStroke: true
+            });
+
+            layer.add(transformer);
+
+            // Click handler for deselection
+            stage.on('click tap', (e) => {
+                if (e.target === stage) {
+                    transformer.nodes([]);
+                    selectedImage = null;
+                    document.getElementById('cropBtn').disabled = true;
+                    log('Deselected all - crop mode disabled');
+                }
+            });
+
+            // Keyboard shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'c' && selectedImage && !cropMode) {
+                    startCropMode();
+                } else if (e.key === 'Escape' && cropMode) {
+                    cancelCrop();
+                }
+            });
+
+            log('Canvas initialized - ready for testing<br><strong>Keyboard:</strong> C = start crop, Escape = cancel');
+        }
+
+        function addImage() {
+            const imageObj = new Image();
+            
+            imageObj.onload = function() {
+                const image = new Konva.Image({
+                    image: imageObj,
+                    x: 100,
+                    y: 100,
+                    width: 300,
+                    height: 225,
+                    draggable: true,
+                    // Store original dimensions
+                    originalWidth: imageObj.naturalWidth,
+                    originalHeight: imageObj.naturalHeight
+                });
+
+                // Add crop properties (start with full image)
+                image.cropX(0);
+                image.cropY(0);
+                image.cropWidth(imageObj.naturalWidth);
+                image.cropHeight(imageObj.naturalHeight);
+
+                layer.add(image);
+                transformer.moveToTop();
+
+                // Add click handler to image
+                image.on('click tap', function(e) {
+                    if (cropMode) return;
+                    
+                    if (transformer.nodes().includes(image)) {
+                        transformer.nodes([]);
+                        selectedImage = null;
+                        document.getElementById('cropBtn').disabled = true;
+                        log('Image deselected');
+                    } else {
+                        transformer.nodes([image]);
+                        transformer.moveToTop();
+                        selectedImage = image;
+                        document.getElementById('cropBtn').disabled = false;
+                        log('Image selected - press C to crop or click "Start Crop"');
+                    }
+                    e.cancelBubble = true;
+                });
+
+                log('Image added - click to select, then press C to start crop mode');
+            };
+            
+            imageObj.src = 'https://images.unsplash.com/photo-1588899357441-7f613216191b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wzMjM4NDZ8MHwxfHJhbmRvbXx8fHx8fHx8fDE2OTU2NTM2NDh8&ixlib=rb-4.0.3&q=80&w=400';
+        }
+
+        function createSimpleCropOverlay(image) {
+            const group = new Konva.Group();
+            
+            // Current crop area (start with full image in display coordinates)
+            const cropArea = {
+                x: 0,
+                y: 0,
+                width: image.width(),
+                height: image.height()
+            };
+
+            // Create overlay rectangles (dimmed areas outside crop)
+            const overlayTop = new Konva.Rect({
+                x: image.x(),
+                y: image.y(),
+                width: image.width(),
+                height: cropArea.y,
+                fill: 'black',
+                opacity: 0.6,
+                listening: false
+            });
+
+            const overlayBottom = new Konva.Rect({
+                x: image.x(),
+                y: image.y() + cropArea.y + cropArea.height,
+                width: image.width(),
+                height: image.height() - cropArea.y - cropArea.height,
+                fill: 'black',
+                opacity: 0.6,
+                listening: false
+            });
+
+            const overlayLeft = new Konva.Rect({
+                x: image.x(),
+                y: image.y() + cropArea.y,
+                width: cropArea.x,
+                height: cropArea.height,
+                fill: 'black',
+                opacity: 0.6,
+                listening: false
+            });
+
+            const overlayRight = new Konva.Rect({
+                x: image.x() + cropArea.x + cropArea.width,
+                y: image.y() + cropArea.y,
+                width: image.width() - cropArea.x - cropArea.width,
+                height: cropArea.height,
+                fill: 'black',
+                opacity: 0.6,
+                listening: false
+            });
+
+            // Crop border
+            const border = new Konva.Rect({
+                x: image.x() + cropArea.x,
+                y: image.y() + cropArea.y,
+                width: cropArea.width,
+                height: cropArea.height,
+                stroke: '#48aff0',
+                strokeWidth: 2,
+                fill: 'transparent',
+                draggable: true
+            });
+
+            // Action buttons
+            const doneButton = new Konva.Circle({
+                x: image.x() + cropArea.x + 30,
+                y: image.y() + cropArea.y - 30,
+                radius: 18,
+                fill: '#51cf66',
+                stroke: 'white',
+                strokeWidth: 2
+            });
+
+            const cancelButton = new Konva.Circle({
+                x: image.x() + cropArea.x + 75,
+                y: image.y() + cropArea.y - 30,
+                radius: 18,
+                fill: '#ff6b6b',
+                stroke: 'white',
+                strokeWidth: 2
+            });
+
+            // Corner handles
+            const handleSize = 8;
+            const handles = [
+                new Konva.Circle({
+                    x: image.x() + cropArea.x,
+                    y: image.y() + cropArea.y,
+                    radius: handleSize,
+                    fill: 'white',
+                    stroke: '#48aff0',
+                    strokeWidth: 2,
+                    draggable: true,
+                    name: 'top-left'
+                }),
+                new Konva.Circle({
+                    x: image.x() + cropArea.x + cropArea.width,
+                    y: image.y() + cropArea.y,
+                    radius: handleSize,
+                    fill: 'white',
+                    stroke: '#48aff0',
+                    strokeWidth: 2,
+                    draggable: true,
+                    name: 'top-right'
+                }),
+                new Konva.Circle({
+                    x: image.x() + cropArea.x,
+                    y: image.y() + cropArea.y + cropArea.height,
+                    radius: handleSize,
+                    fill: 'white',
+                    stroke: '#48aff0',
+                    strokeWidth: 2,
+                    draggable: true,
+                    name: 'bottom-left'
+                }),
+                new Konva.Circle({
+                    x: image.x() + cropArea.x + cropArea.width,
+                    y: image.y() + cropArea.y + cropArea.height,
+                    radius: handleSize,
+                    fill: 'white',
+                    stroke: '#48aff0',
+                    strokeWidth: 2,
+                    draggable: true,
+                    name: 'bottom-right'
+                })
+            ];
+
+            // Add all elements
+            group.add(overlayTop, overlayBottom, overlayLeft, overlayRight, border);
+            group.add(doneButton, cancelButton);
+            handles.forEach(handle => group.add(handle));
+
+            // Event handlers
+            doneButton.on('click tap', () => applyCrop(image, cropArea));
+            cancelButton.on('click tap', cancelCrop);
+
+            return { group, cropArea, overlays: [overlayTop, overlayBottom, overlayLeft, overlayRight], border, handles };
+        }
+
+        function startCropMode() {
+            if (!selectedImage || cropMode) return;
+            
+            cropMode = true;
+            transformer.nodes([]);
+            
+            cropOverlay = createSimpleCropOverlay(selectedImage);
+            layer.add(cropOverlay.group);
+            
+            document.getElementById('cropBtn').disabled = true;
+            log('🌾 Crop mode active - drag handles or move crop area<br>Green button = apply, Red = cancel, Esc = cancel');
+        }
+
+        function applyCrop(image, cropArea) {
+            if (!image) return;
+
+            // Convert display coordinates to original image coordinates
+            const scaleX = image.originalWidth / image.width();
+            const scaleY = image.originalHeight / image.height();
+            
+            const originalCrop = {
+                x: Math.round(cropArea.x * scaleX),
+                y: Math.round(cropArea.y * scaleY),
+                width: Math.round(cropArea.width * scaleX),
+                height: Math.round(cropArea.height * scaleY)
+            };
+
+            // Apply crop to the Konva image
+            image.cropX(originalCrop.x);
+            image.cropY(originalCrop.y);
+            image.cropWidth(originalCrop.width);
+            image.cropHeight(originalCrop.height);
+
+            console.log('Applied crop:', originalCrop);
+            finishCrop();
+            log(`✅ Crop applied: ${originalCrop.width}×${originalCrop.height} from (${originalCrop.x},${originalCrop.y})<br>Image now shows cropped portion`);
+        }
+
+        function finishCrop() {
+            cropMode = false;
+            
+            if (cropOverlay) {
+                cropOverlay.group.destroy();
+                cropOverlay = null;
+            }
+            
+            if (selectedImage) {
+                transformer.nodes([selectedImage]);
+                transformer.moveToTop();
+                document.getElementById('cropBtn').disabled = false;
+            }
+        }
+
+        function cancelCrop() {
+            finishCrop();
+            log('❌ Crop cancelled - image unchanged');
+        }
+
+        function clearCanvas() {
+            cancelCrop();
+            transformer.nodes([]);
+            selectedImage = null;
+            layer.removeChildren();
+            layer.add(transformer);
+            document.getElementById('cropBtn').disabled = true;
+            log('Canvas cleared');
+        }
+
+        // Initialize
+        window.onload = initCanvas;
+    </script>
+</body>
+</html>

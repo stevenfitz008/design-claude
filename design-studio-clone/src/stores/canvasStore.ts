@@ -33,6 +33,8 @@ interface CanvasStore extends CanvasState {
   
   // Canvas operations
   setZoom: (zoom: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
   setPan: (pan: { x: number; y: number }) => void;
   setCanvasSize: (size: { width: number; height: number }) => void;
   setBackgroundColor: (color: string) => void;
@@ -385,7 +387,19 @@ export const useCanvasStore = create<CanvasStore>()(
 
       // Canvas operations
       setZoom: (zoom) => {
-        set((state) => ({ ...state, zoom: Math.max(0.1, Math.min(5, zoom)) }));
+        set((state) => ({ ...state, zoom: Math.max(0.05, Math.min(20, zoom)) })); // Allow 0.05x-20x zoom range for maximum flexibility
+      },
+
+      zoomIn: () => {
+        const state = get();
+        const newZoom = Math.min(20.0, state.zoom * 1.25); // Allow up to 20x zoom
+        set({ ...state, zoom: newZoom });
+      },
+
+      zoomOut: () => {
+        const state = get();
+        const newZoom = Math.max(0.05, state.zoom / 1.25); // Allow down to 5% zoom for overview
+        set({ ...state, zoom: newZoom });
       },
 
       setPan: (pan) => {
@@ -401,43 +415,50 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       fitCanvasToContainer: (containerWidth, containerHeight) => {
-        // Account for padding and bottom controls
-        const horizontalPadding = 80; // 40px padding on each side
-        const verticalPadding = 120; // Account for bottom zoom controls and page carousel
-        const availableWidth = containerWidth - horizontalPadding;
-        const availableHeight = containerHeight - verticalPadding;
-        
-        // Use 80% of available space for optimal viewing
-        const usagePercent = 0.8;
-        const targetWidth = availableWidth * usagePercent;
-        const targetHeight = availableHeight * usagePercent;
-        
-        // Use 16:10 aspect ratio (golden ratio for design work)
+        // TRUE Polotno-style centering: Make margins as equal as possible
+        // The key insight: Calculate the largest possible canvas that leaves equal margins
+        const minMargin = 20; // Very small margin for maximum canvas space in browser
+
+        // Available space with equal margins
+        const availableWidth = containerWidth - (minMargin * 2);
+        const availableHeight = containerHeight - (minMargin * 2);
+
+        // Maintain 16:10 aspect ratio (standard design canvas ratio)
         const aspectRatio = 16 / 10;
         let canvasWidth, canvasHeight;
-        
-        // Calculate dimensions based on which constraint is tighter
-        if (targetWidth / targetHeight > aspectRatio) {
-          // Height is the limiting factor
-          canvasHeight = targetHeight;
-          canvasWidth = canvasHeight * aspectRatio;
+
+        // Calculate based on aspect ratio constraints
+        const widthBasedHeight = availableWidth / aspectRatio;
+        const heightBasedWidth = availableHeight * aspectRatio;
+
+        if (widthBasedHeight <= availableHeight) {
+          // Width is the limiting factor - use full available width
+          canvasWidth = availableWidth;
+          canvasHeight = widthBasedHeight;
         } else {
-          // Width is the limiting factor  
-          canvasWidth = targetWidth;
-          canvasHeight = canvasWidth / aspectRatio;
+          // Height is the limiting factor - use full available height
+          canvasWidth = heightBasedWidth;
+          canvasHeight = availableHeight;
         }
-        
-        // Apply sensible minimum and maximum sizes
-        canvasWidth = Math.max(600, Math.min(canvasWidth, 1400));
-        canvasHeight = Math.max(400, Math.min(canvasHeight, 1000));
-        
+
+        // Ensure reasonable minimum size
+        const minCanvasWidth = 400;
+        const minCanvasHeight = 250;
+        canvasWidth = Math.max(minCanvasWidth, canvasWidth);
+        canvasHeight = Math.max(minCanvasHeight, canvasHeight);
+
         const newSize = {
           width: Math.round(canvasWidth),
           height: Math.round(canvasHeight)
         };
-        
-        console.log(`🎯 Auto-fit canvas to ${newSize.width}x${newSize.height} (container: ${containerWidth}x${containerHeight})`);
-        
+
+        // Calculate ACTUAL margins (should be equal if our logic is correct)
+        const actualHorizontalMargin = (containerWidth - newSize.width) / 2;
+        const actualVerticalMargin = (containerHeight - newSize.height) / 2;
+
+        console.log(`🎯 Polotno centering: ${newSize.width}x${newSize.height} canvas in ${containerWidth}x${containerHeight} container`);
+        console.log(`📐 Margins: H=${actualHorizontalMargin.toFixed(1)}px, V=${actualVerticalMargin.toFixed(1)}px (equal=${Math.abs(actualHorizontalMargin - actualVerticalMargin) < 5 ? 'YES' : 'NO'})`);
+
         set((state) => ({ ...state, canvasSize: newSize }));
       },
 

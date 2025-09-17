@@ -1,0 +1,188 @@
+import React, { useState } from 'react';
+import { Button, ButtonGroup, HTMLSelect } from '@blueprintjs/core';
+// import { styled } from '@styles/goober-setup';
+import { useTheme } from '@/contexts/ThemeProvider';
+import { usePanelStore } from '@/stores/panelStore';
+import { useCanvasStore } from '@/stores/canvasStore';
+import type { PanelType } from '@/stores/panelStore';
+
+// // const DemoContainer = styled.div<{ theme: any }>`
+//   display: flex;
+//   flex-direction: column;
+//   gap: ${props => props.theme.spacing.md};
+//   padding: ${props => props.theme.spacing.lg};
+//   background-color: ${props => props.theme.colors.panelBg};
+//   border-radius: 8px;
+//   margin: ${props => props.theme.spacing.md};
+// `;
+
+// // const DemoSection = styled.div<{ theme: any }>`
+//   display: flex;
+//   flex-direction: column;
+//   gap: ${props => props.theme.spacing.sm};
+// `;
+
+// // const DemoLabel = styled.label<{ theme: any }>`
+//   font-size: ${props => props.theme.typography.fontSizeSm};
+//   font-weight: ${props => props.theme.typography.fontWeightMedium};
+//   color: ${props => props.theme.colors.textPrimary};
+// `;
+
+// // const DemoControls = styled.div<{ theme: any }>`
+//   display: flex;
+//   align-items: center;
+//   gap: ${props => props.theme.spacing.sm};
+// `;
+
+export const ActionBarDemo: React.FC = () => {
+  const { theme } = useTheme();
+  const { activePanel, setActivePanel } = usePanelStore();
+  const { addElement, selectElement, clearSelection, selection } = useCanvasStore();
+
+  const panelOptions: { value: PanelType; label: string }[] = [
+    { value: 'templates', label: 'Templates (Default Actions)' },
+    { value: 'text', label: 'Text (Text Actions)' },
+    { value: 'photos', label: 'Photos (Photo Actions)' },
+    { value: 'shapes', label: 'Shapes (Shape Actions)' },
+    { value: 'icons', label: 'Icons (Shape Actions)' },
+    { value: 'videos', label: 'Videos (Default Actions)' },
+  ];
+
+  const addMockElement = (type: 'text' | 'image' | 'shape') => {
+    const baseElement = {
+      id: `${type}_${Date.now()}`,
+      type,
+      x: 100 + Math.random() * 200,
+      y: 100 + Math.random() * 200,
+      width: 100,
+      height: 100,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      zIndex: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    if (type === 'text') {
+      addElement({
+        ...baseElement,
+        text: 'Sample Text',
+        fontFamily: 'Arial',
+        fontSize: 18,
+        fontWeight: 'normal',
+        fontStyle: 'normal',
+        textAlign: 'left',
+        verticalAlign: 'top',
+        color: '#000000',
+        lineHeight: 1.2,
+        letterSpacing: 0,
+        textDecoration: 'none',
+        textTransform: 'none',
+        wordWrap: true,
+      } as any);
+    } else if (type === 'image') {
+      addElement({
+        ...baseElement,
+        src: 'https://via.placeholder.com/200x150',
+        originalWidth: 200,
+        originalHeight: 150,
+        fit: 'cover',
+      } as any);
+    } else if (type === 'shape') {
+      addElement({
+        ...baseElement,
+        shapeType: 'rectangle',
+        fill: '#48aff0',
+        stroke: '#2c5282',
+        strokeWidth: 2,
+      } as any);
+    }
+
+    selectElement(baseElement.id);
+  };
+
+  return (
+    <DemoContainer theme={theme}>
+      <DemoSection theme={theme}>
+        <DemoLabel theme={theme}>Dynamic Action Bar Demo</DemoLabel>
+        <p style={{ fontSize: '13px', color: theme.colors.textSecondary, margin: 0 }}>
+          Test the dynamic action system by switching between different panels and creating elements.
+          The top navigation will show different action buttons based on the active panel and selected elements.
+        </p>
+      </DemoSection>
+
+      <DemoSection theme={theme}>
+        <DemoLabel theme={theme}>Switch Active Panel:</DemoLabel>
+        <DemoControls theme={theme}>
+          <HTMLSelect
+            value={activePanel}
+            onChange={(e) => setActivePanel(e.target.value as PanelType)}
+            options={panelOptions}
+            fill
+          />
+        </DemoControls>
+      </DemoSection>
+
+      <DemoSection theme={theme}>
+        <DemoLabel theme={theme}>Add Elements to Canvas:</DemoLabel>
+        <DemoControls theme={theme}>
+          <ButtonGroup>
+            <Button 
+              icon="font" 
+              text="Add Text" 
+              onClick={() => addMockElement('text')}
+              small
+            />
+            <Button 
+              icon="media" 
+              text="Add Image" 
+              onClick={() => addMockElement('image')}
+              small
+            />
+            <Button 
+              icon="square" 
+              text="Add Shape" 
+              onClick={() => addMockElement('shape')}
+              small
+            />
+          </ButtonGroup>
+        </DemoControls>
+      </DemoSection>
+
+      <DemoSection theme={theme}>
+        <DemoLabel theme={theme}>Selection Controls:</DemoLabel>
+        <DemoControls theme={theme}>
+          <ButtonGroup>
+            <Button 
+              icon="cross" 
+              text="Clear Selection" 
+              onClick={clearSelection}
+              small
+            />
+            <Button 
+              icon="info-sign" 
+              text={`Selected: ${selection.length}`}
+              disabled
+              small
+            />
+          </ButtonGroup>
+        </DemoControls>
+      </DemoSection>
+
+      <DemoSection theme={theme}>
+        <DemoLabel theme={theme}>Expected Action Bar Behavior:</DemoLabel>
+        <ul style={{ fontSize: '12px', color: theme.colors.textSecondary, margin: 0, paddingLeft: '16px' }}>
+          <li><strong>Templates/Default:</strong> Shows basic actions (copy, paste, duplicate, delete, layer controls)</li>
+          <li><strong>Text Panel:</strong> Shows text formatting (font, size, bold/italic, alignment, color) when text selected</li>
+          <li><strong>Photos Panel:</strong> Shows image tools (effects, fit to page, mask, crop, animate, remove bg) when image selected</li>
+          <li><strong>Shapes/Icons Panel:</strong> Shows shape tools (fill, stroke, corners, opacity, duplicate, delete) when shape selected</li>
+          <li><strong>No Selection:</strong> Actions are disabled or show selection-independent tools</li>
+        </ul>
+      </DemoSection>
+    </DemoContainer>
+  );
+};

@@ -20,13 +20,14 @@ interface CanvasEngineProps {
 }
 
 // Temporarily using inline styles to fix styled.div error
-const CanvasContainer: React.FC<{ 
-  className?: string; 
+const CanvasContainer = React.forwardRef<HTMLDivElement, {
+  className?: string;
   children: React.ReactNode;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
-}> = ({ className, children, onDragOver, onDrop }) => (
-  <div 
+}>(({ className, children, onDragOver, onDrop }, ref) => (
+  <div
+    ref={ref}
     className={className}
     onDragOver={onDragOver}
     onDrop={onDrop}
@@ -48,7 +49,7 @@ const CanvasContainer: React.FC<{
   >
     {children}
   </div>
-);
+));
 
 const GridBackground: React.FC<{ visible: boolean; size: number; zoom: number }> = ({ visible, size, zoom }) => (
   <div style={{
@@ -876,26 +877,65 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
   }, [fitStageIntoParentContainer, calculateCanvasSize, zoomToFit]);
 
   useEffect(() => {
-    // Initial resize calculation
-    handleResize();
-    
-    // Use ResizeObserver for better performance if available
-    if (window.ResizeObserver && containerRef.current) {
-      const resizeObserver = new ResizeObserver(() => {
-        // Throttle resize events to avoid excessive calculations
-        requestAnimationFrame(handleResize);
+    // Only handle initial sizing, let MainCanvas handle resize events
+    if (containerRef.current) {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      setDimensions({ width, height });
+      fitStageIntoParentContainer();
+    }
+  }, []); // Remove handleResize dependency to prevent automatic resizing
+
+  // Update dimensions when container size changes (browser resize, parent changes)
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        const currentDims = { width, height };
+
+        // Only update if dimensions actually changed
+        setDimensions(prev => {
+          if (prev.width !== currentDims.width || prev.height !== currentDims.height) {
+            console.log(`📐 Canvas dimensions updated: ${prev.width}x${prev.height} → ${currentDims.width}x${currentDims.height}`);
+            return currentDims;
+          }
+          return prev;
+        });
+
+        fitStageIntoParentContainer();
+      }
+    };
+
+    // Listen for canvas resize events from parent
+    const handleCanvasResize = () => {
+      requestAnimationFrame(updateDimensions);
+    };
+
+    // Set up ResizeObserver for direct container size monitoring
+    let resizeObserver: ResizeObserver | null = null;
+    if (containerRef.current && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            handleCanvasResize();
+          }
+        }
       });
       resizeObserver.observe(containerRef.current);
-      return () => resizeObserver.disconnect();
-    } else {
-      // Fallback to window resize events
-      const throttledResize = () => {
-        requestAnimationFrame(handleResize);
-      };
-      window.addEventListener('resize', throttledResize);
-      return () => window.removeEventListener('resize', throttledResize);
     }
-  }, [handleResize]);
+
+    // Also listen for window resize as fallback
+    window.addEventListener('resize', handleCanvasResize);
+    window.addEventListener('canvas-container-resized', handleCanvasResize);
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', handleCanvasResize);
+      window.removeEventListener('canvas-container-resized', handleCanvasResize);
+    };
+  }, [fitStageIntoParentContainer]);
 
   // Recalculate when canvas size changes in store
   useEffect(() => {
@@ -903,6 +943,61 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
       fitStageIntoParentContainer();
     }
   }, [canvasSize, fitStageIntoParentContainer]);
+
+  // Responsive sizing utility for elements based on canvas scale and zoom
+  const getResponsiveElementSize = useCallback((elementType: 'image' | 'text' | 'shape') => {
+    // Base element sizes (what we want at 1:1 scale and 100% zoom)
+    const BASE_SIZES = {
+      image: { width: 200, height: 200 },
+      text: { width: 200, height: 50 },
+      shape: { width: 100, height: 100 }
+    };
+
+    // Check if there are existing elements to determine current scaling context
+    const currentElements = useCanvasStore.getState().elements;
+    const existingElements = currentElements.filter(el => el.type === elementType);
+
+    if (existingElements.length > 0) {
+      // Use existing elements as reference for current scale
+      const referenceElement = existingElements[0];
+      const baseSize = BASE_SIZES[elementType];
+
+      // Calculate current scale based on first existing element vs its base size
+      const currentScaleX = referenceElement.width / baseSize.width;
+      const currentScaleY = referenceElement.height / baseSize.height;
+      const currentScale = Math.min(currentScaleX, currentScaleY);
+
+      // Apply zoom adjustment - smaller zoom means we want proportionally larger elements
+      const zoomAdjustment = 1 / zoom;
+      const finalScale = currentScale * zoomAdjustment;
+
+      const responsiveSize = {
+        width: Math.round(baseSize.width * finalScale),
+        height: Math.round(baseSize.height * finalScale)
+      };
+
+      console.log(`📏 Responsive ${elementType} (existing ref): currentScale(${currentScale.toFixed(2)}) zoom(${zoom.toFixed(2)}) → ${responsiveSize.width}x${responsiveSize.height}`);
+      return responsiveSize;
+    } else {
+      // Fallback to canvas-based calculation for first element of this type
+      const STANDARD_CANVAS = { width: 800, height: 500 };
+      const scaleX = canvasSize.width / STANDARD_CANVAS.width;
+      const scaleY = canvasSize.height / STANDARD_CANVAS.height;
+      const scaleFactor = Math.min(scaleX, scaleY);
+
+      const zoomAdjustment = 1 / zoom;
+      const finalScale = scaleFactor * zoomAdjustment;
+
+      const baseSize = BASE_SIZES[elementType];
+      const responsiveSize = {
+        width: Math.round(baseSize.width * finalScale),
+        height: Math.round(baseSize.height * finalScale)
+      };
+
+      console.log(`📏 Responsive ${elementType} (canvas ref): canvas(${canvasSize.width}x${canvasSize.height}) scale(${scaleFactor.toFixed(2)}) zoom(${zoom.toFixed(2)}) → ${responsiveSize.width}x${responsiveSize.height}`);
+      return responsiveSize;
+    }
+  }, [canvasSize, zoom]);
 
   // Drag and drop handlers
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -928,9 +1023,11 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       
-      // Calculate drop position relative to canvas
-      const canvasX = (e.clientX - rect.left - pan.x) / zoom;
-      const canvasY = (e.clientY - rect.top - pan.y) / zoom;
+      // Calculate drop position relative to canvas with centered stage
+      const stageX = (dimensions.width - canvasSize.width * zoom) / 2;
+      const stageY = (dimensions.height - canvasSize.height * zoom) / 2;
+      const canvasX = (e.clientX - rect.left - stageX) / zoom;
+      const canvasY = (e.clientY - rect.top - stageY) / zoom;
       
       // Handle different types of dragged items
       switch (data.type) {
@@ -940,13 +1037,14 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           break;
           
         case 'photo':
+          const imageSize = getResponsiveElementSize('image');
           addElement({
             id: generateId(),
             type: 'image',
-            x: canvasX - 100, // Center the image
-            y: canvasY - 100,
-            width: 200,
-            height: 200,
+            x: canvasX - imageSize.width / 2, // Center the image
+            y: canvasY - imageSize.height / 2,
+            width: imageSize.width,
+            height: imageSize.height,
             rotation: 0,
             scaleX: 1,
             scaleY: 1,
@@ -971,13 +1069,14 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           break;
           
         case 'shape':
+          const shapeSize = getResponsiveElementSize('shape');
           addElement({
             id: generateId(),
             type: 'shape',
-            x: canvasX - 50,
-            y: canvasY - 50,
-            width: 100,
-            height: 100,
+            x: canvasX - shapeSize.width / 2,
+            y: canvasY - shapeSize.height / 2,
+            width: shapeSize.width,
+            height: shapeSize.height,
             rotation: 0,
             scaleX: 1,
             scaleY: 1,
@@ -996,13 +1095,14 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           break;
           
         case 'text':
+          const textSize = getResponsiveElementSize('text');
           addElement({
             id: generateId(),
             type: 'text',
-            x: canvasX - 100,
-            y: canvasY - 25,
-            width: 200,
-            height: 50,
+            x: canvasX - textSize.width / 2,
+            y: canvasY - textSize.height / 2,
+            width: textSize.width,
+            height: textSize.height,
             rotation: 0,
             scaleX: 1,
             scaleY: 1,
@@ -1066,16 +1166,16 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         height={dimensions.height}
         scaleX={zoom}
         scaleY={zoom}
-        x={pan.x}
-        y={pan.y}
+        x={(dimensions.width - canvasSize.width * zoom) / 2}
+        y={(dimensions.height - canvasSize.height * zoom) / 2}
         onClick={handleStageClick}
         onMouseDown={handleStageMouseDown}
-        onWheel={handleWheel}
+        // onWheel={handleWheel} // DISABLED: Mouse wheel zoom disabled per user request
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onDblTap={handleDoubleTap}
-        draggable={selection.length === 0} // Only allow stage dragging when nothing is selected
+        draggable={false} // DISABLED: Stage is now locked in center position
         
         // Performance optimizations
         perfectDrawEnabled={false}
@@ -1096,16 +1196,34 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           handleDrop(e.evt as unknown as React.DragEvent);
         }}
       >
-        {/* Main canvas background */}
+        {/* Main canvas background with Polotno-style frame */}
         <Layer ref={layerRef} imageSmoothingEnabled={false}>
+          {/* Canvas shadow/border frame like Polotno */}
+          <Rect
+            x={-2}
+            y={-2}
+            width={canvasSize.width + 4}
+            height={canvasSize.height + 4}
+            fill="rgba(0, 0, 0, 0.1)"
+            listening={false}
+            perfectDrawEnabled={false}
+            cornerRadius={2}
+          />
+          {/* Main white canvas background */}
           <Rect
             x={0}
             y={0}
             width={canvasSize.width}
             height={canvasSize.height}
             fill={backgroundColor}
+            stroke="rgba(0, 0, 0, 0.15)"
+            strokeWidth={1}
             listening={false}
             perfectDrawEnabled={false}
+            shadowColor="rgba(0, 0, 0, 0.2)"
+            shadowBlur={8}
+            shadowOffset={{ x: 0, y: 4 }}
+            shadowOpacity={0.3}
           />
         </Layer>
         

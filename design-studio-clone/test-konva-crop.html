@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konva Crop API Test</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .status { 
+            padding: 10px; 
+            background: #444; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        #canvas-container { 
+            border: 1px solid #555; 
+            background: white; 
+        }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            background: #48aff0; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background: #0056b3; 
+        }
+        .controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 200px;
+            margin-right: 10px;
+        }
+        .value {
+            color: #48aff0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Konva Crop API Research</h1>
+        
+        <div class="status" id="status">
+            Testing Konva.js crop properties: cropX, cropY, cropWidth, cropHeight<br>
+            <strong>How it works:</strong> These properties define a rectangle in the original image coordinates that will be displayed.
+        </div>
+        
+        <div class="controls">
+            <h3>Image Crop Controls</h3>
+            <div class="control-group">
+                <label>Crop X: <span class="value" id="cropX-value">0</span></label>
+                <input type="range" id="cropX" min="0" max="400" value="0" step="1">
+            </div>
+            <div class="control-group">
+                <label>Crop Y: <span class="value" id="cropY-value">0</span></label>
+                <input type="range" id="cropY" min="0" max="300" value="0" step="1">
+            </div>
+            <div class="control-group">
+                <label>Crop Width: <span class="value" id="cropWidth-value">400</span></label>
+                <input type="range" id="cropWidth" min="50" max="400" value="400" step="1">
+            </div>
+            <div class="control-group">
+                <label>Crop Height: <span class="value" id="cropHeight-value">300</span></label>
+                <input type="range" id="cropHeight" min="50" max="300" value="300" step="1">
+            </div>
+        </div>
+
+        <button onclick="resetCrop()">Reset to Full Image</button>
+        <button onclick="cropToCenter()">Crop to Center Square</button>
+        <button onclick="cropToQuarter()">Crop to Top-Left Quarter</button>
+
+        <div id="canvas-container"></div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script>
+        let stage, layer, konvaImage;
+        let originalImageWidth = 400;
+        let originalImageHeight = 300;
+        
+        function log(message) {
+            console.log(message);
+            document.getElementById('status').innerHTML = message;
+        }
+
+        function initCanvas() {
+            stage = new Konva.Stage({
+                container: 'canvas-container',
+                width: 600,
+                height: 400
+            });
+
+            layer = new Konva.Layer();
+            stage.add(layer);
+
+            // Load test image
+            const imageObj = new Image();
+            imageObj.onload = function() {
+                originalImageWidth = imageObj.naturalWidth;
+                originalImageHeight = imageObj.naturalHeight;
+                
+                // Update sliders to match actual image dimensions
+                document.getElementById('cropX').max = originalImageWidth;
+                document.getElementById('cropY').max = originalImageHeight;
+                document.getElementById('cropWidth').max = originalImageWidth;
+                document.getElementById('cropHeight').max = originalImageHeight;
+                document.getElementById('cropWidth').value = originalImageWidth;
+                document.getElementById('cropHeight').value = originalImageHeight;
+                document.getElementById('cropWidth-value').textContent = originalImageWidth;
+                document.getElementById('cropHeight-value').textContent = originalImageHeight;
+
+                konvaImage = new Konva.Image({
+                    image: imageObj,
+                    x: 50,
+                    y: 50,
+                    width: 300,  // Display size (different from original)
+                    height: 225, // Display size (different from original)
+                    // Crop properties - these refer to the original image coordinates
+                    cropX: 0,
+                    cropY: 0,
+                    cropWidth: originalImageWidth,
+                    cropHeight: originalImageHeight,
+                    stroke: '#48aff0',
+                    strokeWidth: 2
+                });
+
+                layer.add(konvaImage);
+                
+                log(`Loaded image: ${originalImageWidth}x${originalImageHeight}px original, displayed as 300x225px<br>
+                     <strong>Key insight:</strong> crop properties use original image coordinates, not display coordinates`);
+            };
+            
+            // Use Unsplash test image
+            imageObj.src = 'https://images.unsplash.com/photo-1588899357441-7f613216191b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wzMjM4NDZ8MHwxfHJhbmRvbXx8fHx8fHx8fDE2OTU2NTM2NDh8&ixlib=rb-4.0.3&q=80&w=400';
+        }
+
+        function updateCrop() {
+            if (!konvaImage) return;
+            
+            const cropX = parseInt(document.getElementById('cropX').value);
+            const cropY = parseInt(document.getElementById('cropY').value);
+            const cropWidth = parseInt(document.getElementById('cropWidth').value);
+            const cropHeight = parseInt(document.getElementById('cropHeight').value);
+            
+            // Update Konva image crop properties
+            konvaImage.cropX(cropX);
+            konvaImage.cropY(cropY);
+            konvaImage.cropWidth(cropWidth);
+            konvaImage.cropHeight(cropHeight);
+            
+            // Update display values
+            document.getElementById('cropX-value').textContent = cropX;
+            document.getElementById('cropY-value').textContent = cropY;
+            document.getElementById('cropWidth-value').textContent = cropWidth;
+            document.getElementById('cropHeight-value').textContent = cropHeight;
+            
+            console.log('Applied crop:', { cropX, cropY, cropWidth, cropHeight });
+            log(`Crop applied: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}<br>
+                 <strong>Result:</strong> Shows portion of original image from (${cropX},${cropY}) with size ${cropWidth}x${cropHeight}`);
+        }
+
+        function resetCrop() {
+            if (!konvaImage) return;
+            
+            document.getElementById('cropX').value = 0;
+            document.getElementById('cropY').value = 0;
+            document.getElementById('cropWidth').value = originalImageWidth;
+            document.getElementById('cropHeight').value = originalImageHeight;
+            updateCrop();
+        }
+
+        function cropToCenter() {
+            if (!konvaImage) return;
+            
+            const size = Math.min(originalImageWidth, originalImageHeight) * 0.6; // 60% of smaller dimension
+            const x = (originalImageWidth - size) / 2;
+            const y = (originalImageHeight - size) / 2;
+            
+            document.getElementById('cropX').value = x;
+            document.getElementById('cropY').value = y;
+            document.getElementById('cropWidth').value = size;
+            document.getElementById('cropHeight').value = size;
+            updateCrop();
+        }
+
+        function cropToQuarter() {
+            if (!konvaImage) return;
+            
+            document.getElementById('cropX').value = 0;
+            document.getElementById('cropY').value = 0;
+            document.getElementById('cropWidth').value = originalImageWidth / 2;
+            document.getElementById('cropHeight').value = originalImageHeight / 2;
+            updateCrop();
+        }
+
+        // Add event listeners to sliders
+        window.onload = function() {
+            initCanvas();
+            
+            ['cropX', 'cropY', 'cropWidth', 'cropHeight'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateCrop);
+            });
+        };
+    </script>
+</body>
+</html>

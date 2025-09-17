@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Resize Debug Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 8px;
+        }
+        .instruction {
+            background: #3d4852;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 12px;
+            background: #48aff0;
+            color: white;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .warning {
+            background: #ff6b6b;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #51cf66;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #1a1a1a;
+        }
+        .console-example {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            overflow-x: auto;
+            border: 1px solid #495563;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 Enhanced Image Resize Debug Test</h1>
+        
+        <div class="instruction">
+            <h3>✅ Debug Enhancements Added!</h3>
+            <p>The system now has comprehensive debugging throughout the image resize pipeline:</p>
+            <ul>
+                <li><strong>TransformElements debugging</strong>: Shows before/after element states</li>
+                <li><strong>Canvas store logging</strong>: Tracks all element transformations</li>
+                <li><strong>Image component debugging</strong>: Shows image rendering updates</li>
+                <li><strong>Resize hook debugging</strong>: Details resize calculations</li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <h3>🎯 Test Objectives</h3>
+            <p>We're testing if image elements resize properly when canvas dimensions change. With the new debugging, you'll see exactly where the process fails (if it does).</p>
+        </div>
+
+        <div class="step">
+            <strong>Step 1:</strong> Open browser console (F12 or Cmd+Option+I) - THIS IS CRUCIAL!
+        </div>
+        
+        <div class="step">
+            <strong>Step 2:</strong> Go to <a href="http://localhost:3000" target="_blank" style="color: #ffffff; text-decoration: underline;">http://localhost:3000</a>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3:</strong> Look for the sample image in the canvas (should see a random image)
+        </div>
+        
+        <div class="step">
+            <strong>Step 4:</strong> Click the "Resize" tool in the left toolbar (resize/expand icon)
+        </div>
+        
+        <div class="step">
+            <strong>Step 5:</strong> In the Image Handling section, enable "Smart image resize" toggle
+        </div>
+        
+        <div class="step">
+            <strong>Step 6:</strong> Enable "Use magic resize" toggle at the top
+        </div>
+        
+        <div class="step">
+            <strong>Step 7:</strong> Change canvas dimensions (try 1200x800 or 600x400)
+        </div>
+        
+        <div class="step">
+            <strong>Step 8:</strong> Click "Apply" to resize the canvas
+        </div>
+
+        <div class="instruction">
+            <h3>🔍 What to Look For in Console:</h3>
+            
+            <h4>1. Canvas Size Change:</h4>
+            <div class="console-example">
+📏 Canvas size changed from 800x600 to 1200x800
+            </div>
+            
+            <h4>2. Element Analysis:</h4>
+            <div class="console-example">
+🔍 Canvas resize - Element analysis: {
+  totalElements: 1,
+  imageElements: 1, 
+  smartImageResize: true,
+  imageElementIds: ['sample-image']
+}
+            </div>
+            
+            <h4>3. Image Resize Calculation:</h4>
+            <div class="console-example">
+🔧 Calculating image resize transform: {
+  imageId: 'sample-image',
+  currentDimensions: { width: 200, height: 150 },
+  oldCanvasSize: { width: 800, height: 600 },
+  newCanvasSize: { width: 1200, height: 800 }
+}
+✅ Image resize transform calculated: { x: 450, y: 225, width: 300, height: 225 }
+            </div>
+            
+            <h4>4. Transform Elements Call:</h4>
+            <div class="console-example">
+🔄 transformElements called: {
+  elementIds: ['sample-image'],
+  transform: { x: 450, y: 225, width: 300, height: 225 },
+  numberOfElements: 1
+}
+📋 Elements before transform: [{
+  id: 'sample-image', type: 'image',
+  x: 300, y: 150, width: 200, height: 150
+}]
+✅ Updated element sample-image: {
+  before: { x: 300, y: 150, width: 200, height: 150 },
+  after: { x: 450, y: 225, width: 300, height: 225 }
+}
+            </div>
+            
+            <h4>5. Image Component Update:</h4>
+            <div class="console-example">
+🖼️ CanvasImageElement render: {
+  id: 'sample-image',
+  width: 300,
+  height: 225,
+  aspectRatio: 1.33
+}
+            </div>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ If Image Doesn't Resize:</h3>
+            <p>Look for these potential issues in the console:</p>
+            <ul>
+                <li><strong>Missing transformElements call</strong>: The resize function isn't calling transformElements</li>
+                <li><strong>Wrong element IDs</strong>: The function is trying to transform non-existent elements</li>
+                <li><strong>Component not re-rendering</strong>: The Konva Image component isn't updating</li>
+                <li><strong>State not updating</strong>: The Zustand store isn't updating element properties</li>
+            </ul>
+        </div>
+
+        <div class="instruction">
+            <h3>🔄 Testing Different Resize Modes</h3>
+            <p>Try different resize modes to see how images adapt:</p>
+            <ul>
+                <li><strong>Scale</strong>: Proportional scaling (default)</li>
+                <li><strong>Fit</strong>: Fit within canvas bounds</li>
+                <li><strong>Fill</strong>: Fill entire canvas</li>
+                <li><strong>Stretch</strong>: Stretch to exact dimensions</li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <h3>✅ Expected Behavior</h3>
+            <p>When working correctly:</p>
+            <ol>
+                <li>Console shows all debug messages in the correct sequence</li>
+                <li>Image visually resizes and moves on the canvas</li>
+                <li>Image maintains or adjusts aspect ratio based on selected mode</li>
+                <li>Multiple resize operations work smoothly</li>
+            </ol>
+        </div>
+
+        <div class="instruction">
+            <h3>🐛 Reporting Issues</h3>
+            <p>If the image doesn't resize:</p>
+            <ol>
+                <li>Copy the console output</li>
+                <li>Note which debug messages appear/don't appear</li>
+                <li>Check if the Konva Image component gets new props</li>
+                <li>Verify the canvas store state is updating</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

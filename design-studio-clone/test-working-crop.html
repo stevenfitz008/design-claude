@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Crop Test - Konva Pattern</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status { 
+            padding: 10px; 
+            background: #444; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+        }
+        #canvas-container { 
+            border: 1px solid #555; 
+            background: white; 
+        }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            background: #48aff0; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background: #0056b3; 
+        }
+        select {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 4px;
+            background: #555;
+            color: white;
+            border: 1px solid #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Working Crop Test - Following Konva Pattern</h1>
+        
+        <div class="status" id="status">
+            This follows the official Konva crop pattern. The image crops to fit the display size while maintaining the source aspect ratio.
+        </div>
+        
+        <div class="controls">
+            <h3>Crop Controls</h3>
+            <label for="cropPosition">Crop Position:</label>
+            <select id="cropPosition">
+                <option value="left-top">Left Top</option>
+                <option value="center-top">Center Top</option>
+                <option value="right-top">Right Top</option>
+                <option disabled>--</option>
+                <option value="left-middle">Left Middle</option>
+                <option value="center-middle" selected>Center Middle</option>
+                <option value="right-middle">Right Middle</option>
+                <option disabled>--</option>
+                <option value="left-bottom">Left Bottom</option>
+                <option value="center-bottom">Center Bottom</option>
+                <option value="right-bottom">Right Bottom</option>
+            </select>
+            
+            <button onclick="addImage()">Add Image</button>
+            <button onclick="resetCrop()">Reset Crop</button>
+            <button onclick="clearCanvas()">Clear</button>
+        </div>
+
+        <div id="canvas-container"></div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script>
+        let stage, layer, transformer, currentImage;
+        
+        function log(message) {
+            console.log(message);
+            document.getElementById('status').textContent = message;
+        }
+
+        // Initialize canvas
+        function initCanvas() {
+            stage = new Konva.Stage({
+                container: 'canvas-container',
+                width: 800,
+                height: 600
+            });
+
+            layer = new Konva.Layer();
+            stage.add(layer);
+
+            transformer = new Konva.Transformer({
+                keepRatio: false,
+                flipEnabled: false,
+                boundBoxFunc: (oldBox, newBox) => {
+                    if (Math.abs(newBox.width) < 10 || Math.abs(newBox.height) < 10) {
+                        return oldBox;
+                    }
+                    return newBox;
+                },
+            });
+
+            layer.add(transformer);
+            log('Canvas initialized - add an image to test crop functionality');
+        }
+
+        // Crop utility functions (from Konva official example)
+        function getCrop(image, size, clipPosition = 'center-middle') {
+            const width = size.width;
+            const height = size.height;
+            const aspectRatio = width / height;
+
+            let newWidth;
+            let newHeight;
+
+            const imageRatio = image.width / image.height;
+
+            if (aspectRatio >= imageRatio) {
+                newWidth = image.width;
+                newHeight = image.width / aspectRatio;
+            } else {
+                newWidth = image.height * aspectRatio;
+                newHeight = image.height;
+            }
+
+            let x = 0;
+            let y = 0;
+            if (clipPosition === 'left-top') {
+                x = 0;
+                y = 0;
+            } else if (clipPosition === 'left-middle') {
+                x = 0;
+                y = (image.height - newHeight) / 2;
+            } else if (clipPosition === 'left-bottom') {
+                x = 0;
+                y = image.height - newHeight;
+            } else if (clipPosition === 'center-top') {
+                x = (image.width - newWidth) / 2;
+                y = 0;
+            } else if (clipPosition === 'center-middle') {
+                x = (image.width - newWidth) / 2;
+                y = (image.height - newHeight) / 2;
+            } else if (clipPosition === 'center-bottom') {
+                x = (image.width - newWidth) / 2;
+                y = image.height - newHeight;
+            } else if (clipPosition === 'right-top') {
+                x = image.width - newWidth;
+                y = 0;
+            } else if (clipPosition === 'right-middle') {
+                x = image.width - newWidth;
+                y = (image.height - newHeight) / 2;
+            } else if (clipPosition === 'right-bottom') {
+                x = image.width - newWidth;
+                y = image.height - newHeight;
+            }
+
+            return {
+                cropX: x,
+                cropY: y,
+                cropWidth: newWidth,
+                cropHeight: newHeight,
+            };
+        }
+
+        // Apply crop to image
+        function applyCrop(img, pos) {
+            img.setAttr('lastCropUsed', pos);
+            const crop = getCrop(
+                img.image(),
+                { width: img.width(), height: img.height() },
+                pos
+            );
+            img.setAttrs(crop);
+            log(`Applied ${pos} crop: ${Math.round(crop.cropWidth)}×${Math.round(crop.cropHeight)} at (${Math.round(crop.cropX)},${Math.round(crop.cropY)})`);
+        }
+
+        function addImage() {
+            const imageObj = new Image();
+            
+            imageObj.onload = function() {
+                // Remove existing image if any
+                if (currentImage) {
+                    currentImage.destroy();
+                }
+
+                const img = new Konva.Image({
+                    image: imageObj,
+                    width: 300,  // Display size
+                    height: 200, // Display size (different aspect ratio than original)
+                    x: 100,
+                    y: 100,
+                    name: 'image',
+                    draggable: true,
+                });
+
+                layer.add(img);
+                currentImage = img;
+
+                // Apply default center-middle crop
+                applyCrop(img, 'center-middle');
+
+                // Set up transformer
+                transformer.nodes([img]);
+                transformer.moveToTop();
+
+                // Handle transform events
+                img.on('transform', () => {
+                    // Reset scale on transform (Konva best practice)
+                    img.setAttrs({
+                        scaleX: 1,
+                        scaleY: 1,
+                        width: img.width() * img.scaleX(),
+                        height: img.height() * img.scaleY(),
+                    });
+                    // Reapply crop
+                    applyCrop(img, img.getAttr('lastCropUsed') || 'center-middle');
+                });
+
+                log(`Image loaded: ${imageObj.width}×${imageObj.height} original, displayed as ${img.width()}×${img.height()}`);
+            };
+            
+            imageObj.src = 'https://images.unsplash.com/photo-1588899357441-7f613216191b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wzMjM4NDZ8MHwxfHJhbmRvbXx8fHx8fHx8fDE2OTU2NTM2NDh8&ixlib=rb-4.0.3&q=80&w=600';
+        }
+
+        function resetCrop() {
+            if (!currentImage) return;
+            
+            const imageElement = currentImage.image();
+            currentImage.setAttrs({
+                cropX: 0,
+                cropY: 0,
+                cropWidth: imageElement.width,
+                cropHeight: imageElement.height,
+                lastCropUsed: 'center-middle'
+            });
+            
+            document.getElementById('cropPosition').value = 'center-middle';
+            log('Reset to full image (no crop)');
+        }
+
+        function clearCanvas() {
+            if (currentImage) {
+                currentImage.destroy();
+                currentImage = null;
+            }
+            transformer.nodes([]);
+            log('Canvas cleared');
+        }
+
+        // Crop position change handler
+        document.getElementById('cropPosition').addEventListener('change', (e) => {
+            if (currentImage) {
+                applyCrop(currentImage, e.target.value);
+            }
+        });
+
+        // Initialize
+        window.onload = initCanvas;
+    </script>
+</body>
+</html>

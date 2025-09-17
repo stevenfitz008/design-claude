@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 // we need observer to update component automatically on any store changes
 // Import @meronex icons for proper vector icons
-import { FaFolder, FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaLayerGroup, FaExpandArrowsAlt, FaQuoteLeft, FaQrcode, FaRobot } from '@meronex/icons/fa';
+import { FaTh, FaFont, FaImage, FaStar, FaShapes, FaUpload, FaPlay, FaLayerGroup, FaExpandArrowsAlt, FaQuoteLeft, FaQrcode, FaRobot } from '@meronex/icons/fa';
 
 // Basic functional components for testing with minimal styling
 export const LeftToolbar: React.FC<{ activeTool?: string; onToolChange?: (tool: string) => void }> = observer(({ activeTool, onToolChange }) => {
@@ -160,19 +160,22 @@ export const TopNavigation: React.FC<{
   canUndo?: boolean;
   canRedo?: boolean;
 }> = observer(({ projectName = 'Untitled Design' }) => (
-  <div 
-    data-testid="top-navigation" 
-    style={{ 
-      width: '100%', 
-      height: '48px', 
-      backgroundColor: '#252a30', 
+  <div
+    data-testid="top-navigation"
+    style={{
+      width: '100%',
+      maxWidth: '100vw',
+      height: '48px',
+      backgroundColor: '#252a30',
       borderBottom: '1px solid #495563',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '0 16px',
       color: '#f5f8fa',
-      fontSize: '14px'
+      fontSize: '14px',
+      boxSizing: 'border-box',
+      overflow: 'hidden'
     }}
   >
     <span data-testid="project-name" style={{ fontWeight: '500' }}>
@@ -218,17 +221,21 @@ export const AppLayout: React.FC<{
   mainCanvas: React.ReactNode;
   rightPanel: React.ReactNode;
 }> = observer(({ topNavigation, leftToolbar, mainCanvas, rightPanel }) => (
-  <div 
+  <div
     data-testid="app-layout"
     style={{
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      backgroundColor: '#1e1e1e'
+      width: '100vw',
+      maxWidth: '100vw',
+      backgroundColor: '#1e1e1e',
+      overflow: 'hidden',
+      boxSizing: 'border-box'
     }}
   >
     {topNavigation}
-    <div style={{ display: 'flex', flex: 1 }}>
+    <div style={{ display: 'flex', flex: 1, overflow: 'hidden', width: '100%' }}>
       {leftToolbar}
       <div data-testid="right-panel" style={{ width: '350px', borderLeft: '1px solid #495563', borderRight: '1px solid #495563' }}>
         {rightPanel}

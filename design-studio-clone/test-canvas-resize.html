@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Resize Test</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+
+        .test-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .test-header {
+            background: #2f343c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+
+        .test-content {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+
+        .test-section h3 {
+            margin-top: 0;
+            color: #2f343c;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .resize-info {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .iframe-container {
+            border: 2px solid #48aff0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .iframe-header {
+            background: #48aff0;
+            color: white;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        iframe {
+            width: 100%;
+            border: none;
+            display: block;
+        }
+
+        .size-controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .size-btn {
+            background: #48aff0;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .size-btn:hover {
+            background: #2c5aa0;
+        }
+
+        .size-btn.active {
+            background: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🔄 Canvas Resize Functionality Test</h1>
+            <p>Testing automatic canvas resizing when browser window is scaled</p>
+        </div>
+
+        <div class="test-content">
+            <div class="test-section">
+                <h3>1. Browser Window Resize Test</h3>
+                <div class="instructions">
+                    <strong>Instructions:</strong>
+                    <ol>
+                        <li>Open the application in a new tab: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+                        <li>Manually resize your browser window by dragging the edges</li>
+                        <li>Watch for console messages showing canvas resize events</li>
+                        <li>Verify the canvas stays centered and maintains aspect ratio</li>
+                        <li>Test both horizontal and vertical window resizing</li>
+                    </ol>
+                </div>
+                <div class="resize-info">
+                    Expected console messages:
+                    <br>🔄 Canvas container resized to [width]x[height]
+                    <br>🎯 Auto-fit canvas to [width]x[height] (container: [width]x[height])
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>2. Embedded Iframe Resize Test</h3>
+                <div class="instructions">
+                    <strong>Instructions:</strong> Click the buttons below to test different iframe sizes. The canvas should automatically adapt to each size change.
+                </div>
+
+                <div class="size-controls">
+                    <button class="size-btn" onclick="resizeIframe(1200, 800)">Desktop (1200x800)</button>
+                    <button class="size-btn" onclick="resizeIframe(1024, 600)">Tablet (1024x600)</button>
+                    <button class="size-btn" onclick="resizeIframe(768, 500)">Small Tablet (768x500)</button>
+                    <button class="size-btn" onclick="resizeIframe(480, 600)">Mobile (480x600)</button>
+                    <button class="size-btn" onclick="resizeIframe(360, 640)">Small Mobile (360x640)</button>
+                </div>
+
+                <div class="iframe-container">
+                    <div class="iframe-header">
+                        Design Studio Canvas - <span id="current-size">1200x800</span>
+                    </div>
+                    <iframe id="test-iframe" src="http://localhost:3000" width="1200" height="800"></iframe>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>3. Browser Zoom Level Test</h3>
+                <div class="instructions">
+                    <strong>Instructions:</strong>
+                    <ol>
+                        <li>Open the application: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+                        <li>Use browser zoom controls (Ctrl/Cmd + Plus/Minus) to change zoom levels</li>
+                        <li>Test zoom levels: 50%, 75%, 100%, 125%, 150%, 200%</li>
+                        <li>Verify canvas remains properly centered at all zoom levels</li>
+                        <li>Check that aspect ratio is maintained during zoom</li>
+                    </ol>
+                </div>
+                <div class="resize-info">
+                    ✓ Canvas should maintain 16:10 aspect ratio at all zoom levels
+                    <br>✓ Canvas should stay centered in the available space
+                    <br>✓ UI elements should remain accessible and properly sized
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>4. Mobile Device Rotation Test</h3>
+                <div class="instructions">
+                    <strong>Instructions:</strong>
+                    <ol>
+                        <li>Open application on mobile device or use browser dev tools mobile simulator</li>
+                        <li>Test both portrait and landscape orientations</li>
+                        <li>Verify canvas adapts to orientation changes</li>
+                        <li>Check that mobile-optimized sizing rules are applied (90% space usage)</li>
+                    </ol>
+                </div>
+                <div class="resize-info">
+                    Mobile features:
+                    <br>• Uses 90% of available space (vs 85% on desktop)
+                    <br>• Smaller minimum canvas size (320x240 vs 600x400)
+                    <br>• Handles orientation change events
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>5. Performance Test</h3>
+                <div class="instructions">
+                    <strong>Instructions:</strong> Rapidly resize the browser window to test the debouncing functionality.
+                </div>
+                <div class="resize-info">
+                    Expected behavior:
+                    <br>• Resize events should be debounced (150ms delay)
+                    <br>• No excessive recalculations during rapid resizing
+                    <br>• Smooth transitions without performance issues
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function resizeIframe(width, height) {
+            const iframe = document.getElementById('test-iframe');
+            const sizeLabel = document.getElementById('current-size');
+            const buttons = document.querySelectorAll('.size-btn');
+
+            // Update iframe size
+            iframe.width = width;
+            iframe.height = height;
+            sizeLabel.textContent = width + 'x' + height;
+
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            console.log(`Resized test iframe to ${width}x${height}`);
+        }
+
+        // Auto-select desktop size on load
+        window.addEventListener('load', () => {
+            const desktopBtn = document.querySelector('.size-btn');
+            desktopBtn.classList.add('active');
+        });
+    </script>
+</body>
+</html>

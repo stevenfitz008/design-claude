@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Functionality Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-step {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #48aff0;
+        }
+        .test-step h3 {
+            margin-top: 0;
+            color: #48aff0;
+        }
+        .test-step code {
+            background: #3a3a3a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #f5f8fa;
+        }
+        .status {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .status.pass {
+            background: #28a745;
+            color: white;
+        }
+        .status.fail {
+            background: #dc3545;
+            color: white;
+        }
+        .instructions {
+            background: #332a00;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .instructions h2 {
+            color: #ffc107;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🌾 Image Crop Functionality Test</h1>
+        
+        <div class="instructions">
+            <h2>📋 Manual Test Instructions</h2>
+            <p>This test verifies that the image crop functionality state synchronization issue has been fixed.</p>
+            <p><strong>Open the main application at:</strong> <a href="http://localhost:3000" target="_blank" style="color: #48aff0;">http://localhost:3000</a></p>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 1: Select an Image Element</h3>
+            <p>Click on the image element in the canvas (the one with leaves/nature pattern).</p>
+            <p><strong>Expected:</strong> Image should be selected with blue selection handles.</p>
+            <p><strong>Debug:</strong> Check console for log: <code>📊 CanvasTopBar render - primaryType: image</code></p>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 2: Click the Crop Button</h3>
+            <p>In the top toolbar, look for the crop button (crop icon) and click it.</p>
+            <p><strong>Expected:</strong> Crop button should appear in the image-specific actions section.</p>
+            <p><strong>Debug:</strong> Check console for logs:</p>
+            <ul>
+                <li><code>🌾 handleStartCrop called</code></li>
+                <li><code>🌾 Canvas Store: Starting crop for element</code></li>
+                <li><code>✅ Canvas Store: Crop mode activated</code></li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 3: Verify Crop Overlay Appears</h3>
+            <p>After clicking crop, you should see:</p>
+            <ul>
+                <li>Blue dashed border around the crop area</li>
+                <li>8 blue resize handles (corners + edges)</li>
+                <li>Grid lines (rule of thirds)</li>
+                <li>Dimmed overlay outside crop area</li>
+            </ul>
+            <p><strong>Debug:</strong> Check console for:</p>
+            <ul>
+                <li><code>🔧 CanvasEngine crop state: {cropMode: true, activeCropElementId: "...", cropArea: {...}}</code></li>
+                <li><code>🎯 Crop overlay check: {cropMode: true, activeCropElementId: "...", cropArea: {...}}</code></li>
+            </ul>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 4: Test Crop Interaction</h3>
+            <p>Try dragging the crop handles to resize the crop area.</p>
+            <p><strong>Expected:</strong> Handles should be draggable and crop area should update dynamically.</p>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 5: Complete or Cancel Crop</h3>
+            <p>Double-click inside the crop area to apply the crop, or click outside to cancel.</p>
+            <p><strong>Expected:</strong> Crop mode should exit and overlay should disappear.</p>
+        </div>
+
+        <div class="test-step">
+            <h3>🔧 Key Fix Implemented</h3>
+            <p>The main issue was that <code>CanvasTopBar</code> and <code>CanvasEngine</code> components were using separate instances of <code>useImageCrop</code> hook, leading to state synchronization problems.</p>
+            <p><strong>Solution:</strong> Moved crop state to the <code>canvasStore</code> (Zustand) so both components share the same state:</p>
+            <ul>
+                <li>Added <code>cropMode</code>, <code>activeCropElementId</code>, <code>cropArea</code> to canvas store</li>
+                <li>Added <code>startCrop()</code>, <code>finishCrop()</code>, <code>cancelCrop()</code> actions</li>
+                <li>Updated both components to use store state instead of separate hook instances</li>
+            </ul>
+        </div>
+
+        <script>
+            // Auto-refresh to check if servers are running
+            setTimeout(() => {
+                fetch('http://localhost:3000')
+                    .then(() => {
+                        document.querySelector('.instructions').innerHTML += 
+                            '<p style="color: #28a745;">✅ Frontend server is running at http://localhost:3000</p>';
+                    })
+                    .catch(() => {
+                        document.querySelector('.instructions').innerHTML += 
+                            '<p style="color: #dc3545;">❌ Frontend server not accessible at http://localhost:3000</p>';
+                    });
+            }, 1000);
+        </script>
+    </div>
+</body>
+</html>

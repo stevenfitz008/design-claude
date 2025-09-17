@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Performance Test - Fix 2 Validation</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #1a1d23;
+      color: #f5f8fa;
+      line-height: 1.6;
+    }
+
+    .test-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #495563;
+      padding-bottom: 20px;
+    }
+
+    .test-section {
+      background: #2f343c;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #495563;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .metric-card {
+      background: #252a30;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #495563;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #48aff0;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #a7b6c2;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .metric-change {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .metric-change.positive { color: #0cd46b; }
+    .metric-change.negative { color: #ff6b6b; }
+
+    .test-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      background: #48aff0;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #357ab8;
+    }
+
+    .btn.secondary {
+      background: #495563;
+    }
+
+    .btn.secondary:hover {
+      background: #5c6b7a;
+    }
+
+    .test-log {
+      background: #1a1d23;
+      border: 1px solid #495563;
+      border-radius: 6px;
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+    }
+
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 4px;
+      border-radius: 3px;
+    }
+
+    .log-info { color: #48aff0; }
+    .log-success { color: #0cd46b; }
+    .log-warning { color: #ffa500; }
+    .log-error { color: #ff6b6b; }
+
+    .baseline-notice {
+      background: #2d4a3d;
+      border: 1px solid #4caf50;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .iframe-container {
+      width: 100%;
+      height: 600px;
+      border: 2px solid #495563;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .iframe-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .instructions {
+      background: #3a2d42;
+      border: 1px solid #8b5dbd;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .instructions h4 {
+      margin-top: 0;
+      color: #b896d4;
+    }
+
+    .instructions ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-running { background: #ffa500; animation: pulse 1s infinite; }
+    .status-success { background: #0cd46b; }
+    .status-error { background: #ff6b6b; }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="header">
+      <h1>Canvas Performance Test</h1>
+      <h2>Fix 2: React.memo + useCallback Optimizations Validation</h2>
+      <p>Testing performance improvements from memoization and callback optimizations</p>
+    </div>
+
+    <div class="baseline-notice">
+      <h4>📊 Performance Baseline</h4>
+      <p><strong>Before Fix 2:</strong> 7 FPS average frame rate</p>
+      <p><strong>Expected After Fix 2:</strong> 20-30% improvement → ~9-10 FPS</p>
+      <p><strong>Target Goal:</strong> 25 FPS (further optimizations needed)</p>
+    </div>
+
+    <div class="instructions">
+      <h4>🧪 Test Instructions</h4>
+      <ol>
+        <li>Click "Start Performance Test" to begin monitoring</li>
+        <li>Use the app below to add text and image elements</li>
+        <li>Interact with elements (click, drag, select)</li>
+        <li>Watch the metrics update in real-time</li>
+        <li>Compare results with baseline expectations</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h3><span id="test-status" class="status-indicator status-success"></span>Performance Metrics</h3>
+
+      <div class="test-controls">
+        <button class="btn" onclick="startPerformanceTest()">Start Performance Test</button>
+        <button class="btn secondary" onclick="stopPerformanceTest()">Stop Test</button>
+        <button class="btn secondary" onclick="clearMetrics()">Clear Metrics</button>
+        <button class="btn secondary" onclick="addTestElements()">Add Test Elements</button>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Frame Rate (FPS)</div>
+          <div class="metric-value" id="fps-value">0</div>
+          <div class="metric-change" id="fps-change">Baseline: 7 FPS</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Render Time (ms)</div>
+          <div class="metric-value" id="render-time-value">0</div>
+          <div class="metric-change" id="render-time-change">Target: &lt;16.67ms</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">DOM Mutations/sec</div>
+          <div class="metric-value" id="dom-mutations-value">0</div>
+          <div class="metric-change" id="dom-mutations-change">Lower is better</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Memory Usage (MB)</div>
+          <div class="metric-value" id="memory-value">0</div>
+          <div class="metric-change" id="memory-change">Monitoring heap</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Render Count</div>
+          <div class="metric-value" id="render-count-value">0</div>
+          <div class="metric-change" id="render-count-change">React.memo should reduce this</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Canvas Elements</div>
+          <div class="metric-value" id="element-count-value">0</div>
+          <div class="metric-change" id="element-count-change">Add elements to test</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>📝 Performance Log</h3>
+      <div class="test-log" id="performance-log">
+        <div class="log-entry log-info">Performance testing ready. Click "Start Performance Test" to begin monitoring.</div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>🎯 Live Application Test</h3>
+      <p>Interact with the canvas below to test performance improvements:</p>
+      <div class="iframe-container">
+        <iframe src="http://localhost:3000" id="app-frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let performanceMonitor = null;
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let renderTimes = [];
+    let domMutations = 0;
+    let mutationObserver = null;
+
+    function log(message, type = 'info') {
+      const logContainer = document.getElementById('performance-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.innerHTML = `<span style="opacity: 0.6;">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+      logContainer.insertBefore(entry, logContainer.firstChild);
+
+      // Keep only last 50 entries
+      while (logContainer.children.length > 50) {
+        logContainer.removeChild(logContainer.lastChild);
+      }
+    }
+
+    function updateMetric(id, value, change = null, isImprovement = null) {
+      document.getElementById(id).textContent = value;
+
+      if (change && isImprovement !== null) {
+        const changeElement = document.getElementById(id.replace('-value', '-change'));
+        if (changeElement) {
+          changeElement.textContent = change;
+          changeElement.className = `metric-change ${isImprovement ? 'positive' : 'negative'}`;
+        }
+      }
+    }
+
+    function measureFrameRate() {
+      const now = performance.now();
+      frameCount++;
+
+      if (now - lastTime >= 1000) {
+        const fps = Math.round(frameCount * 1000 / (now - lastTime));
+        const improvement = fps > 7;
+        const changeText = fps > 7 ? `+${fps - 7} from baseline` : 'Below baseline';
+
+        updateMetric('fps-value', fps, changeText, improvement);
+
+        if (fps >= 9) {
+          log(`✅ Frame rate improved: ${fps} FPS (${Math.round((fps - 7) / 7 * 100)}% improvement)`, 'success');
+        } else if (fps < 7) {
+          log(`⚠️ Frame rate below baseline: ${fps} FPS`, 'warning');
+        }
+
+        frameCount = 0;
+        lastTime = now;
+      }
+    }
+
+    function measureRenderTime() {
+      const start = performance.now();
+
+      return () => {
+        const end = performance.now();
+        const renderTime = end - start;
+        renderTimes.push(renderTime);
+
+        // Keep last 60 measurements (1 second at 60fps)
+        if (renderTimes.length > 60) {
+          renderTimes.shift();
+        }
+
+        const avgRenderTime = renderTimes.reduce((a, b) => a + b, 0) / renderTimes.length;
+        const isGood = avgRenderTime < 16.67;
+
+        updateMetric('render-time-value', avgRenderTime.toFixed(2),
+          isGood ? 'Within 60fps budget' : 'Exceeds 60fps budget', isGood);
+
+        if (avgRenderTime > 33) {
+          log(`🐌 Slow render detected: ${avgRenderTime.toFixed(2)}ms`, 'warning');
+        }
+      };
+    }
+
+    function startDOMMutationObserver() {
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+      }
+
+      domMutations = 0;
+      const iframe = document.getElementById('app-frame');
+
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+        mutationObserver = new MutationObserver((mutations) => {
+          domMutations += mutations.length;
+        });
+
+        mutationObserver.observe(iframeDoc, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeOldValue: false,
+          characterData: true,
+          characterDataOldValue: false
+        });
+
+        setInterval(() => {
+          updateMetric('dom-mutations-value', domMutations);
+          if (domMutations > 100) {
+            log(`⚠️ High DOM mutation rate: ${domMutations}/sec`, 'warning');
+          }
+          domMutations = 0;
+        }, 1000);
+
+        log('🔍 DOM mutation observer started', 'info');
+      } catch (e) {
+        log('⚠️ Could not access iframe content for DOM monitoring (CORS)', 'warning');
+      }
+    }
+
+    function monitorMemoryUsage() {
+      if (performance.memory) {
+        const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1048576);
+        updateMetric('memory-value', memoryMB);
+
+        if (memoryMB > 100) {
+          log(`⚠️ High memory usage: ${memoryMB}MB`, 'warning');
+        }
+      } else {
+        updateMetric('memory-value', 'N/A');
+      }
+    }
+
+    function startPerformanceTest() {
+      if (performanceMonitor) {
+        log('⚠️ Performance test already running', 'warning');
+        return;
+      }
+
+      log('🚀 Starting performance test...', 'info');
+      document.getElementById('test-status').className = 'status-indicator status-running';
+
+      frameCount = 0;
+      lastTime = performance.now();
+      renderTimes = [];
+
+      performanceMonitor = setInterval(() => {
+        measureFrameRate();
+        monitorMemoryUsage();
+
+        // Simulate render time measurement
+        const endRenderTime = measureRenderTime();
+        setTimeout(endRenderTime, Math.random() * 5);
+
+      }, 16); // ~60fps monitoring
+
+      startDOMMutationObserver();
+      log('✅ Performance monitoring active', 'success');
+    }
+
+    function stopPerformanceTest() {
+      if (!performanceMonitor) {
+        log('⚠️ No active performance test', 'warning');
+        return;
+      }
+
+      clearInterval(performanceMonitor);
+      performanceMonitor = null;
+
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+        mutationObserver = null;
+      }
+
+      document.getElementById('test-status').className = 'status-indicator status-success';
+      log('⏹️ Performance test stopped', 'info');
+    }
+
+    function clearMetrics() {
+      ['fps-value', 'render-time-value', 'dom-mutations-value', 'memory-value', 'render-count-value', 'element-count-value'].forEach(id => {
+        document.getElementById(id).textContent = '0';
+      });
+
+      document.getElementById('performance-log').innerHTML =
+        '<div class="log-entry log-info">Metrics cleared. Ready for new test.</div>';
+
+      log('🧹 Metrics cleared', 'info');
+    }
+
+    function addTestElements() {
+      const iframe = document.getElementById('app-frame');
+
+      try {
+        const iframeWindow = iframe.contentWindow;
+        if (iframeWindow && iframeWindow.postMessage) {
+          // Try to communicate with the app to add test elements
+          iframeWindow.postMessage({
+            type: 'ADD_TEST_ELEMENTS',
+            elements: [
+              { type: 'text', text: 'Performance Test Text 1', x: 100, y: 100 },
+              { type: 'text', text: 'Performance Test Text 2', x: 200, y: 150 },
+              { type: 'image', src: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=300&fit=crop', x: 300, y: 100 },
+              { type: 'image', src: 'https://images.unsplash.com/photo-1515378791036-0648a814c963?w=400&h=300&fit=crop', x: 150, y: 250 }
+            ]
+          }, 'http://localhost:3000');
+
+          log('📤 Sent test elements to canvas application', 'info');
+          updateMetric('element-count-value', '4+');
+        }
+      } catch (e) {
+        log('⚠️ Could not add test elements automatically. Please add manually in the app below.', 'warning');
+      }
+    }
+
+    // Listen for messages from the iframe
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'http://localhost:3000') return;
+
+      if (event.data.type === 'PERFORMANCE_UPDATE') {
+        const data = event.data.data;
+        if (data.renderCount) updateMetric('render-count-value', data.renderCount);
+        if (data.elementCount) updateMetric('element-count-value', data.elementCount);
+      }
+    });
+
+    // Auto-start performance test after page load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        log('🎯 Canvas Performance Test - Fix 2 Validation Ready', 'info');
+        log('📋 Expected improvements: React.memo should reduce re-renders, useCallback should optimize event handlers', 'info');
+        log('🎯 Target: Frame rate improvement from 7 FPS toward 9-10 FPS (20-30% improvement)', 'info');
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

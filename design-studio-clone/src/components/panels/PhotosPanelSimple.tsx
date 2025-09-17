@@ -309,55 +309,27 @@ export const PhotosPanelSimple: React.FC = observer(() => {
       overflow: 'hidden'
     }}>
       {/* Search Bar */}
-      <div style={{ 
+      <div style={{
         padding: '16px',
         borderBottom: '1px solid #495563'
       }}>
-        <div style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <div style={{ 
-            color: '#8a9ba8',
-            fontSize: '16px',
-            flexShrink: 0,
-            paddingLeft: '2px'
-          }}>
-            🔍
-          </div>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => {
-              const value = e.target.value;
-              handleSearch(value);
-            }}
-            style={{
-              flex: 1,
-              minHeight: '36px',
-              backgroundColor: 'rgba(16, 22, 26, 0.3)',
-              border: '1px solid #495563',
-              borderRadius: '3px',
-              padding: '8px 12px',
-              color: '#f5f8fa',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#48aff0';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#495563';
-            }}
-          />
-          {loading && (
-            <div style={{ flexShrink: 0, paddingRight: '4px' }}>
-              <Spinner size={16} />
-            </div>
-          )}
-        </div>
+        <InputGroup
+          leftIcon="search"
+          placeholder="Search photos..."
+          value={searchQuery}
+          onChange={(e) => {
+            const value = e.target.value;
+            handleSearch(value);
+          }}
+          rightElement={
+            loading ? <Spinner size={16} /> : undefined
+          }
+          fill
+          style={{
+            backgroundColor: 'rgba(16, 22, 26, 0.3)',
+            border: '1px solid #495563'
+          }}
+        />
         <div style={{
           fontSize: '11px',
           color: '#8a9ba8',

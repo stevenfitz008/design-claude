@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Photo Crop Test - Design Studio</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #1a1e23;
+            color: #f5f8fa;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #252a30;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #495563;
+        }
+        .test-title {
+            color: #48aff0;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .test-step {
+            background: #2f343c;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #48aff0;
+        }
+        .step-number {
+            color: #48aff0;
+            font-weight: 600;
+        }
+        .expected-result {
+            background: #1c4b2e;
+            border-left: 4px solid #51cf66;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #495563;
+        }
+        .feature-list li:before {
+            content: "✅ ";
+            color: #51cf66;
+            font-weight: bold;
+        }
+        .app-link {
+            display: inline-block;
+            background: #48aff0;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 16px;
+        }
+        .app-link:hover {
+            background: #3a8bc8;
+        }
+        .code-block {
+            background: #1a1e23;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: Monaco, monospace;
+            font-size: 14px;
+            border: 1px solid #495563;
+            color: #a7b6c2;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="test-title">🌾 Interactive Photo Crop Test</h1>
+        
+        <div class="test-section">
+            <h2 class="test-title">🎯 Test Objective</h2>
+            <p>Verify that users can select photos and immediately crop them by dragging edges, similar to normal photo editing applications.</p>
+            
+            <h3>✨ New Features Implemented</h3>
+            <ul class="feature-list">
+                <li><strong>Auto-Crop Mode</strong>: Crop overlay appears automatically when photo is selected</li>
+                <li><strong>Edge Dragging</strong>: 8 resize handles (4 corners + 4 edges) for precise cropping</li>
+                <li><strong>Visual Feedback</strong>: Dimmed areas outside crop bounds with grid lines</li>
+                <li><strong>Center Drag</strong>: Move entire crop area by dragging the center</li>
+                <li><strong>Real-time Updates</strong>: Live preview of crop changes</li>
+                <li><strong>Double-click Apply</strong>: Quick finish gesture</li>
+                <li><strong>Boundary Constraints</strong>: Crop area stays within image bounds</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2 class="test-title">📋 Test Steps</h2>
+            
+            <div class="test-step">
+                <span class="step-number">Step 1:</span> Open the Design Studio application
+                <div class="expected-result">
+                    <strong>Expected:</strong> Application loads with left toolbar, canvas, and right panel visible
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 2:</span> Click "Photos" in the left toolbar
+                <div class="expected-result">
+                    <strong>Expected:</strong> Photos panel opens in the right sidebar showing available images
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 3:</span> Drag any photo from the photos panel onto the canvas
+                <div class="expected-result">
+                    <strong>Expected:</strong> Photo appears on canvas and is automatically selected
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 3a:</span> Click once on the photo (without dragging)
+                <div class="expected-result">
+                    <strong>Expected:</strong> Photo is selected but does NOT move. It should stay in place with selection indicators.
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 3b:</span> Click and drag the photo (hold mouse down and move)
+                <div class="expected-result">
+                    <strong>Expected:</strong> Photo moves only when you drag it (requires 5px movement before drag starts). Single clicks should not move the photo.
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 4:</span> Look at the selected photo (no crop overlay yet)
+                <div class="expected-result">
+                    <strong>Expected:</strong> Photo is selected with blue selection border, but NO crop handles appear yet. The photo should have normal resize handles only.
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 5:</span> Click the "Crop" button in the top bar (crop icon)
+                <div class="expected-result">
+                    <strong>Expected:</strong> NOW the crop border appears with blue crop handles (8 handles total):
+                    <div class="code-block">
+• 4 Corner handles (squares) for proportional resize
+• 4 Edge handles (top, bottom, left, right) for single-direction resize
+• Dimmed overlay outside crop area
+• Grid lines for composition guidance
+• Dashed blue border around crop area</div>
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 6:</span> Drag a corner handle to resize crop area
+                <div class="expected-result">
+                    <strong>Expected:</strong> Crop area resizes proportionally, dimmed areas update in real-time
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 7:</span> Drag an edge handle to resize in one direction
+                <div class="expected-result">
+                    <strong>Expected:</strong> Crop area expands/contracts in the specific direction only
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 8:</span> Drag the center of the crop area
+                <div class="expected-result">
+                    <strong>Expected:</strong> Entire crop area moves without changing size
+                </div>
+            </div>
+            
+            <div class="test-step">
+                <span class="step-number">Step 9:</span> Double-click inside the crop area OR click "Apply" in top bar
+                <div class="expected-result">
+                    <strong>Expected:</strong> Image is cropped to the selected area, crop handles disappear
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="test-title">🔧 Technical Implementation</h2>
+            <p>The interactive crop system uses Konva.js for canvas rendering with the following components:</p>
+            
+            <div class="code-block">
+useImageCrop Hook:
+• Auto-detects image selections
+• Manages crop state and boundaries
+• Handles coordinate transformations
+
+ImageCropOverlay Component:
+• 8 draggable Konva Rect handles
+• Real-time drag event handling  
+• Visual feedback with dimmed overlays
+• Grid composition guidelines
+
+CanvasEngine Integration:
+• Auto-activates crop mode on selection
+• Renders crop overlay above images
+• Handles crop completion and cancellation</div>
+        </div>
+
+        <div class="test-section">
+            <h2 class="test-title">🚀 Start Testing</h2>
+            <p>Click the button below to open the Design Studio and test the interactive crop functionality:</p>
+            <a href="http://localhost:3000" class="app-link" target="_blank">🎨 Open Design Studio</a>
+            
+            <h3>Alternative Testing</h3>
+            <p>You can also test the functionality by:</p>
+            <ul class="feature-list">
+                <li>Using the crop tools in the top bar when an image is selected</li>
+                <li>Testing quick crop ratios (square, portrait, landscape)</li>
+                <li>Using the crop panel in the right sidebar</li>
+                <li>Testing with different image sizes and aspect ratios</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2 class="test-title">🐛 Troubleshooting</h2>
+            <p>If crop handles don't appear:</p>
+            <ul class="feature-list">
+                <li>Make sure only one image is selected (multi-selection disables crop)</li>
+                <li>Check browser console for any JavaScript errors</li>
+                <li>Refresh the page and try again</li>
+                <li>Verify the development server is running on port 3000</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        console.log('🌾 Interactive Photo Crop Test Page Loaded');
+        console.log('📋 Test Steps:');
+        console.log('1. Open Design Studio (http://localhost:3000)');
+        console.log('2. Click Photos in left toolbar');
+        console.log('3. Drag photo to canvas');
+        console.log('4. Verify crop handles appear automatically');
+        console.log('5. Test edge dragging functionality');
+        console.log('6. Apply crop with double-click or top bar button');
+    </script>
+</body>
+</html>

@@ -17,8 +17,8 @@ const BottomZoomControls: React.FC<BottomZoomControlsProps> = observer(({
   zoom,
   onZoomChange,
   onAutoFit,
-  minZoom = 0.1,
-  maxZoom = 5.0,
+  minZoom = 0.05,
+  maxZoom = 20.0,
   className
 }) => {
   const { theme } = useTheme();

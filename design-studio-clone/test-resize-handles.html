@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resize Handles Test</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #1a1a1a; color: white; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .status { padding: 10px; background: #444; border-radius: 4px; margin: 10px 0; }
+        #canvas-container { border: 1px solid #555; background: white; }
+        button { padding: 10px 15px; margin: 5px; background: #48aff0; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resize Handles Test - Direct Konva Approach</h1>
+        
+        <div class="status" id="status">Click "Add Image" then click on the image to see resize handles</div>
+        
+        <button onclick="addImage()">Add Image</button>
+        <button onclick="clearCanvas()">Clear Canvas</button>
+
+        <div id="canvas-container"></div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script>
+        let stage, layer, transformer;
+        
+        function log(message) {
+            console.log(message);
+            document.getElementById('status').textContent = message;
+        }
+
+        function initCanvas() {
+            stage = new Konva.Stage({
+                container: 'canvas-container',
+                width: 800,
+                height: 600
+            });
+
+            layer = new Konva.Layer();
+            stage.add(layer);
+
+            // Create transformer
+            transformer = new Konva.Transformer({
+                anchorStroke: '#48aff0',
+                anchorFill: 'white',
+                anchorSize: 10,
+                borderStroke: '#48aff0',
+                borderStrokeWidth: 2,
+                borderDash: [4, 4],
+                keepRatio: false,
+                ignoreStroke: true
+            });
+
+            layer.add(transformer);
+
+            // Click handler for deselection
+            stage.on('click tap', (e) => {
+                if (e.target === stage) {
+                    transformer.nodes([]);
+                    log('Deselected all');
+                }
+            });
+
+            log('Canvas initialized');
+        }
+
+        function addImage() {
+            // Use Unsplash image like in your app
+            const imageObj = new Image();
+            
+            // Set up onload handler before setting src (best practice)
+            imageObj.onload = function() {
+                const image = new Konva.Image({
+                    image: imageObj,
+                    x: 100,
+                    y: 100,
+                    width: 200,
+                    height: 150,
+                    draggable: true
+                });
+
+                layer.add(image);
+                // Ensure transformer stays on top of new images
+                transformer.moveToTop();
+
+                // Add click handler to image
+                image.on('click tap', function(e) {
+                    // Toggle selection using modern node management
+                    if (transformer.nodes().includes(image)) {
+                        transformer.nodes([]);
+                        log('Image deselected');
+                    } else {
+                        transformer.nodes([image]);
+                        // Move transformer to top after selection
+                        transformer.moveToTop();
+                        log('Image selected - resize handles should be visible');
+                    }
+                    e.cancelBubble = true;
+                });
+
+                log('Image added - click on it to select');
+            };
+            
+            // Set src after onload handler is declared (best practice)
+            imageObj.src = 'https://images.unsplash.com/photo-1588899357441-7f613216191b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wzMjM4NDZ8MHwxfHJhbmRvbXx8fHx8fHx8fDE2OTU2NTM2NDh8&ixlib=rb-4.0.3&q=80&w=400';
+        }
+
+        function clearCanvas() {
+            transformer.nodes([]);
+            layer.removeChildren();
+            layer.add(transformer); // Re-add transformer
+            log('Canvas cleared');
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            initCanvas();
+        };
+    </script>
+</body>
+</html>

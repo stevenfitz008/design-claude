@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Performance Test - Current State</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #1a1d23;
+      color: #f5f8fa;
+    }
+    .test-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #2f343c;
+      border-radius: 8px;
+      border: 1px solid #495563;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .metric {
+      background: #252a30;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #48aff0;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: #a7b6c2;
+      margin-top: 5px;
+    }
+    button {
+      background: #48aff0;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #369bd7;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+      background: #2d3748;
+    }
+    .iframe-container {
+      margin-top: 20px;
+      border: 1px solid #495563;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 600px;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🚀 Quick Performance Test - Current State</h1>
+    <div class="status" id="status">Ready to test...</div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-value" id="fps">-</div>
+        <div class="metric-label">FPS</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value" id="frameTime">-</div>
+        <div class="metric-label">Frame Time (ms)</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value" id="memory">-</div>
+        <div class="metric-label">Memory (MB)</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value" id="consoleCount">-</div>
+        <div class="metric-label">Console Calls/sec</div>
+      </div>
+    </div>
+
+    <div>
+      <button onclick="runQuickTest()">Run Quick Performance Test</button>
+      <button onclick="testCanvasInteraction()">Test Canvas Interaction</button>
+      <button onclick="openApp()">Open App in New Tab</button>
+    </div>
+
+    <div class="iframe-container">
+      <iframe id="appFrame" src="http://localhost:3000"></iframe>
+    </div>
+  </div>
+
+  <script>
+    let testRunning = false;
+    let frameCount = 0;
+    let startTime = 0;
+    let consoleCallCount = 0;
+    let originalConsoleLog = console.log;
+
+    // Override console.log to count calls
+    console.log = function(...args) {
+      consoleCallCount++;
+      return originalConsoleLog.apply(console, args);
+    };
+
+    function updateStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function updateMetric(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function runQuickTest() {
+      if (testRunning) return;
+
+      testRunning = true;
+      frameCount = 0;
+      startTime = performance.now();
+      consoleCallCount = 0;
+
+      updateStatus('🔄 Running performance test...');
+
+      // Test for 5 seconds
+      const testDuration = 5000;
+      let lastFrameTime = performance.now();
+
+      function measureFrame() {
+        if (!testRunning) return;
+
+        const currentTime = performance.now();
+        const frameTime = currentTime - lastFrameTime;
+        frameCount++;
+        lastFrameTime = currentTime;
+
+        // Update metrics every 100ms
+        if (frameCount % 6 === 0) {
+          const elapsed = currentTime - startTime;
+          const currentFPS = (frameCount / elapsed * 1000).toFixed(1);
+          const avgFrameTime = (elapsed / frameCount).toFixed(2);
+          const consoleRate = (consoleCallCount / elapsed * 1000).toFixed(1);
+
+          updateMetric('fps', currentFPS);
+          updateMetric('frameTime', avgFrameTime);
+          updateMetric('consoleCount', consoleRate);
+
+          // Get memory if available
+          if (performance.memory) {
+            const memoryMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
+            updateMetric('memory', memoryMB);
+          }
+        }
+
+        if (currentTime - startTime < testDuration) {
+          requestAnimationFrame(measureFrame);
+        } else {
+          finishTest();
+        }
+      }
+
+      requestAnimationFrame(measureFrame);
+    }
+
+    function finishTest() {
+      testRunning = false;
+      const finalTime = performance.now() - startTime;
+      const finalFPS = (frameCount / finalTime * 1000).toFixed(1);
+      const avgFrameTime = (finalTime / frameCount).toFixed(2);
+      const consoleRate = (consoleCallCount / finalTime * 1000).toFixed(1);
+
+      updateStatus(`✅ Test complete! FPS: ${finalFPS}, Frame Time: ${avgFrameTime}ms, Console: ${consoleRate}/sec`);
+
+      // Performance assessment
+      const fps = parseFloat(finalFPS);
+      const frameTime = parseFloat(avgFrameTime);
+
+      if (fps >= 45) {
+        updateStatus('🚀 EXCELLENT: Performance is smooth (45+ FPS)');
+      } else if (fps >= 25) {
+        updateStatus('✅ GOOD: Performance is acceptable (25+ FPS)');
+      } else if (fps >= 15) {
+        updateStatus('⚠️ POOR: Performance is choppy (15+ FPS)');
+      } else {
+        updateStatus('❌ CRITICAL: Performance is unacceptable (<15 FPS)');
+      }
+    }
+
+    function testCanvasInteraction() {
+      updateStatus('🎯 Testing canvas interaction - Click and drag in the canvas above');
+
+      const iframe = document.getElementById('appFrame');
+      iframe.contentWindow.postMessage({
+        type: 'performance-test',
+        action: 'start-interaction-test'
+      }, '*');
+    }
+
+    function openApp() {
+      window.open('http://localhost:3000', '_blank');
+    }
+
+    // Start automatic monitoring
+    setTimeout(() => {
+      updateStatus('📊 Monitoring performance... Click "Run Quick Test" for detailed metrics');
+    }, 1000);
+  </script>
+</body>
+</html>

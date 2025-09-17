@@ -92,40 +92,30 @@ export const useCanvas = (): CanvasHookReturn => {
   }, [setZoom, setPan]);
 
   const centerView = useCallback(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    
-    const stageWidth = stage.width();
-    const stageHeight = stage.height();
-    const centerX = stageWidth / 2 - (canvasSize.width * zoom) / 2;
-    const centerY = stageHeight / 2 - (canvasSize.height * zoom) / 2;
-    
-    setPan({ x: centerX, y: centerY });
-  }, [canvasSize, zoom, setPan]);
+    // Stage is automatically centered in CanvasEngine - no manual centering needed
+    console.log('🎯 Center view: Stage is automatically centered');
+  }, []);
 
   const zoomToFit = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
-    
+
     const stageWidth = stage.width();
     const stageHeight = stage.height();
-    
-    // Account for bottom zoom controls and some padding
-    const availableWidth = stageWidth - 40; // 20px padding on each side
-    const availableHeight = stageHeight - 80; // Account for bottom controls
-    
+
+    // Reserve space for bottom zoom controls
+    const availableWidth = stageWidth - 20; // Minimal horizontal padding
+    const availableHeight = stageHeight - 60; // Space for bottom zoom controls
+
     const scaleX = availableWidth / canvasSize.width;
     const scaleY = availableHeight / canvasSize.height;
-    const newZoom = Math.min(scaleX, scaleY, 1.0); // Max 100% zoom for fitting
-    
+    const newZoom = Math.min(scaleX, scaleY);
+
+    console.log(`🔍 ZoomToFit: stage(${stageWidth}x${stageHeight}) canvas(${canvasSize.width}x${canvasSize.height}) → zoom ${newZoom.toFixed(2)} (auto-centered)`);
+
     setZoom(newZoom);
-    
-    // Center the canvas perfectly
-    const centerX = (stageWidth - canvasSize.width * newZoom) / 2;
-    const centerY = (stageHeight - canvasSize.height * newZoom) / 2;
-    
-    setPan({ x: centerX, y: centerY });
-  }, [canvasSize, setZoom, setPan]);
+    // Stage is automatically centered in CanvasEngine - no manual pan needed
+  }, [canvasSize, setZoom]);
 
   const zoomToSelection = useCallback(() => {
     const selectedElements = useCanvasStore.getState().getSelectedElements();
@@ -292,33 +282,20 @@ export const useCanvas = (): CanvasHookReturn => {
 
   const handleWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
-    
+
     const stage = stageRef.current;
     if (!stage) return;
-    
+
     const oldScale = zoom;
-    const pointer = stage.getPointerPosition();
-    if (!pointer) return;
-    
-    const mousePointTo = {
-      x: (pointer.x - pan.x) / oldScale,
-      y: (pointer.y - pan.y) / oldScale,
-    };
-    
+
     // Zoom speed
     const zoomSpeed = 0.1;
     const direction = e.evt.deltaY > 0 ? -1 : 1;
     const newZoom = Math.max(0.1, Math.min(5, oldScale + direction * zoomSpeed));
-    
+
     setZoom(newZoom);
-    
-    const newPan = {
-      x: pointer.x - mousePointTo.x * newZoom,
-      y: pointer.y - mousePointTo.y * newZoom,
-    };
-    
-    setPan(newPan);
-  }, [zoom, pan, setZoom, setPan]);
+    // Stage is automatically centered - no pan calculations needed
+  }, [zoom, setZoom]);
 
   // Keyboard shortcuts
   const setupKeyboardShortcuts = useCallback(() => {

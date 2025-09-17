@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Resize Test</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #1a1a1a; color: white; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-area { background: #333; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .status { padding: 10px; background: #444; border-radius: 4px; margin: 10px 0; }
+        #canvas-container { border: 1px solid #555; background: white; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .instructions { background: #2a2a2a; padding: 15px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Resize Test - Simplified</h1>
+        
+        <div class="instructions">
+            <h3>Test Instructions:</h3>
+            <ol>
+                <li>Click "Add Test Image" to add an image to the canvas</li>
+                <li>Click on the image to select it</li>
+                <li>Look for resize handles around the image</li>
+                <li>Try dragging the handles to resize</li>
+                <li>Check the console for debugging info</li>
+            </ol>
+        </div>
+
+        <div class="status" id="status">Ready to test...</div>
+        
+        <div class="test-area">
+            <button onclick="addTestImage()">Add Test Image</button>
+            <button onclick="clearCanvas()">Clear Canvas</button>
+            <button onclick="toggleDebug()">Toggle Debug</button>
+        </div>
+
+        <div id="canvas-container"></div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script>
+        let stage, layer, uiLayer, transformer;
+        let debugMode = true;
+        
+        function log(message, data = null) {
+            if (debugMode) {
+                console.log(message, data);
+                document.getElementById('status').innerHTML = message + (data ? ` ${JSON.stringify(data)}` : '');
+            }
+        }
+
+        function initCanvas() {
+            stage = new Konva.Stage({
+                container: 'canvas-container',
+                width: 800,
+                height: 600
+            });
+
+            // Main layer for elements
+            layer = new Konva.Layer();
+            stage.add(layer);
+
+            // UI layer for transformer
+            uiLayer = new Konva.Layer();
+            stage.add(uiLayer);
+
+            // Create transformer
+            transformer = new Konva.Transformer({
+                anchorStroke: '#007bff',
+                anchorFill: 'white',
+                anchorSize: 10,
+                borderStroke: '#007bff',
+                borderStrokeWidth: 2,
+                borderDash: [4, 4],
+                rotateEnabled: true,
+                enabledAnchors: ['top-left', 'top-center', 'top-right', 'middle-right', 'bottom-right', 'bottom-center', 'bottom-left', 'middle-left']
+            });
+
+            uiLayer.add(transformer);
+
+            // Click handler for selection
+            stage.on('click tap', (e) => {
+                if (e.target === stage) {
+                    // Clicked on empty area
+                    transformer.nodes([]);
+                    log('Deselected all');
+                } else {
+                    // Clicked on an element
+                    transformer.nodes([e.target]);
+                    log('Selected element', { id: e.target.id(), type: e.target.getClassName() });
+                }
+                uiLayer.batchDraw();
+            });
+
+            // Transformer events
+            transformer.on('transform', (e) => {
+                const node = transformer.nodes()[0];
+                if (node) {
+                    log('Transforming', { 
+                        width: node.width() * node.scaleX(), 
+                        height: node.height() * node.scaleY(),
+                        scaleX: node.scaleX(),
+                        scaleY: node.scaleY()
+                    });
+                }
+            });
+
+            transformer.on('transformend', (e) => {
+                const node = transformer.nodes()[0];
+                if (node) {
+                    // Reset scale and apply to width/height
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+                    
+                    node.width(node.width() * scaleX);
+                    node.height(node.height() * scaleY);
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    
+                    log('Transform end', { 
+                        finalWidth: node.width(), 
+                        finalHeight: node.height() 
+                    });
+                    
+                    layer.batchDraw();
+                }
+            });
+
+            log('Canvas initialized');
+        }
+
+        function addTestImage() {
+            // Create a simple colored rectangle as test "image"
+            const rect = new Konva.Rect({
+                id: 'test-image-' + Date.now(),
+                x: 100 + Math.random() * 100,
+                y: 100 + Math.random() * 100,
+                width: 150,
+                height: 100,
+                fill: '#ff6b6b',
+                stroke: '#000',
+                strokeWidth: 2,
+                cornerRadius: 10
+            });
+
+            layer.add(rect);
+            layer.batchDraw();
+            
+            log('Added test image', { id: rect.id(), width: rect.width(), height: rect.height() });
+        }
+
+        function clearCanvas() {
+            transformer.nodes([]);
+            layer.removeChildren();
+            layer.batchDraw();
+            uiLayer.batchDraw();
+            log('Canvas cleared');
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            log('Debug mode', { enabled: debugMode });
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            initCanvas();
+        };
+    </script>
+</body>
+</html>

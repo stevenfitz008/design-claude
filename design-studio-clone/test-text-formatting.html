@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Formatting Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #2f343c;
+            color: #f5f8fa;
+            padding: 20px;
+        }
+        .test-steps {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .step {
+            background: #252a30;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #48aff0;
+        }
+        .step-number {
+            font-weight: bold;
+            color: #48aff0;
+        }
+        .expected {
+            background: rgba(72, 175, 240, 0.1);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .controls-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .control-item {
+            background: #495563;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-steps">
+        <h1>🎨 Text Formatting Controls Test</h1>
+        <p>Manual testing guide for the enhanced Canvas Top Bar text formatting features.</p>
+        
+        <div class="step">
+            <div class="step-number">Step 1:</div>
+            <p>Open the Design Studio at <strong>http://localhost:3002</strong></p>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 2:</div>
+            <p>Click the <strong>Text tool (T icon)</strong> in the left toolbar</p>
+            <div class="expected">
+                <strong>Expected:</strong> Right panel should show TextPanel with text templates and "Rich Text Editor" button
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 3:</div>
+            <p>Click on any text template (e.g., "Header", "Subheader", "Body text")</p>
+            <div class="expected">
+                <strong>Expected:</strong> Text element should be added to the canvas
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 4:</div>
+            <p>Click on the text element on the canvas to select it</p>
+            <div class="expected">
+                <strong>Expected:</strong> Text element should show selection handles, and the Canvas Top Bar should display advanced text formatting controls
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 5: Verify Text Formatting Controls</div>
+            <p>Check that the following controls appear in the Canvas Top Bar when text is selected:</p>
+            <div class="controls-list">
+                <div class="control-item">📝 Font Family Dropdown<br><small>(Arial, Georgia, etc.)</small></div>
+                <div class="control-item">🔢 Font Size Dropdown<br><small>(8, 10, 12, 14, 16, etc.)</small></div>
+                <div class="control-item">🔤 Bold Button<br><small>Toggles bold formatting</small></div>
+                <div class="control-item">🔤 Italic Button<br><small>Toggles italic formatting</small></div>
+                <div class="control-item">🔤 Underline Button<br><small>Toggles underline</small></div>
+                <div class="control-item">↔️ Align Left Button<br><small>Left text alignment</small></div>
+                <div class="control-item">↔️ Align Center Button<br><small>Center text alignment</small></div>
+                <div class="control-item">↔️ Align Right Button<br><small>Right text alignment</small></div>
+                <div class="control-item">🎨 Text Color Selector<br><small>Color swatch + dropdown</small></div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 6: Test Functionality</div>
+            <p>Test each control to verify they work:</p>
+            <ul>
+                <li>Change font family and see text update</li>
+                <li>Change font size and see text resize</li>
+                <li>Click Bold button - should toggle bold state</li>
+                <li>Click Italic button - should toggle italic state</li>
+                <li>Try different text alignments</li>
+                <li>Change text color and see color update</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">✅ Success Criteria:</div>
+            <div class="expected">
+                <strong>All text formatting controls should:</strong>
+                <ul>
+                    <li>Appear only when text elements are selected</li>
+                    <li>Show current text properties (active states)</li>
+                    <li>Update the selected text in real-time</li>
+                    <li>Work with multiple text elements selected</li>
+                    <li>Have proper dark theme styling</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">🚀 Advanced Features:</div>
+            <p>Also test the Rich Text Editor button in the TextPanel for additional features like:</p>
+            <ul>
+                <li>🌟 Text Shadow (Ctrl+Shift+B)</li>
+                <li>🎨 Gradient Text (Ctrl+Shift+G)</li>
+                <li>📏 Line Height Control</li>
+                <li>↔️ Letter Spacing Control</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

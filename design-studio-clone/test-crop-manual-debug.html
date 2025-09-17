@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Crop Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        .test-results {
+            background: #222;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #FF9800; }
+        .info { color: #2196F3; }
+        button {
+            background: #48aff0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manual Crop Debug Test</h1>
+    <p>This test loads the main app and guides you through testing the crop functionality step by step.</p>
+    
+    <div class="test-section">
+        <h2>Step 1: Load Main Application</h2>
+        <button onclick="loadApp()">Load App</button>
+        <div class="test-results" id="step1-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 2: Manual Test Instructions</h2>
+        <div class="test-results">
+            <h3>Test Steps:</h3>
+            <ol>
+                <li><span class="info">Open Photos Panel:</span> Click on "Photos" in the left toolbar</li>
+                <li><span class="info">Add an Image:</span> Drag any photo from the panel to the canvas</li>
+                <li><span class="info">Select the Image:</span> Click on the image to select it</li>
+                <li><span class="info">Check Canvas Top Bar:</span> Look for crop controls in the top bar</li>
+                <li><span class="info">Test Crop Positions:</span> Try different crop positions from dropdown</li>
+                <li><span class="info">Observe Console:</span> Open browser DevTools and watch console logs</li>
+            </ol>
+            
+            <h3>What to Look For:</h3>
+            <ul>
+                <li><span class="success">✅ Crop button appears</span> when image is selected</li>
+                <li><span class="success">✅ Dropdown shows</span> all 9 crop positions</li>
+                <li><span class="success">✅ Console shows crop debug logs</span> with calculations</li>
+                <li><span class="success">✅ Image visually changes</span> when crop position is selected</li>
+                <li><span class="error">❌ Only center crop works</span> - other positions don't show visual changes</li>
+            </ul>
+            
+            <h3>Debug Console Commands:</h3>
+            <code>
+                // Check if canvas store is accessible<br>
+                window.useCanvasStore<br><br>
+                
+                // Check if Konva stage is accessible<br>
+                window.konvaStage<br><br>
+                
+                // Check current elements<br>
+                window.useCanvasStore.getState().elements<br><br>
+                
+                // Check current selection<br>
+                window.useCanvasStore.getState().selection
+            </code>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 3: App Frame</h2>
+        <div id="app-container"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('step1-results');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function loadApp() {
+            log('Loading main application...', 'info');
+            
+            const container = document.getElementById('app-container');
+            const iframe = document.createElement('iframe');
+            iframe.src = 'http://localhost:3000';
+            iframe.onload = function() {
+                log('✅ Application loaded successfully', 'success');
+                log('📋 You can now manually test the crop functionality using the steps above', 'info');
+                log('🔍 Open browser DevTools (F12) to see console logs', 'warning');
+                
+                // Try to access the iframe content (may be blocked by CORS)
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    log('✅ Iframe content accessible', 'success');
+                } catch (e) {
+                    log('⚠️ Iframe content not accessible (CORS) - use browser DevTools instead', 'warning');
+                }
+            };
+            iframe.onerror = function() {
+                log('❌ Failed to load application - check if dev server is running on localhost:3000', 'error');
+            };
+            
+            container.innerHTML = '';
+            container.appendChild(iframe);
+        }
+
+        // Instructions for debugging
+        log('🧪 Manual Crop Debug Test Ready', 'info');
+        log('📝 Follow the steps above to test crop functionality', 'info');
+        log('🔍 The goal is to identify why only center crop position works', 'warning');
+    </script>
+</body>
+</html>

@@ -84,7 +84,7 @@ export interface Theme {
 // Default dark theme matching our CSS variables
 export const darkTheme: Theme = {
   colors: {
-    canvasBg: '#2f343c',
+    canvasBg: '#e7e7e7',
     canvasSurface: '#ffffff',
     panelBg: '#394b59',
     toolbarBg: '#252a30',

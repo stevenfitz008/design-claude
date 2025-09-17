@@ -180,30 +180,94 @@ export const useCanvas = (): CanvasHookReturn => {
   }, [createAddElementCommand, executeCommand, selectElement]);
 
   const addImageElement = useCallback((x: number, y: number, src: string) => {
-    const element: CanvasElement = {
-      id: `image_${Date.now()}`,
-      type: 'image',
-      x,
-      y,
-      width: 200,
-      height: 150,
-      rotation: 0,
-      scaleX: 1,
-      scaleY: 1,
-      opacity: 1,
-      visible: true,
-      locked: false,
-      zIndex: Date.now(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      src,
-      originalWidth: 200,
-      originalHeight: 150,
-      fit: 'cover',
-    } as CanvasElement;
-    
-    addElement(element);
-    selectElement(element.id);
+    // Load the image to get natural dimensions
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const { width: naturalWidth, height: naturalHeight } = img;
+      const aspectRatio = naturalWidth / naturalHeight;
+
+      // Calculate reasonable display size based on natural dimensions
+      const maxWidth = 400;
+      const maxHeight = 300;
+      let displayWidth = naturalWidth;
+      let displayHeight = naturalHeight;
+
+      // Scale down if too large
+      if (displayWidth > maxWidth || displayHeight > maxHeight) {
+        const widthRatio = maxWidth / displayWidth;
+        const heightRatio = maxHeight / displayHeight;
+        const scale = Math.min(widthRatio, heightRatio);
+        displayWidth = Math.round(displayWidth * scale);
+        displayHeight = Math.round(displayHeight * scale);
+      }
+
+      // Ensure minimum size
+      const minSize = 50;
+      if (displayWidth < minSize || displayHeight < minSize) {
+        if (aspectRatio > 1) {
+          displayWidth = Math.max(minSize, displayWidth);
+          displayHeight = Math.round(displayWidth / aspectRatio);
+        } else {
+          displayHeight = Math.max(minSize, displayHeight);
+          displayWidth = Math.round(displayHeight * aspectRatio);
+        }
+      }
+
+      const element: CanvasElement = {
+        id: `image_${Date.now()}`,
+        type: 'image',
+        x,
+        y,
+        width: displayWidth,
+        height: displayHeight,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        visible: true,
+        locked: false,
+        zIndex: Date.now(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        src,
+        originalWidth: naturalWidth,
+        originalHeight: naturalHeight,
+        fit: 'cover',
+      } as CanvasElement;
+
+      addElement(element);
+      selectElement(element.id);
+    };
+    img.onerror = () => {
+      console.error('Failed to load image for sizing:', src);
+      // Fallback to default sizing if image load fails
+      const element: CanvasElement = {
+        id: `image_${Date.now()}`,
+        type: 'image',
+        x,
+        y,
+        width: 300,
+        height: 200,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        visible: true,
+        locked: false,
+        zIndex: Date.now(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        src,
+        originalWidth: 300,
+        originalHeight: 200,
+        fit: 'cover',
+      } as CanvasElement;
+
+      addElement(element);
+      selectElement(element.id);
+    };
+    img.src = src;
   }, [addElement, selectElement]);
 
   const addShapeElement = useCallback((x: number, y: number, shapeType: string) => {

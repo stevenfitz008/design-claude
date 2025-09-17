@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './styles/goober-setup'; // Initialize Goober CSS-in-JS setup
-import { AppLayout, LeftToolbar, TopNavigation } from './components/basic';
+import './styles/global-icons.css'; // Global icon theming
+import { AppLayout, LeftToolbar } from './components/basic';
+import { TopNavigation } from './components/layout/TopNavigation';
+import { ThemeProvider } from './contexts/ThemeProvider';
 import { MainCanvas } from './components/layout/MainCanvas';
 import { PhotosPanelSimple } from './components/panels/PhotosPanelSimple';
 import { VideosPanel } from './components/panels/VideosPanel';
@@ -9,6 +12,7 @@ import { TextPanel } from './components/panels/TextPanel';
 import { ShapesPanel } from './components/panels/ShapesPanel';
 import { ResizePanel } from './components/panels/ResizePanel';
 import { BackgroundMediaPanel } from './components/panels/BackgroundMedia';
+import { LayersPanel } from './components/panels/LayersPanel';
 import { useTextEditor } from './hooks/useTextEditor';
 import { preloadEssentialFonts } from './services/googleFonts';
 import { useCanvasStore } from './stores/canvasStore';
@@ -17,7 +21,7 @@ import type { TextTemplate } from './components/panels/TextPanel';
 const AppContent: React.FC = () => {
   const [activeTool, setActiveTool] = useState('templates');
   const [projectName] = useState('Untitled Design');
-  const [rightPanelVisible, setRightPanelVisible] = useState(true);
+  const [leftContextPanelVisible, setLeftContextPanelVisible] = useState(true);
   const { createTextFromTemplate } = useTextEditor();
   const { addElement, elements } = useCanvasStore();
 
@@ -50,8 +54,8 @@ const AppContent: React.FC = () => {
     console.log('Redo action');
   };
 
-  const toggleRightPanel = () => {
-    setRightPanelVisible(!rightPanelVisible);
+  const toggleLeftContextPanel = () => {
+    setLeftContextPanelVisible(!leftContextPanelVisible);
   };
 
   // Handle text template selection
@@ -101,22 +105,22 @@ const AppContent: React.FC = () => {
       mainCanvas={
         <MainCanvas />
       }
-      rightPanel={rightPanelVisible ? (
-        <div style={{ backgroundColor: '#2f343c', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          {/* Collapsible Tab integrated into panel */}
+      rightPanel={leftContextPanelVisible ? (
+        <div style={{ backgroundColor: '#2f343c', height: '100%', width: '525px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          {/* Collapsible Tab integrated into panel - positioned on right side */}
           <div
-            onClick={toggleRightPanel}
-            title="Collapse panel"
+            onClick={toggleLeftContextPanel}
+            title="Collapse context panel"
             style={{
               position: 'absolute',
-              left: '-24px',
+              right: '-24px',
               top: '50%',
               transform: 'translateY(-50%)',
               width: '24px',
               height: '80px',
               backgroundColor: '#252a30',
               border: '1px solid #495563',
-              borderRadius: '12px 0 0 12px',
+              borderRadius: '0 12px 12px 0',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -127,29 +131,29 @@ const AppContent: React.FC = () => {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(72, 175, 240, 0.1)';
-              e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)';
+              e.currentTarget.style.transform = 'translateY(-50%) translateX(2px)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#252a30';
               e.currentTarget.style.transform = 'translateY(-50%)';
             }}
           >
-            <svg 
-              viewBox="0 0 24 24" 
+            <svg
+              viewBox="0 0 24 24"
               fill="none"
               style={{
                 width: '12px',
                 height: '12px',
                 color: '#a7b6c2',
                 transition: 'transform 0.15s ease',
-                transform: 'rotate(0deg)'
+                transform: 'rotate(180deg)'
               }}
             >
-              <path 
-                d="M9 18l6-6-6-6" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <path
+                d="M9 18l6-6-6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
@@ -188,6 +192,8 @@ const AppContent: React.FC = () => {
               <ResizePanel />
             ) : activeTool === 'background' ? (
               <BackgroundMediaPanel />
+            ) : activeTool === 'layers' ? (
+              <LayersPanel />
             ) : (
               <div style={{ 
                 display: 'flex',
@@ -251,13 +257,13 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Expand Tab when panel is collapsed */
+        /* Expand Tab when context panel is collapsed - positioned next to left toolbar */
         <div
-          onClick={toggleRightPanel}
-          title="Expand panel"
+          onClick={toggleLeftContextPanel}
+          title="Expand context panel"
           style={{
             position: 'fixed',
-            right: '0px',
+            left: '72px',
             top: '50%',
             transform: 'translateY(-50%)',
             width: '24px',
@@ -282,22 +288,22 @@ const AppContent: React.FC = () => {
             e.currentTarget.style.transform = 'translateY(-50%)';
           }}
         >
-          <svg 
-            viewBox="0 0 24 24" 
+          <svg
+            viewBox="0 0 24 24"
             fill="none"
             style={{
               width: '12px',
               height: '12px',
               color: '#a7b6c2',
               transition: 'transform 0.15s ease',
-              transform: 'rotate(180deg)'
+              transform: 'rotate(0deg)'
             }}
           >
-            <path 
-              d="M9 18l6-6-6-6" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
+            <path
+              d="M9 18l6-6-6-6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
@@ -309,7 +315,11 @@ const AppContent: React.FC = () => {
 };
 
 function App() {
-  return <AppContent />;
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }
 
 export default App;

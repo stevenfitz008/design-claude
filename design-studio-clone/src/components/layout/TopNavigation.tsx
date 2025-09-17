@@ -1,9 +1,11 @@
 import React from 'react';
 import { observer } from "mobx-react-lite";
 import { Button, ButtonGroup, Icon, Menu, MenuDivider, MenuItem, Popover } from '@blueprintjs/core';
-import { styled } from '@styles/goober-setup';
+import { styled } from 'goober';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { ThemeSelector } from '@/components/ui/ThemeSelector';
+import type { Theme } from '@/styles/goober-setup';
 
 interface TopNavigationProps {
   projectName?: string;
@@ -16,63 +18,26 @@ interface TopNavigationProps {
   canRedo?: boolean;
 }
 
-const NavigationContainer = styled.div<{ theme: any }>`
+const TopNavContainer = styled('div')<{ theme: Theme }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
   padding: 0 ${props => props.theme.spacing.lg};
   background-color: ${props => props.theme.colors.toolbarBg};
   border-bottom: 1px solid ${props => props.theme.colors.borderColor};
+  flex-shrink: 0;
 `;
 
-const LeftSection = styled.div<{ theme: any }>`
+const LeftSection = styled('div')<{ theme: Theme }>`
   display: flex;
   align-items: center;
   gap: ${props => props.theme.spacing.lg};
 `;
 
-const CenterSection = styled.div<{ theme: any }>`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  flex: 1;
-  justify-content: center;
-  max-width: 800px;
-`;
-
-const RightSection = styled.div<{ theme: any }>`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-`;
-
-const ProjectName = styled.div<{ theme: any }>`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  
-  .project-title {
-    font-size: ${props => props.theme.typography.fontSizeMd};
-    font-weight: ${props => props.theme.typography.fontWeightMedium};
-    color: ${props => props.theme.colors.textPrimary};
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  .edit-button {
-    opacity: 0.7;
-    transition: opacity ${props => props.theme.transitions.fast};
-    
-    &:hover {
-      opacity: 1;
-    }
-  }
-`;
-
-const Logo = styled.div<{ theme: any }>`
+const LogoSection = styled('div')<{ theme: Theme }>`
   display: flex;
   align-items: center;
   gap: ${props => props.theme.spacing.sm};
@@ -81,8 +46,39 @@ const Logo = styled.div<{ theme: any }>`
   font-size: ${props => props.theme.typography.fontSizeLg};
 `;
 
+const CenterSection = styled('div')<{ theme: Theme }>`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+  flex: 1;
+  justify-content: center;
+  max-width: 800px;
+`;
+
+const ProjectNameContainer = styled('div')<{ theme: Theme }>`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const ProjectName = styled('span')<{ theme: Theme }>`
+  font-size: ${props => props.theme.typography.fontSizeMd};
+  font-weight: ${props => props.theme.typography.fontWeightMedium};
+  color: ${props => props.theme.colors.textPrimary};
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const RightSection = styled('div')<{ theme: Theme }>`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
 // we need observer to update component automatically on any store changes
-export const TopNavigation: React.FC<TopNavigationProps> = observer(({ 
+export const TopNavigation: React.FC<TopNavigationProps> = observer(({
   projectName = 'Untitled Design',
   onSave,
   onExport,
@@ -138,101 +134,104 @@ export const TopNavigation: React.FC<TopNavigationProps> = observer(({
   );
 
   return (
-    <NavigationContainer theme={theme}>
+    <TopNavContainer theme={theme}>
       <LeftSection theme={theme}>
-        <Logo theme={theme}>
+        <LogoSection theme={theme}>
           <Icon icon="edit" size={20} />
           Design Studio
-        </Logo>
-        
+        </LogoSection>
+
         <Popover content={fileMenu} placement="bottom-start">
           <Button minimal icon="menu" text="File" />
         </Popover>
       </LeftSection>
 
       <CenterSection theme={theme}>
-        <ProjectName theme={theme}>
-          <span className="project-title" data-testid="project-name">{projectName}</span>
-          <Button minimal icon="edit" className="edit-button" small />
-        </ProjectName>
-        
+        <ProjectNameContainer theme={theme}>
+          <ProjectName data-testid="project-name" theme={theme}>
+            {projectName}
+          </ProjectName>
+          <Button minimal icon="edit" small style={{ opacity: 0.7 }} />
+        </ProjectNameContainer>
       </CenterSection>
 
       <RightSection theme={theme}>
         {/* Position and Layer Controls */}
         <ButtonGroup minimal>
-          <Button 
-            icon="layers" 
-            minimal 
+          <Button
+            icon="layers"
+            minimal
             small
-            title="Position" 
+            title="Position"
           />
-          <Button 
-            icon="bring-data" 
-            minimal 
+          <Button
+            icon="bring-data"
+            minimal
             small
-            title="Bring to front" 
+            title="Bring to front"
           />
-          <Button 
-            icon="send-to-map" 
-            minimal 
+          <Button
+            icon="send-to-map"
+            minimal
             small
-            title="Send to back" 
+            title="Send to back"
           />
-          <Button 
-            icon="duplicate" 
-            minimal 
+          <Button
+            icon="duplicate"
+            minimal
             small
-            title="Duplicate" 
+            title="Duplicate"
           />
-          <Button 
-            icon="trash" 
-            minimal 
+          <Button
+            icon="trash"
+            minimal
             small
-            title="Delete" 
+            title="Delete"
           />
-          <Button 
-            icon="more" 
-            minimal 
+          <Button
+            icon="more"
+            minimal
             small
-            title="More options" 
+            title="More options"
           />
         </ButtonGroup>
-        
+
         {/* Project Actions */}
         <ButtonGroup>
           <Popover content={shareMenu} placement="bottom-end">
-            <Button 
-              intent="primary" 
-              icon="share" 
+            <Button
+              intent="primary"
+              icon="share"
               text="Share"
               onClick={onShare}
               data-testid="share-button"
             />
           </Popover>
-          
-          <Button 
-            intent="success" 
-            icon="floppy-disk" 
-            text="Save" 
+
+          <Button
+            intent="success"
+            icon="floppy-disk"
+            text="Save"
             onClick={onSave}
             data-testid="save-button"
           />
-          
-          <Button 
+
+          <Button
             intent="primary"
             icon="export"
             text="Export"
             onClick={onExport}
             data-testid="export-button"
           />
-          
+
+          <ThemeSelector />
+
           <Popover content={helpMenu} placement="bottom-end">
             <Button minimal icon="help" />
           </Popover>
         </ButtonGroup>
       </RightSection>
-    </NavigationContainer>
+    </TopNavContainer>
   );
 });
 

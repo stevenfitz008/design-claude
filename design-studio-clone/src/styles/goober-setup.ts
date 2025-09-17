@@ -32,6 +32,10 @@ export interface Theme {
     text: string;
     border: string;
     primary: string;
+    // Icon colors for global theming
+    iconPrimary: string;
+    iconSecondary: string;
+    iconMuted: string;
   };
   shadows: {
     sm: string;
@@ -81,6 +85,83 @@ export interface Theme {
   };
 }
 
+// Light theme configuration
+export const lightTheme: Theme = {
+  colors: {
+    canvasBg: '#f0f0f0',
+    canvasSurface: '#ffffff',
+    panelBg: '#ffffff',
+    toolbarBg: '#f8f9fa',
+    textPrimary: '#1a202c',
+    textSecondary: '#4a5568',
+    textMuted: '#718096',
+    borderColor: '#e2e8f0',
+    hoverBg: 'rgba(72, 175, 240, 0.1)',
+    activeBg: 'rgba(72, 175, 240, 0.2)',
+    selectionColor: '#48aff0',
+    selectionBg: 'rgba(72, 175, 240, 0.15)',
+    handleColor: '#48aff0',
+    gridColor: 'rgba(0, 0, 0, 0.1)',
+    guideColor: '#ff6b6b',
+    // Additional properties for PhotosPanelPremium
+    bg: '#ffffff',
+    cardBg: '#f8f9fa',
+    text: '#1a202c',
+    border: '#e2e8f0',
+    primary: '#48aff0',
+    // Icon colors for global theming - light theme uses darker icons
+    iconPrimary: '#1a202c',
+    iconSecondary: '#4a5568',
+    iconMuted: '#718096',
+  },
+  shadows: {
+    sm: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    md: '0 2px 6px rgba(0, 0, 0, 0.15)',
+    lg: '0 4px 12px rgba(0, 0, 0, 0.2)',
+    xl: '0 8px 24px rgba(0, 0, 0, 0.25)',
+  },
+  layout: {
+    leftToolbarWidth: '72px',
+    rightPanelWidth: '350px',
+    topNavHeight: '64px',
+    timelineHeight: '200px',
+  },
+  borderRadius: {
+    sm: '3px',
+    md: '4px',
+    lg: '6px',
+    xl: '8px',
+  },
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '12px',
+    lg: '16px',
+    xl: '24px',
+    xxl: '32px',
+  },
+  typography: {
+    fontSizeXs: '11px',
+    fontSizeSm: '12px',
+    fontSizeMd: '14px',
+    fontSizeLg: '16px',
+    fontSizeXl: '18px',
+    fontSizeXxl: '20px',
+    lineHeightSm: '1.2',
+    lineHeightMd: '1.4',
+    lineHeightLg: '1.6',
+    fontWeightNormal: '400',
+    fontWeightMedium: '500',
+    fontWeightSemibold: '600',
+    fontWeightBold: '700',
+  },
+  transitions: {
+    fast: '0.1s ease',
+    normal: '0.15s ease',
+    slow: '0.3s ease',
+  },
+};
+
 // Default dark theme matching our CSS variables
 export const darkTheme: Theme = {
   colors: {
@@ -105,6 +186,10 @@ export const darkTheme: Theme = {
     text: '#f5f8fa',
     border: '#495563',
     primary: '#48aff0',
+    // Icon colors for global theming
+    iconPrimary: '#f5f8fa',
+    iconSecondary: '#a7b6c2',
+    iconMuted: '#8a9ba8',
   },
   shadows: {
     sm: '0 1px 3px rgba(0, 0, 0, 0.2)',

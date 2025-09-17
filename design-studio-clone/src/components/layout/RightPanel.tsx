@@ -7,6 +7,7 @@ import { ReportsPanel } from '@components/panels/ReportsPanel';
 import { PagesPanel } from '@components/panels/PagesPanel';
 import { ComponentsPanel } from '@components/panels/ComponentsPanel';
 import { HierarchicalPanel } from '@components/panels/HierarchicalPanel';
+import { LayersPanel } from '@components/panels/LayersPanel';
 
 interface RightPanelProps {
   activePanel?: string;
@@ -20,6 +21,7 @@ const PANEL_NAMES: Record<string, string> = {
   'text': 'Text Tools',
   'photos': 'Photos',
   'videos': 'Videos',
+  'layers': 'Layers',
   'reports': 'Reports',
   'pages': 'Pages',
   'components': 'Components',
@@ -42,6 +44,8 @@ export const RightPanel: React.FC<RightPanelProps> = observer(({
         return <PhotosPanelSimple />;
       case 'videos':
         return <VideosPanel />;
+      case 'layers':
+        return <LayersPanel />;
       case 'reports':
         return <ReportsPanel />;
       case 'pages':
@@ -98,7 +102,7 @@ export const RightPanel: React.FC<RightPanelProps> = observer(({
         overflow: 'hidden'
       }}
     >
-      {!['photos', 'videos', 'reports', 'pages', 'components', 'hierarchy'].includes(activePanel) && (
+      {!['photos', 'videos', 'layers', 'reports', 'pages', 'components', 'hierarchy'].includes(activePanel) && (
         <div style={{ 
           padding: '16px',
           borderBottom: '1px solid #495563',

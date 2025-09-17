@@ -8,7 +8,8 @@ const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://127.0.0.
 console.log('🔧 MediaService Configuration:', {
   VITE_BACKEND_API_URL: import.meta.env.VITE_BACKEND_API_URL,
   BACKEND_API_URL: BACKEND_API_URL,
-  env_keys: Object.keys(import.meta.env)
+  env_keys: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')),
+  all_env_vars: import.meta.env
 });
 
 // Common interfaces for both photos and videos

@@ -237,9 +237,7 @@ export const AppLayout: React.FC<{
     {topNavigation}
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden', width: '100%' }}>
       {leftToolbar}
-      <div data-testid="right-panel" style={{ width: '350px', borderLeft: '1px solid #495563', borderRight: '1px solid #495563' }}>
-        {rightPanel}
-      </div>
+      {rightPanel}
       {mainCanvas}
     </div>
   </div>

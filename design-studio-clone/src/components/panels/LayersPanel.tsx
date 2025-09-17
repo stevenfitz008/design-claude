@@ -3,35 +3,65 @@ import { Button, ButtonGroup, Icon, Switch } from '@blueprintjs/core';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { useCanvasStore } from '@/stores/canvasStore';
 import type { CanvasElement } from '@/types/canvas';
+import { getGlobalIconStyle, getCleanIconContainerStyle, getDragHandleDotStyle } from '@/utils/themeUtils';
 
-// Element type icons
+// Element type icons matching the screenshot
 const ELEMENT_ICONS: Record<string, string> = {
   text: 'font',
   image: 'media',
   shape: 'shapes',
   video: 'video',
-  audio: 'volume-up'
+  audio: 'volume-up',
+  background: 'layers',
+  icon: 'symbol-square' // For SVG icons
 };
 
-// Get element display name
+// Get element display type for the first column
+const getElementDisplayType = (element: CanvasElement): string => {
+  switch (element.type) {
+    case 'text':
+      return 'Text';
+    case 'image':
+      return 'Image';
+    case 'shape':
+      if ((element as any).iconName) {
+        return 'SVG'; // Icon elements are displayed as SVG
+      }
+      return 'SVG'; // Shapes are also SVG
+    case 'video':
+      return 'Video';
+    case 'audio':
+      return 'Audio';
+    case 'background':
+      return 'Background';
+    default:
+      return 'Element';
+  }
+};
+
+// Get element display name/ID for the second column
 const getElementDisplayName = (element: CanvasElement): string => {
   switch (element.type) {
     case 'text':
-      return (element as any).text || 'Text Element';
+      const textContent = (element as any).text || 'Text Element';
+      // Truncate long text content
+      return textContent.length > 20 ? textContent.substring(0, 17) + '...' : textContent;
     case 'image':
-      return (element as any).fileName || 'Image';
+      // Return a shortened element ID like in the screenshot
+      return `#${element.id.substring(element.id.length - 8)}`;
     case 'shape':
-      const shapeType = (element as any).shapeType || 'shape';
-      if ((element as any).icon) {
-        return `Icon: ${(element as any).icon}`;
+      if ((element as any).iconName) {
+        return `#${element.id.substring(element.id.length - 8)}`;
       }
-      return shapeType.charAt(0).toUpperCase() + shapeType.slice(1);
+      return `#${element.id.substring(element.id.length - 8)}`;
     case 'video':
-      return (element as any).title || (element as any).fileName || 'Video';
+      return (element as any).title || `#${element.id.substring(element.id.length - 8)}`;
     case 'audio':
-      return (element as any).fileName || 'Audio';
+      return (element as any).fileName || `#${element.id.substring(element.id.length - 8)}`;
+    case 'background':
+      return `#${element.id.substring(element.id.length - 8)}`;
     default:
-      return 'Element';
+      return `#${element.id.substring(element.id.length - 8)}`;
   }
 };
 
@@ -76,9 +106,16 @@ export const LayersPanel: React.FC = () => {
     moveBackward
   } = useCanvasStore();
 
-  // Sort elements by zIndex (top to bottom in panel)
+  // Sort elements by zIndex (top to bottom in panel), with background elements always last
   const sortedElements = useMemo(() => {
-    return [...elements].sort((a, b) => b.zIndex - a.zIndex);
+    return [...elements].sort((a, b) => {
+      // Background elements always go to the bottom
+      if (a.type === 'background' && b.type !== 'background') return 1;
+      if (b.type === 'background' && a.type !== 'background') return -1;
+
+      // Regular sorting by zIndex (descending - higher zIndex appears first/top)
+      return b.zIndex - a.zIndex;
+    });
   }, [elements]);
 
   const handleElementClick = (elementId: string, event: React.MouseEvent) => {
@@ -106,12 +143,14 @@ export const LayersPanel: React.FC = () => {
   const hasSelection = selectedCount > 0;
 
   return (
-    <div style={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
+    <div
+      className="layers-panel"
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
       {/* Header */}
       <div style={{
         padding: '16px',
@@ -134,30 +173,30 @@ export const LayersPanel: React.FC = () => {
         {/* Layer Controls */}
         {hasSelection && (
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            <ButtonGroup minimal small>
+            <ButtonGroup minimal size="small">
               <Button
-                icon="bring-data"
+                icon="chevron-up"
                 onClick={() => selection.forEach(id => moveToFront(id))}
                 title="Bring to front"
               />
               <Button
-                icon="move-up"
+                icon="arrow-up"
                 onClick={() => selection.forEach(id => moveForward(id))}
                 title="Move forward"
               />
               <Button
-                icon="move-down"
+                icon="arrow-down"
                 onClick={() => selection.forEach(id => moveBackward(id))}
                 title="Move backward"
               />
               <Button
-                icon="send-to-back"
+                icon="chevron-down"
                 onClick={() => selection.forEach(id => moveToBack(id))}
                 title="Send to back"
               />
             </ButtonGroup>
             
-            <ButtonGroup minimal small>
+            <ButtonGroup minimal size="small">
               <Button
                 icon="duplicate"
                 onClick={() => selection.forEach(id => duplicateElement(id))}
@@ -212,16 +251,17 @@ export const LayersPanel: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    padding: '8px',
-                    borderRadius: '4px',
+                    padding: '6px 8px',
+                    borderRadius: '3px',
                     cursor: 'pointer',
-                    backgroundColor: isSelected ? (theme.colors?.primary || '#48aff0') + '20' : 'transparent',
-                    border: isSelected ? `1px solid ${theme.colors?.primary || '#48aff0'}` : '1px solid transparent',
-                    transition: 'all 0.1s ease'
+                    backgroundColor: isSelected ? (theme.colors?.primary || '#48aff0') + '15' : 'transparent',
+                    border: isSelected ? `1px solid ${theme.colors?.primary || '#48aff0'}40` : '1px solid transparent',
+                    transition: 'all 0.1s ease',
+                    marginBottom: '1px'
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = theme.colors?.cardBg || '#394b59';
+                      e.currentTarget.style.backgroundColor = (theme.colors?.cardBg || '#394b59') + '40';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -230,46 +270,59 @@ export const LayersPanel: React.FC = () => {
                     }
                   }}
                 >
-                  {/* Element Icon */}
+                  {/* Drag Handle */}
                   <div style={{
-                    width: '32px',
+                    width: '16px',
                     height: '32px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: theme.colors?.cardBg || '#394b59',
-                    borderRadius: '4px',
                     marginRight: '8px',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    cursor: 'grab'
                   }}>
-                    <Icon 
-                      icon={ELEMENT_ICONS[element.type] || 'document'} 
-                      size={14}
-                      style={{ color: theme.colors?.textSecondary || '#a7b6c2' }}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px'
+                    }}>
+                      <div style={getDragHandleDotStyle(theme)} />
+                      <div style={getDragHandleDotStyle(theme)} />
+                      <div style={getDragHandleDotStyle(theme)} />
+                    </div>
+                  </div>
+
+                  {/* Element Icon */}
+                  <div style={getCleanIconContainerStyle(20, 12)}>
+                    <Icon
+                      icon={ELEMENT_ICONS[element.type] || 'document'}
+                      size={16}
+                      style={getGlobalIconStyle(theme, 'secondary')}
                     />
                   </div>
 
                   {/* Element Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: '12px',
+                      fontSize: '11px',
                       fontWeight: 500,
                       color: theme.colors?.textPrimary || '#f5f8fa',
-                      marginBottom: '2px',
+                      marginBottom: '1px',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {displayName}
+                      {getElementDisplayType(element)}
                     </div>
                     <div style={{
-                      fontSize: '10px',
+                      fontSize: '11px',
                       color: theme.colors?.textSecondary || '#a7b6c2',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis'
+                      textOverflow: 'ellipsis',
+                      fontFamily: 'monospace'
                     }}>
-                      {description}
+                      {displayName}
                     </div>
                   </div>
 
@@ -279,7 +332,7 @@ export const LayersPanel: React.FC = () => {
                     <Button
                       icon={element.visible ? 'eye-open' : 'eye-off'}
                       minimal
-                      small
+                      size="small"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleVisibilityToggle(element.id, !element.visible);
@@ -296,7 +349,7 @@ export const LayersPanel: React.FC = () => {
                     <Button
                       icon={element.locked ? 'lock' : 'unlock'}
                       minimal
-                      small
+                      size="small"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleLockToggle(element.id, !element.locked);
@@ -309,34 +362,22 @@ export const LayersPanel: React.FC = () => {
                       title={element.locked ? 'Unlock element' : 'Lock element'}
                     />
 
-                    {/* Layer Actions Menu */}
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '1px'
-                    }}>
-                      <Button
-                        icon="more"
-                        minimal
-                        small
-                        style={{
-                          minWidth: '20px',
-                          minHeight: '20px',
-                          opacity: 0.5
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // In a real app, this would open a context menu
-                          const actions = [
-                            () => duplicateElement(element.id),
-                            () => deleteElement(element.id)
-                          ];
-                          // For now, just duplicate on click
-                          duplicateElement(element.id);
-                        }}
-                        title="Layer options"
-                      />
-                    </div>
+                    {/* Delete Button */}
+                    <Button
+                      icon="trash"
+                      minimal
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(element.id);
+                      }}
+                      style={{
+                        minWidth: '20px',
+                        minHeight: '20px',
+                        color: theme.colors?.textSecondary || '#a7b6c2'
+                      }}
+                      title="Delete element"
+                    />
                   </div>
                 </div>
               );
@@ -355,7 +396,7 @@ export const LayersPanel: React.FC = () => {
             onClick={clearSelection}
             disabled={!hasSelection}
             fill
-            small
+            size="small"
           >
             Clear Selection
           </Button>

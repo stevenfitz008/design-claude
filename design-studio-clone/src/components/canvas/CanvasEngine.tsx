@@ -413,7 +413,7 @@ const generateIconSVG = (iconName: string, fill: string, stroke?: string, stroke
     
     // Location & Map icons
     'location': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="${fill}"/><circle cx="12" cy="10" r="3" fill="white"/>`,
-    'map': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2 1,6" fill="${fill}"/><line x1="8" y1="2" x2="8" y2="18" stroke="white" stroke-width="2"/><line x1="16" y1="6" x2="16" y2="22" stroke="white" stroke-width="2"/>`,
+    'map-basic': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2 1,6" fill="${fill}"/><line x1="8" y1="2" x2="8" y2="18" stroke="white" stroke-width="2"/><line x1="16" y1="6" x2="16" y2="22" stroke="white" stroke-width="2"/>`,
     'compass': `<circle cx="12" cy="12" r="10" fill="${fill}"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88 16.24,7.76" fill="white"/>`,
     'globe': `<circle cx="12" cy="12" r="10" stroke="${fill}" stroke-width="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${fill}" stroke-width="2"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="${fill}" stroke-width="2" fill="none"/>`,
     
@@ -480,7 +480,7 @@ const generateIconSVG = (iconName: string, fill: string, stroke?: string, stroke
     // Additional Navigation icons
     'navigation': `<polygon points="3,11 22,2 13,21 11,13 3,11" fill="${fill}"/>`,
     'map-pin': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="${fill}"/><circle cx="12" cy="10" r="3" stroke="white" stroke-width="2" fill="none"/>`,
-    'map': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2" fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`,
+    'map-detailed': `<polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2" fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`,
     'move': `<polyline points="5,9 2,12 5,15" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="9,5 12,2 15,5" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="15,19 12,22 9,19" stroke="${fill}" stroke-width="2" fill="none"/><polyline points="19,9 22,12 19,15" stroke="${fill}" stroke-width="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${fill}" stroke-width="2"/><line x1="12" y1="2" x2="12" y2="22" stroke="${fill}" stroke-width="2"/>`,
     'corner-down-right': `<polyline points="15,10 20,15 15,20" stroke="${fill}" stroke-width="2" fill="none"/><path d="M4 4v7a4 4 0 0 0 4 4h12" stroke="${fill}" stroke-width="2" fill="none"/>`,
     'corner-up-left': `<polyline points="9,14 4,9 9,4" stroke="${fill}" stroke-width="2" fill="none"/><path d="M20 20v-7a4 4 0 0 0-4-4H4" stroke="${fill}" stroke-width="2" fill="none"/>`,
@@ -944,11 +944,50 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
     }
   }, [canvasSize, fitStageIntoParentContainer]);
 
+  // Function to calculate optimal image size based on natural dimensions and canvas constraints
+  const calculateOptimalImageSize = useCallback((naturalWidth: number, naturalHeight: number, maxWidth = 400, maxHeight = 300) => {
+    // Calculate the aspect ratio
+    const aspectRatio = naturalWidth / naturalHeight;
+
+    // Apply reasonable constraints based on canvas size and zoom
+    const canvasBasedMaxWidth = Math.min(maxWidth, canvasSize.width * 0.4 / zoom);
+    const canvasBasedMaxHeight = Math.min(maxHeight, canvasSize.height * 0.4 / zoom);
+
+    let width = naturalWidth;
+    let height = naturalHeight;
+
+    // Scale down if too large
+    if (width > canvasBasedMaxWidth || height > canvasBasedMaxHeight) {
+      const widthRatio = canvasBasedMaxWidth / width;
+      const heightRatio = canvasBasedMaxHeight / height;
+      const scale = Math.min(widthRatio, heightRatio);
+
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    // Ensure minimum reasonable size
+    const minSize = 50;
+    if (width < minSize || height < minSize) {
+      if (aspectRatio > 1) {
+        width = Math.max(minSize, width);
+        height = Math.round(width / aspectRatio);
+      } else {
+        height = Math.max(minSize, height);
+        width = Math.round(height * aspectRatio);
+      }
+    }
+
+    console.log(`🖼️ Image sizing: natural(${naturalWidth}x${naturalHeight}) → optimal(${width}x${height}) aspectRatio(${aspectRatio.toFixed(2)}) zoom(${zoom.toFixed(2)})`);
+
+    return { width, height };
+  }, [canvasSize, zoom]);
+
   // Responsive sizing utility for elements based on canvas scale and zoom
   const getResponsiveElementSize = useCallback((elementType: 'image' | 'text' | 'shape') => {
     // Base element sizes (what we want at 1:1 scale and 100% zoom)
     const BASE_SIZES = {
-      image: { width: 200, height: 200 },
+      image: { width: 300, height: 200 }, // More reasonable default aspect ratio
       text: { width: 200, height: 50 },
       shape: { width: 100, height: 100 }
     };
@@ -1023,11 +1062,26 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       
-      // Calculate drop position relative to canvas with centered stage
-      const stageX = (dimensions.width - canvasSize.width * zoom) / 2;
-      const stageY = (dimensions.height - canvasSize.height * zoom) / 2;
-      const canvasX = (e.clientX - rect.left - stageX) / zoom;
-      const canvasY = (e.clientY - rect.top - stageY) / zoom;
+      // Calculate drop position using accurate coordinate transformation
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      // Get drop position relative to the container
+      const dropX = e.clientX - rect.left;
+      const dropY = e.clientY - rect.top;
+
+      // Get stage transform values
+      const stageAttrs = stage.getAttrs();
+      const stageX = stageAttrs.x || 0;
+      const stageY = stageAttrs.y || 0;
+      const stageScale = stageAttrs.scaleX || 1;
+
+      // Transform screen coordinates to canvas coordinates
+      // Account for stage position and scale
+      const canvasX = (dropX - stageX) / stageScale;
+      const canvasY = (dropY - stageY) / stageScale;
+
+      console.log(`📍 Drop coordinates: screen(${dropX.toFixed(1)}, ${dropY.toFixed(1)}) stage(${stageX.toFixed(1)}, ${stageY.toFixed(1)}) scale(${stageScale.toFixed(2)}) → canvas(${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`);
       
       // Handle different types of dragged items
       switch (data.type) {
@@ -1037,35 +1091,81 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
           break;
           
         case 'photo':
-          const imageSize = getResponsiveElementSize('image');
-          addElement({
-            id: generateId(),
-            type: 'image',
-            x: canvasX - imageSize.width / 2, // Center the image
-            y: canvasY - imageSize.height / 2,
-            width: imageSize.width,
-            height: imageSize.height,
-            rotation: 0,
-            scaleX: 1,
-            scaleY: 1,
-            opacity: 1,
-            visible: true,
-            locked: false,
-            zIndex: elements.length + 1,
-            src: data.src,
-            alt: data.alt || 'Dragged photo',
-            filters: {
-              brightness: 100,
-              contrast: 100,
-              saturation: 100,
-              hue: 0,
-              blur: 0,
-              sepia: 0,
-              grayscale: 0
-            },
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          });
+          // Load the image to get natural dimensions
+          const img = new window.Image();
+          img.crossOrigin = 'anonymous'; // Handle CORS for external images
+          img.onload = () => {
+            const { width: naturalWidth, height: naturalHeight } = img;
+            console.log(`🖼️ Loaded image natural size: ${naturalWidth}x${naturalHeight}`);
+
+            // Calculate optimal size based on natural dimensions
+            const optimalSize = calculateOptimalImageSize(naturalWidth, naturalHeight);
+
+            addElement({
+              id: generateId(),
+              type: 'image',
+              x: canvasX - optimalSize.width / 2, // Center the image
+              y: canvasY - optimalSize.height / 2,
+              width: optimalSize.width,
+              height: optimalSize.height,
+              rotation: 0,
+              scaleX: 1,
+              scaleY: 1,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: elements.length + 1,
+              src: data.src,
+              originalWidth: naturalWidth,
+              originalHeight: naturalHeight,
+              alt: data.alt || 'Dragged photo',
+              filters: {
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                hue: 0,
+                blur: 0,
+                sepia: 0,
+                grayscale: 0
+              },
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+          };
+          img.onerror = () => {
+            console.error('❌ Failed to load image:', data.src);
+            // Fallback to responsive sizing if image load fails
+            const fallbackSize = getResponsiveElementSize('image');
+            addElement({
+              id: generateId(),
+              type: 'image',
+              x: canvasX - fallbackSize.width / 2,
+              y: canvasY - fallbackSize.height / 2,
+              width: fallbackSize.width,
+              height: fallbackSize.height,
+              rotation: 0,
+              scaleX: 1,
+              scaleY: 1,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: elements.length + 1,
+              src: data.src,
+              alt: data.alt || 'Dragged photo',
+              filters: {
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                hue: 0,
+                blur: 0,
+                sepia: 0,
+                grayscale: 0
+              },
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+          };
+          img.src = data.src;
           break;
           
         case 'shape':
@@ -1180,7 +1280,7 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         // Performance optimizations
         perfectDrawEnabled={false}
         imageSmoothingEnabled={true}
-        hitGraphEnabled={true}
+        listening={true}
         
         // WebGL acceleration (falls back to 2D canvas if not supported)
         globalCompositeOperation="source-over"
@@ -1228,9 +1328,9 @@ const CanvasEngine: React.FC<CanvasEngineProps> = ({ className }) => {
         </Layer>
         
         {/* Elements layer */}
-        <Layer 
+        <Layer
           imageSmoothingEnabled={false}
-          hitGraphEnabled={true}
+          listening={true}
           perfectDrawEnabled={false}
         >
           {sortedElements.map((element) => (

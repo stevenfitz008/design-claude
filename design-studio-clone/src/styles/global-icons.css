@@ -1,0 +1,116 @@
+/**
+ * Global Icon Theming - Consistent icon colors across the entire application
+ * This file ensures all Blueprint.js icons and custom icons follow the theme
+ * Supports light, dark, and system (auto) theme preferences
+ */
+
+/* Dark Theme Icon Colors */
+.theme-dark {
+  /* Blueprint.js icon colors */
+  --bp5-icon-color: #a7b6c2;
+  --bp5-icon-color-hover: #f5f8fa;
+  --bp5-icon-color-disabled: #8a9ba8;
+
+  /* Custom icon variables */
+  --icon-primary: #f5f8fa;
+  --icon-secondary: #a7b6c2;
+  --icon-muted: #8a9ba8;
+}
+
+/* Light Theme Icon Colors */
+.theme-light,
+.theme-system.prefers-light {
+  /* System theme in light mode */
+  /* Blueprint.js icon colors */
+  --bp5-icon-color: #4a5568;
+  --bp5-icon-color-hover: #1a202c;
+  --bp5-icon-color-disabled: #718096;
+
+  /* Custom icon variables */
+  --icon-primary: #1a202c;
+  --icon-secondary: #4a5568;
+  --icon-muted: #718096;
+}
+
+/* Global Blueprint.js Icon Overrides */
+.bp5-icon {
+  color: var(--bp5-icon-color) !important;
+}
+
+.bp5-button:hover .bp5-icon,
+.bp5-button:focus .bp5-icon {
+  color: var(--bp5-icon-color-hover) !important;
+}
+
+.bp5-button:disabled .bp5-icon,
+.bp5-disabled .bp5-icon {
+  color: var(--bp5-icon-color-disabled) !important;
+}
+
+/* Remove background boxes from icons in panels */
+.layers-panel .bp5-icon,
+.photos-panel .bp5-icon,
+.videos-panel .bp5-icon,
+.icons-panel .bp5-icon,
+.text-panel .bp5-icon,
+.shapes-panel .bp5-icon {
+  /* Icons should appear without background boxes */
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure consistent icon sizing */
+.panel-icon {
+  width: 16px !important;
+  height: 16px !important;
+  color: var(--icon-secondary) !important;
+}
+
+.panel-icon-primary {
+  color: var(--icon-primary) !important;
+}
+
+.panel-icon-muted {
+  color: var(--icon-muted) !important;
+}
+
+/* Button icon overrides for consistent theming */
+.bp5-button .bp5-icon {
+  color: var(--icon-secondary) !important;
+}
+
+.bp5-button:hover .bp5-icon {
+  color: var(--icon-primary) !important;
+}
+
+.bp5-button.bp5-active .bp5-icon {
+  color: var(--icon-primary) !important;
+}
+
+/* Toolbar icon styling */
+.left-toolbar .bp5-icon {
+  color: var(--icon-secondary) !important;
+}
+
+.left-toolbar .bp5-button:hover .bp5-icon,
+.left-toolbar .bp5-button.bp5-active .bp5-icon {
+  color: var(--icon-primary) !important;
+}
+
+/* Layer controls specific styling */
+.layer-control-icon {
+  color: var(--icon-secondary) !important;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+
+.layer-control-icon:hover {
+  color: var(--icon-primary) !important;
+  opacity: 1;
+}
+
+.layer-control-icon.active {
+  color: var(--icon-primary) !important;
+  opacity: 1;
+}

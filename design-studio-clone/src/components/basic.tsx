@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, InputGroup, Icon } from '@blueprintjs/core';
 import { TOOLS } from '../types/tools';
-import { PhotosPanelSimple } from './PhotosPanelSimple';
+import { PhotosPanelSimple } from './panels/PhotosPanelSimple';
 import { useCanvasStore } from '../stores/canvasStore';
 import { usePageStore } from '../stores/pageStore';
 

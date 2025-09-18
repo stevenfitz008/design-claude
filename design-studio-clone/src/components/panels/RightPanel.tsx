@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeProvider';
 import { usePanelStore, PanelType } from '@/stores/panelStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { TemplatesPanel } from './TemplatesPanel';
-import { PhotosPanel } from './PhotosPanel';
+import { PhotosPanelPremium } from './PhotosPanelPremium';
 import { TextToolsPanel } from './TextToolsPanel';
 import { IconsPanel } from './IconsPanel';
 import { IconControlPanel } from './IconControlPanel';
@@ -118,7 +118,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
       case 'templates':
         return <TemplatesPanel />;
       case 'photos':
-        return <PhotosPanel />;
+        return <PhotosPanelPremium />;
       case 'text':
         return <TextToolsPanel />;
       case 'icons':

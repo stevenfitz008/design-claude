@@ -1,148 +1,280 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Button, InputGroup, MenuItem, Spinner } from '@blueprintjs/core';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Button, InputGroup, MenuItem, Spinner, Tag, Icon } from '@blueprintjs/core';
 import { Select, ItemRenderer } from '@blueprintjs/select';
-import { styled } from '@styles/goober-setup';
+import { styled, keyframes } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { usePanelStore } from '@/stores/panelStore';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { unsplashService, UnsplashPhoto } from '@/services/unsplashService';
+import { ProgressiveImage } from '@/components/common/ProgressiveImage';
+import { useVirtualGrid, useScrollContainer, useGridItemHeights } from '@/hooks/useVirtualGrid';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { debounce } from 'lodash';
 
-interface UnsplashPhoto {
-  id: string;
-  description: string | null;
-  alt_description: string | null;
-  urls: {
-    raw: string;
-    full: string;
-    regular: string;
-    small: string;
-    thumb: string;
-  };
-  width: number;
-  height: number;
-  user: {
-    id: string;
-    name: string;
-    username: string;
-  };
-  likes: number;
-  downloads: number;
-}
+// Premium animations
+const slideInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const pulseGlow = keyframes`
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.6);
+  }
+`;
+
+const fadeInStagger = keyframes`
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
 
 const PanelContainer = styled.div<{ theme: any }>`
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: ${props => props.theme.colors.bg};
+  position: relative;
 `;
 
 const SearchSection = styled.div<{ theme: any }>`
-  padding: 16px;
+  padding: 20px 16px 16px;
   border-bottom: 1px solid ${props => props.theme.colors.border};
+  background: linear-gradient(135deg, ${props => props.theme.colors.bg} 0%, ${props => props.theme.colors.cardBg} 100%);
+  animation: ${slideInUp} 0.4s ease-out;
+  
+  .search-header {
+    margin-bottom: 16px;
+    
+    .search-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: ${props => props.theme.colors.text};
+      margin-bottom: 4px;
+    }
+    
+    .search-subtitle {
+      font-size: 12px;
+      color: ${props => props.theme.colors.textSecondary};
+      opacity: 0.8;
+    }
+  }
   
   .search-input {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    
+    .bp5-input-group {
+      transition: all 0.3s ease;
+      
+      &:focus-within {
+        animation: ${pulseGlow} 2s infinite;
+      }
+      
+      .bp5-input {
+        background: ${props => props.theme.colors.cardBg};
+        border: 1px solid ${props => props.theme.colors.border};
+        transition: all 0.3s ease;
+        
+        &:focus {
+          background: ${props => props.theme.colors.bg};
+          border-color: ${props => props.theme.colors.primary};
+        }
+      }
+    }
   }
   
   .filters {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
     flex-wrap: wrap;
+    
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .filter-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: ${props => props.theme.colors.textSecondary};
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .bp5-button {
+        transition: all 0.3s ease;
+        background: ${props => props.theme.colors.cardBg};
+        border: 1px solid ${props => props.theme.colors.border};
+        
+        &:hover {
+          background: ${props => props.theme.colors.primary};
+          color: white;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
   }
   
-  .filter-label {
-    font-size: 12px;
+  .search-stats {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
     color: ${props => props.theme.colors.textSecondary};
-    margin-right: 4px;
+    
+    .stats-left {
+      display: flex;
+      gap: 16px;
+    }
+    
+    .rate-limit {
+      opacity: 0.7;
+    }
   }
 `;
 
 const PhotosGrid = styled.div<{ theme: any }>`
   flex: 1;
-  padding: 16px;
-  overflow-y: auto;
+  position: relative;
+  overflow: hidden;
   
-  &::-webkit-scrollbar {
-    width: 6px;
+  .virtual-scroll-container {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: ${props => props.theme.colors.bg};
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, ${props => props.theme.colors.border}, ${props => props.theme.colors.primary});
+      border-radius: 4px;
+      transition: background 0.3s ease;
+      
+      &:hover {
+        background: ${props => props.theme.colors.primary};
+      }
+    }
   }
   
-  &::-webkit-scrollbar-track {
-    background: ${props => props.theme.colors.bg};
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: ${props => props.theme.colors.border};
-    border-radius: 3px;
+  .virtual-content {
+    position: relative;
+    width: 100%;
   }
 `;
 
-const MasonryGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  
-  @supports (grid-template-rows: masonry) {
-    grid-template-rows: masonry;
-  }
+const VirtualGrid = styled.div`
+  position: relative;
+  width: 100%;
 `;
 
-const PhotoCard = styled.div<{ theme: any; aspectRatio: number }>`
+const PhotoCard = styled.div<{ 
+  theme: any; 
+  x: number; 
+  y: number; 
+  width: number; 
+  height: number;
+  isDragging?: boolean;
+  animationDelay?: number;
+}>`
+  position: absolute;
+  left: ${props => props.x}px;
+  top: ${props => props.y}px;
+  width: ${props => props.width}px;
+  height: ${props => props.height}px;
   background: ${props => props.theme.colors.cardBg};
   border: 1px solid ${props => props.theme.colors.border};
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  break-inside: avoid;
+  cursor: grab;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: ${fadeInStagger} 0.6s ease-out;
+  animation-delay: ${props => (props.animationDelay || 0) * 0.05}s;
+  animation-fill-mode: both;
+  
+  ${props => props.isDragging && `
+    cursor: grabbing;
+    transform: rotate(3deg) scale(1.05);
+    z-index: 1000;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border-color: ${props.theme.colors.primary};
+  `}
   
   &:hover {
     border-color: ${props => props.theme.colors.primary};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.15),
+      0 0 0 1px ${props => props.theme.colors.primary}40;
     
-    .photo-overlay {
+    .photo-actions {
       opacity: 1;
+      transform: translateY(0);
     }
   }
   
-  .photo-container {
-    position: relative;
-    width: 100%;
-    aspect-ratio: ${props => props.aspectRatio};
-    overflow: hidden;
+  &:active {
+    transform: translateY(-2px) scale(0.98);
+    transition: transform 0.1s ease;
+  }
+  
+  .photo-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
     
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    
-    .photo-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8));
-      opacity: 0;
-      transition: opacity 0.2s ease;
+    .action-button {
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      border-radius: 50%;
+      color: white;
       display: flex;
-      align-items: flex-end;
-      padding: 12px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
       
-      .photo-info {
-        color: white;
-        font-size: 11px;
-        
-        .photo-author {
-          font-weight: 600;
-          margin-bottom: 2px;
-        }
-        
-        .photo-dimensions {
-          opacity: 0.8;
-        }
+      &:hover {
+        background: ${props => props.theme.colors.primary};
+        transform: scale(1.1);
+      }
+      
+      .bp5-icon {
+        font-size: 12px;
       }
     }
   }
@@ -150,39 +282,142 @@ const PhotoCard = styled.div<{ theme: any; aspectRatio: number }>`
 
 const LoadingState = styled.div<{ theme: any }>`
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  height: 300px;
   color: ${props => props.theme.colors.textSecondary};
   font-size: 14px;
-  gap: 8px;
+  gap: 16px;
+  
+  .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    
+    .loading-text {
+      font-weight: 500;
+    }
+    
+    .loading-subtext {
+      font-size: 12px;
+      opacity: 0.7;
+      text-align: center;
+      max-width: 250px;
+    }
+  }
 `;
 
 const LoadMoreButton = styled(Button)<{ theme: any }>`
-  margin: 16px auto;
+  margin: 24px auto;
   display: block;
+  background: linear-gradient(135deg, ${props => props.theme.colors.primary}, ${props => props.theme.colors.primary}dd);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+    background: linear-gradient(135deg, ${props => props.theme.colors.primary}ee, ${props => props.theme.colors.primary});
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 const categories = [
-  { value: 'all', label: 'All Photos' },
+  { value: '', label: 'All Categories' },
   { value: 'nature', label: 'Nature' },
   { value: 'people', label: 'People' },
   { value: 'technology', label: 'Technology' },
   { value: 'business', label: 'Business' },
-  { value: 'food', label: 'Food' },
+  { value: 'food', label: 'Food & Drink' },
   { value: 'travel', label: 'Travel' },
   { value: 'architecture', label: 'Architecture' },
+  { value: 'fashion', label: 'Fashion' },
+  { value: 'art', label: 'Arts & Culture' },
+  { value: 'sports', label: 'Sports' },
+  { value: 'animals', label: 'Animals' },
 ];
 
 const orientations = [
-  { value: 'all', label: 'Any Orientation' },
+  { value: '', label: 'All Orientations' },
   { value: 'landscape', label: 'Landscape' },
   { value: 'portrait', label: 'Portrait' },
   { value: 'squarish', label: 'Square' },
 ];
 
+const colors = [
+  { value: '', label: 'All Colors' },
+  { value: 'black_and_white', label: 'Black & White' },
+  { value: 'black', label: 'Black' },
+  { value: 'white', label: 'White' },
+  { value: 'yellow', label: 'Yellow' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'red', label: 'Red' },
+  { value: 'purple', label: 'Purple' },
+  { value: 'magenta', label: 'Magenta' },
+  { value: 'green', label: 'Green' },
+  { value: 'teal', label: 'Teal' },
+  { value: 'blue', label: 'Blue' },
+];
+
 const CategorySelect = Select.ofType<{ value: string; label: string }>();
 const OrientationSelect = Select.ofType<{ value: string; label: string }>();
+const ColorSelect = Select.ofType<{ value: string; label: string }>();
+
+const EmptyState = styled.div<{ theme: any }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: ${props => props.theme.colors.textSecondary};
+  text-align: center;
+  padding: 40px 20px;
+  
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+  
+  .empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: ${props => props.theme.colors.text};
+  }
+  
+  .empty-description {
+    font-size: 14px;
+    opacity: 0.8;
+    max-width: 300px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  
+  .empty-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    
+    .suggestion-tag {
+      cursor: pointer;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+  }
+`;
 
 const renderOption: ItemRenderer<{ value: string; label: string }> = (
   option,
@@ -198,72 +433,51 @@ const renderOption: ItemRenderer<{ value: string; label: string }> = (
   );
 };
 
-// Mock Unsplash data (in real app, this would come from Unsplash API)
-const mockPhotos: UnsplashPhoto[] = [
-  {
-    id: 'photo_1',
-    description: 'Beautiful landscape',
-    alt_description: 'Mountain landscape at sunset',
-    urls: {
-      raw: '/api/placeholder/400/300',
-      full: '/api/placeholder/400/300', 
-      regular: '/api/placeholder/400/300',
-      small: '/api/placeholder/200/150',
-      thumb: '/api/placeholder/200/150',
-    },
-    width: 4000,
-    height: 3000,
-    user: {
-      id: 'user_1',
-      name: 'John Photographer',
-      username: 'johnphoto',
-    },
-    likes: 156,
-    downloads: 1247,
-  },
-  {
-    id: 'photo_2',
-    description: 'City architecture',
-    alt_description: 'Modern glass building',
-    urls: {
-      raw: '/api/placeholder/300/400',
-      full: '/api/placeholder/300/400',
-      regular: '/api/placeholder/300/400', 
-      small: '/api/placeholder/150/200',
-      thumb: '/api/placeholder/150/200',
-    },
-    width: 3000,
-    height: 4000,
-    user: {
-      id: 'user_2',
-      name: 'Architecture Pro',
-      username: 'archpro',
-    },
-    likes: 89,
-    downloads: 567,
-  },
-  {
-    id: 'photo_3',
-    description: 'Technology workspace',
-    alt_description: 'Laptop and coffee on desk',
-    urls: {
-      raw: '/api/placeholder/500/300',
-      full: '/api/placeholder/500/300',
-      regular: '/api/placeholder/500/300',
-      small: '/api/placeholder/250/150', 
-      thumb: '/api/placeholder/250/150',
-    },
-    width: 5000,
-    height: 3000,
-    user: {
-      id: 'user_3',
-      name: 'Tech Shots',
-      username: 'techshots',
-    },
-    likes: 234,
-    downloads: 891,
-  },
-];
+// Error boundary component
+const ErrorBoundary = styled.div<{ theme: any }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  padding: 40px 20px;
+  text-align: center;
+  color: ${props => props.theme.colors.textSecondary};
+  
+  .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #ff6b6b;
+  }
+  
+  .error-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: ${props => props.theme.colors.text};
+  }
+  
+  .error-message {
+    font-size: 14px;
+    opacity: 0.8;
+    max-width: 400px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  
+  .error-actions {
+    display: flex;
+    gap: 12px;
+    
+    button {
+      transition: all 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+  }
+`;
 
 export const PhotosPanel: React.FC = () => {
   const { theme } = useTheme();

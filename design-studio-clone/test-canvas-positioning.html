@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Positioning Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f0f0;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        iframe {
+            border: 2px solid #48aff0;
+            border-radius: 4px;
+            width: 100%;
+            height: 600px;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        .checklist {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .checklist h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .check-item input {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Canvas Positioning & Resize Test</h1>
+
+    <div class="instructions">
+        <h3>Testing Canvas Behavior (Should Match Polotno Studio)</h3>
+        <p>This test verifies that our canvas positioning, centering, and resize functionality works exactly like studio.polotno.com</p>
+        <p><strong>Open the app below and test the following behaviors:</strong></p>
+    </div>
+
+    <div class="test-container">
+        <h3>🖼️ Design Studio Application</h3>
+        <iframe src="http://localhost:3000" title="Design Studio"></iframe>
+    </div>
+
+    <div class="checklist">
+        <h3>✅ Test Checklist</h3>
+
+        <div class="check-item">
+            <input type="checkbox" id="gray-bg">
+            <label for="gray-bg"><strong>Gray Background Visible:</strong> Canvas should have gray (#f5f5f5) background areas around the white canvas, just like Polotno Studio</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="centered">
+            <label for="centered"><strong>Canvas Centered:</strong> White canvas should be perfectly centered in the viewport at all times</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="browser-resize">
+            <label for="browser-resize"><strong>Browser Resize Works:</strong> Resize this browser window - canvas should stay centered and responsive</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="zoom-controls">
+            <label for="zoom-controls"><strong>Zoom Controls Work:</strong> Use zoom controls (bottom of canvas) - canvas should scale while staying centered</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="auto-fit">
+            <label for="auto-fit"><strong>Auto-Fit Button Works:</strong> Click "Fit" button - canvas should auto-fit to viewport with proper centering</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="zoom-in-out">
+            <label for="zoom-in-out"><strong>Zoom In/Out Maintains Center:</strong> Use + and - zoom buttons - canvas should grow/shrink from center</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="elements-responsive">
+            <label for="elements-responsive"><strong>Elements Stay in Position:</strong> Canvas elements (text, shapes) should maintain their relative positions during zoom/resize</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="no-scrollbars">
+            <label for="no-scrollbars"><strong>No Unnecessary Scrollbars:</strong> Should not have horizontal/vertical scrollbars unless canvas is zoomed beyond viewport</label>
+        </div>
+
+        <div class="check-item">
+            <input type="checkbox" id="polotno-comparison">
+            <label for="polotno-comparison"><strong>Matches Polotno Studio:</strong> Open studio.polotno.com in another tab and compare - behavior should be identical</label>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>🔧 Debug Information</h3>
+        <p>Open browser console (F12) to see positioning debug logs that start with 🎯</p>
+        <p>Look for messages like: "Stage position: container(1200x800) canvas(800x500) zoom(1.00) → position(200.0, 150.0)"</p>
+    </div>
+
+    <script>
+        // Auto-check items as they are tested
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const checked = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).length;
+                const total = document.querySelectorAll('input[type="checkbox"]').length;
+
+                if (checked === total) {
+                    alert('🎉 All tests passed! Canvas positioning is working correctly.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

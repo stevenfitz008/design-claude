@@ -1,5 +1,10 @@
 export { default as CanvasEngine } from './CanvasEngine';
+export { default as AdvancedCanvasEngine } from './AdvancedCanvasEngine';
 export { SelectionHandles } from './SelectionHandles';
 export { TransformControls } from './TransformControls';
 export { LassoSelection, useLassoSelection } from './LassoSelection';
 export { SelectionBox, useSelectionBox } from './SelectionBox';
+export { PageCarousel } from './PageCarousel';
+export { ZoomControls } from './ZoomControls';
+export { CanvasToolbar } from './CanvasToolbar';
+export { PositionCallout, usePositionCallout } from './PositionCallout';

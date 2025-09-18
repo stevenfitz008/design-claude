@@ -43,16 +43,17 @@ export default defineConfig({
     },
   ],
 
-  webServer: [
-    {
-      command: 'npm run dev',
-      port: 3000,
-      reuseExistingServer: !process.env.CI,
-    },
-    {
-      command: 'cd ../design-studio-backend && node test-api.js',
-      port: 3001,
-      reuseExistingServer: !process.env.CI,
-    }
-  ],
+  // webServer config disabled since dev server is already running
+  // webServer: [
+  //   {
+  //     command: 'npm run dev',
+  //     port: 5173,
+  //     reuseExistingServer: !process.env.CI,
+  //   },
+  //   {
+  //     command: 'cd ../design-studio-backend && node test-api.js',
+  //     port: 3001,
+  //     reuseExistingServer: !process.env.CI,
+  //   }
+  // ],
 });

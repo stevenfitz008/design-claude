@@ -97,6 +97,21 @@ export type {
   InterpolationType
 } from './timeline';
 
+// Multi-page system types
+export type {
+  // Page management
+  DesignPage,
+  PageState,
+  
+  // Component props
+  PageCarouselProps,
+  PageThumbnailProps,
+  ZoomControlProps,
+  PositionCalloutProps,
+  CanvasToolbarProps,
+  ActionButtonProps
+} from './pages';
+
 // API and service types
 export type {
   // Base API types

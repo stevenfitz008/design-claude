@@ -2,13 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { observer } from "mobx-react-lite";
 // import { styled } from '@styles/goober-setup';
 import { useTheme } from '@/contexts/ThemeProvider';
-import CanvasEngine from '../canvas/CanvasEngine';
-import { BottomZoomControls } from '../canvas/BottomZoomControls';
-import { CanvasTopBar } from '../canvas/CanvasTopBar';
-// import { ActionBar } from '../navigation/ActionBar';
-import { useCanvasStore } from '@/stores/canvasStore';
-import { useCanvas } from '@/hooks/useCanvas';
-import { useCanvasResize } from '@/hooks/useCanvasResize';
+import AdvancedCanvasEngine from '../canvas/AdvancedCanvasEngine';
 
 interface MainCanvasProps {
   className?: string;
@@ -193,18 +187,12 @@ export const MainCanvas: React.FC<MainCanvasProps> = observer(({ className }) =>
   }, []); // Remove dependencies to prevent re-running
 
   return (
-    <CanvasContainer theme={theme} className={className}>
-      <CanvasTopBar />
-      <CanvasArea canvasAreaRef={canvasAreaRef}>
-        <CanvasEngine />
-        <BottomZoomControls
-          zoom={zoom}
-          onZoomChange={handleZoomChange}
-          onAutoFit={handleAutoFit}
-          minZoom={0.05}
-          maxZoom={20.0}
-        />
-      </CanvasArea>
+    <CanvasContainer
+      theme={theme}
+      className={className}
+      data-canvas-container
+    >
+      <AdvancedCanvasEngine />
     </CanvasContainer>
   );
 });

@@ -1,7 +1,4 @@
-import React, { useState } from 'react';
-// Collapsible tab functionality - positioned in border area
-import { observer } from "mobx-react-lite";
-import { styled } from '@styles/goober-setup';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeProvider';
 
 interface AppLayoutProps {
@@ -12,106 +9,7 @@ interface AppLayoutProps {
   topNavigation?: React.ReactNode;
 }
 
-const LayoutContainer = styled.div<{ theme: any }>`
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  max-height: 100vh; /* Ensure no overflow beyond viewport */
-  max-width: 100vw;  /* Ensure no overflow beyond viewport */
-  min-height: 0;     /* Allow flex shrinking */
-  background-color: ${props => props.theme.colors.canvasBg};
-  color: ${props => props.theme.colors.textPrimary};
-  overflow: hidden;
-  position: fixed;   /* Fix to viewport for browser fitting */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-`;
-
-const TopNavigationContainer = styled.div<{ theme: any }>`
-  height: ${props => props.theme.layout.topNavHeight};
-  background-color: ${props => props.theme.colors.toolbarBg};
-  border-bottom: 1px solid ${props => props.theme.colors.borderColor};
-  flex-shrink: 0;
-  z-index: 10;
-`;
-
-const MainContainer = styled.div`
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0; /* Allow flex shrinking for proper browser fit */
-  position: relative;
-`;
-
-const LeftToolbarContainer = styled.div<{ theme: any; isVisible: boolean }>`
-  width: ${props => props.isVisible ? props.theme.layout.leftToolbarWidth : '0'};
-  background-color: ${props => props.theme.colors.toolbarBg};
-  border-right: 1px solid ${props => props.theme.colors.borderColor};
-  flex-shrink: 0;
-  overflow: hidden;
-  transition: width ${props => props.theme.transitions.normal};
-  z-index: 5;
-`;
-
-const MainCanvasContainer = styled.div<{ theme: any }>`
-  flex: 1;
-  background-color: ${props => props.theme.colors.canvasBg};
-  position: relative;
-  overflow: hidden;
-  min-height: 0; /* Allow flex shrinking for proper browser fit */
-  min-width: 0;  /* Allow flex shrinking for proper browser fit */
-  /* Canvas is now on the right side */
-`;
-
-const RightPanelContainer = styled.div<{ theme: any; isVisible: boolean }>`
-  width: ${props => props.isVisible ? props.theme.layout.rightPanelWidth : '0'};
-  background-color: ${props => props.theme.colors.panelBg};
-  border-left: 1px solid ${props => props.theme.colors.borderColor};
-  border-right: 1px solid ${props => props.theme.colors.borderColor};
-  flex-shrink: 0;
-  overflow: hidden;
-  transition: width ${props => props.theme.transitions.normal};
-  z-index: 5;
-  position: relative;
-`;
-
-const CollapseTab = styled.div<{ theme: any; isVisible: boolean }>`
-  position: absolute;
-  right: ${props => props.isVisible ? '0px' : '-24px'};
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 80px;
-  background-color: ${props => props.theme.colors.toolbarBg};
-  border: 1px solid ${props => props.theme.colors.borderColor};
-  border-radius: 12px 0 0 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all ${props => props.theme.transitions.normal};
-  z-index: 15;
-  box-shadow: ${props => props.theme.shadows.sm};
-  
-  &:hover {
-    background-color: ${props => props.theme.colors.hoverBg};
-    transform: translateY(-50%) translateX(-2px);
-  }
-  
-  svg {
-    width: 12px;
-    height: 12px;
-    color: ${props => props.theme.colors.textSecondary};
-    transition: transform ${props => props.theme.transitions.normal};
-    transform: ${props => props.isVisible ? 'rotate(0deg)' : 'rotate(180deg)'};
-  }
-`;
-
-// we need observer to update component automatically on any store changes
-export const AppLayout: React.FC<AppLayoutProps> = observer(({
+export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   leftToolbar,
   mainCanvas,
@@ -121,90 +19,262 @@ export const AppLayout: React.FC<AppLayoutProps> = observer(({
   const { theme } = useTheme();
   const [leftToolbarVisible, setLeftToolbarVisible] = useState(true);
   const [rightPanelVisible, setRightPanelVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Expose panel visibility controls through context or props
-  const layoutControls = {
-    leftToolbarVisible,
-    rightPanelVisible,
-    toggleLeftToolbar: () => setLeftToolbarVisible(!leftToolbarVisible),
-    toggleRightPanel: () => setRightPanelVisible(!rightPanelVisible),
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setRightPanelVisible(false);
+      } else {
+        setRightPanelVisible(true);
+      }
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  const toggleRightPanel = () => {
+    setRightPanelVisible(!rightPanelVisible);
   };
 
   return (
-    <LayoutContainer theme={theme} data-testid="app-layout">
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      width: '100vw',
+      backgroundColor: '#2f343c',
+      color: '#f5f8fa',
+      overflow: 'hidden'
+    }} data-testid="app-layout">
       {topNavigation && (
-        <TopNavigationContainer theme={theme} data-testid="top-navigation">
+        <div style={{
+          height: '64px',
+          backgroundColor: '#252a30',
+          borderBottom: '1px solid #495563',
+          flexShrink: 0,
+          zIndex: 10
+        }} data-testid="top-navigation">
           {topNavigation}
-        </TopNavigationContainer>
+        </div>
       )}
       
-      <MainContainer>
-        <LeftToolbarContainer theme={theme} isVisible={leftToolbarVisible} data-testid="left-toolbar">
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        overflow: 'hidden',
+        position: 'relative'
+      }}>
+        <div style={{
+          width: leftToolbarVisible ? '72px' : '0',
+          backgroundColor: '#252a30',
+          borderRight: '1px solid #495563',
+          flexShrink: 0,
+          overflow: 'hidden',
+          transition: 'width 0.15s ease',
+          zIndex: 5,
+          ...(isMobile && {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '100%',
+            width: leftToolbarVisible ? '72px' : '0'
+          })
+        }} data-testid="left-toolbar">
           {leftToolbar}
-        </LeftToolbarContainer>
+        </div>
         
-        <MainCanvasContainer theme={theme} data-testid="main-canvas">
-          {mainCanvas}
-          <div
-            onClick={layoutControls.toggleRightPanel}
-            title={rightPanelVisible ? "Collapse panel" : "Expand panel"}
-            style={{
-              position: 'absolute',
-              right: rightPanelVisible ? '0px' : '-24px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '24px',
-              height: '80px',
-              backgroundColor: '#252a30',
-              border: '1px solid #495563',
-              borderRadius: '12px 0 0 12px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-              zIndex: 15,
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(72, 175, 240, 0.1)';
-              e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#252a30';
-              e.currentTarget.style.transform = 'translateY(-50%)';
-            }}
-          >
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none"
+        <div style={{
+          width: rightPanelVisible ? '350px' : '0',
+          backgroundColor: '#394b59',
+          borderRight: '1px solid #495563',
+          flexShrink: 0,
+          overflow: 'hidden',
+          transition: isMobile ? 'transform 0.15s ease' : 'width 0.15s ease',
+          zIndex: 6,
+          position: 'relative',
+          ...(isMobile && {
+            position: 'absolute',
+            top: 0,
+            left: leftToolbarVisible ? '72px' : '0',
+            height: '100%',
+            width: '350px',
+            transform: rightPanelVisible ? 'translateX(0)' : 'translateX(-100%)'
+          })
+        }} data-testid="right-panel">
+          {rightPanel}
+          
+          {/* Desktop toggle tab */}
+          {!isMobile && (
+            <button
+              onClick={toggleRightPanel}
               style={{
-                width: '12px',
-                height: '12px',
+                position: 'absolute',
+                top: '50%',
+                right: rightPanelVisible ? '-16px' : '-32px',
+                transform: 'translateY(-50%)',
+                width: '16px',
+                height: '60px',
+                backgroundColor: '#394b59',
+                border: '1px solid #495563',
+                borderLeft: rightPanelVisible ? 'none' : '1px solid #495563',
+                borderRadius: rightPanelVisible ? '0 8px 8px 0' : '8px',
                 color: '#a7b6c2',
-                transition: 'transform 0.15s ease',
-                transform: rightPanelVisible ? 'rotate(0deg)' : 'rotate(180deg)'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                zIndex: 7,
+                transition: 'all 0.15s ease',
+                boxShadow: rightPanelVisible ? 'none' : '2px 0 4px rgba(0, 0, 0, 0.1)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#f5f8fa';
+                e.currentTarget.style.backgroundColor = '#485563';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#a7b6c2';
+                e.currentTarget.style.backgroundColor = '#394b59';
+              }}
+              title={rightPanelVisible ? 'Hide panel' : 'Show panel'}
+            >
+              {rightPanelVisible ? '«' : '»'}
+            </button>
+          )}
+          
+          {/* Mobile close button */}
+          {isMobile && rightPanelVisible && (
+            <button
+              onClick={toggleRightPanel}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: '-20px',
+                transform: 'translateY(-50%)',
+                width: '20px',
+                height: '40px',
+                backgroundColor: '#394b59',
+                border: '1px solid #495563',
+                borderLeft: 'none',
+                borderRadius: '0 8px 8px 0',
+                color: '#f5f8fa',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                zIndex: 7
               }}
             >
-              <path 
-                d="M9 18l6-6-6-6" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-        </MainCanvasContainer>
+              ×
+            </button>
+          )}
+        </div>
         
-        <RightPanelContainer theme={theme} isVisible={rightPanelVisible} data-testid="right-panel">
-          {rightPanel}
-        </RightPanelContainer>
-      </MainContainer>
+        <div style={{
+          flex: 1,
+          backgroundColor: '#2f343c',
+          position: 'relative',
+          overflow: 'hidden',
+          ...(isMobile && leftToolbarVisible && {
+            marginLeft: rightPanelVisible ? '0' : '0'
+          })
+        }} data-testid="main-canvas">
+          {mainCanvas}
+        </div>
+      </div>
       
       {children}
-    </LayoutContainer>
+      
+      {/* Mobile panel toggle button */}
+      {isMobile && !rightPanelVisible && (
+        <button
+          onClick={toggleRightPanel}
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: leftToolbarVisible ? '82px' : '10px',
+            transform: 'translateY(-50%)',
+            width: '40px',
+            height: '40px',
+            backgroundColor: '#394b59',
+            border: '1px solid #495563',
+            borderRadius: '50%',
+            color: '#f5f8fa',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            zIndex: 10,
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+          }}
+        >
+          ☰
+        </button>
+      )}
+      
+      {/* Desktop panel toggle button when closed */}
+      {!isMobile && !rightPanelVisible && (
+        <button
+          onClick={toggleRightPanel}
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: leftToolbarVisible ? '82px' : '10px',
+            transform: 'translateY(-50%)',
+            width: '32px',
+            height: '60px',
+            backgroundColor: '#394b59',
+            border: '1px solid #495563',
+            borderRadius: '8px',
+            color: '#a7b6c2',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '14px',
+            zIndex: 7,
+            boxShadow: '2px 0 4px rgba(0, 0, 0, 0.1)',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#f5f8fa';
+            e.currentTarget.style.backgroundColor = '#485563';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#a7b6c2';
+            e.currentTarget.style.backgroundColor = '#394b59';
+          }}
+          title="Show panel"
+        >
+          »
+        </button>
+      )}
+      
+      {/* Mobile overlay */}
+      {isMobile && rightPanelVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '64px',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 5
+          }}
+          onClick={toggleRightPanel}
+        />
+      )}
+    </div>
   );
-});
+};
 
 export type { AppLayoutProps };
+export default AppLayout;

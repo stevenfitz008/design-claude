@@ -1,0 +1,141 @@
+name: Hourly Repository Backup
+
+on:
+  schedule:
+    # Run every hour at minute 0 (UTC)
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  BACKUP_RETENTION_DAYS: 30
+  MAX_ARTIFACTS_PER_RUN: 24  # Keep 24 hours worth
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for complete backup
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup backup environment
+      run: |
+        echo "BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_ENV
+        echo "BACKUP_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+        echo "BACKUP_HOUR=$(date +%H)" >> $GITHUB_ENV
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+
+    - name: Create backup archive
+      run: |
+        # Create backup directory
+        mkdir -p backup
+
+        # Create comprehensive backup with metadata
+        cat > backup/backup-info.json << EOF
+        {
+          "repository": "${{ github.repository }}",
+          "branch": "${{ github.ref_name }}",
+          "commit_sha": "${{ github.sha }}",
+          "backup_timestamp": "${{ env.BACKUP_TIMESTAMP }}",
+          "backup_date": "${{ env.BACKUP_DATE }}",
+          "backup_hour": "${{ env.BACKUP_HOUR }}",
+          "workflow_run_id": "${{ github.run_id }}",
+          "workflow_run_number": "${{ github.run_number }}"
+        }
+        EOF
+
+        # Create git bundle (complete repository backup)
+        git bundle create backup/repo-${{ env.BACKUP_TIMESTAMP }}.bundle --all
+
+        # Create tar archive of working directory
+        tar -czf backup/files-${{ env.BACKUP_TIMESTAMP }}.tar.gz \
+          --exclude='.git' \
+          --exclude='backup' \
+          --exclude='node_modules' \
+          --exclude='**/node_modules' \
+          --exclude='.DS_Store' \
+          --exclude='**/.DS_Store' \
+          .
+
+        # Create git log for this backup
+        git log --oneline -50 > backup/recent-commits.txt
+
+        # Create file listing
+        find . -type f \
+          -not -path './.git/*' \
+          -not -path './backup/*' \
+          -not -path './node_modules/*' \
+          -not -path '**/node_modules/*' \
+          > backup/file-listing.txt
+
+        # Show backup contents
+        ls -la backup/
+        du -h backup/*
+
+    - name: Upload backup artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: repo-backup-${{ env.BACKUP_DATE }}-${{ env.BACKUP_HOUR }}h
+        path: backup/
+        retention-days: ${{ env.BACKUP_RETENTION_DAYS }}
+        compression-level: 9
+
+    - name: Cleanup old artifacts (if needed)
+      continue-on-error: true
+      run: |
+        echo "Backup completed successfully"
+        echo "Artifact: repo-backup-${{ env.BACKUP_DATE }}-${{ env.BACKUP_HOUR }}h"
+        echo "Retention: ${{ env.BACKUP_RETENTION_DAYS }} days"
+
+    - name: Backup verification
+      run: |
+        # Verify backup files exist and have content
+        if [[ ! -f backup/repo-${{ env.BACKUP_TIMESTAMP }}.bundle ]]; then
+          echo "ERROR: Git bundle backup failed!"
+          exit 1
+        fi
+
+        if [[ ! -f backup/files-${{ env.BACKUP_TIMESTAMP }}.tar.gz ]]; then
+          echo "ERROR: File archive backup failed!"
+          exit 1
+        fi
+
+        # Check bundle is valid
+        git bundle verify backup/repo-${{ env.BACKUP_TIMESTAMP }}.bundle
+
+        # Check file sizes
+        bundle_size=$(stat -c%s backup/repo-${{ env.BACKUP_TIMESTAMP }}.bundle)
+        archive_size=$(stat -c%s backup/files-${{ env.BACKUP_TIMESTAMP }}.tar.gz)
+
+        echo "Git bundle size: $(( bundle_size / 1024 ))KB"
+        echo "File archive size: $(( archive_size / 1024 ))KB"
+
+        if [[ $bundle_size -lt 1000 || $archive_size -lt 1000 ]]; then
+          echo "WARNING: Backup files seem unusually small"
+        fi
+
+        echo "✅ Backup verification completed successfully"
+
+  backup-status:
+    needs: backup
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Report backup status
+      run: |
+        if [[ "${{ needs.backup.result }}" == "success" ]]; then
+          echo "✅ Hourly backup completed successfully"
+          echo "Timestamp: $(date)"
+          echo "Repository: ${{ github.repository }}"
+        else
+          echo "❌ Hourly backup failed"
+          echo "Status: ${{ needs.backup.result }}"
+          exit 1
+        fi

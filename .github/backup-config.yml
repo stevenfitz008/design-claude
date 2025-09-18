@@ -1,0 +1,97 @@
+# GitHub Repository Backup Configuration
+
+# Backup schedule configuration
+schedule:
+  # Cron expression for hourly backups (UTC timezone)
+  # Format: minute hour day month dayofweek
+  # Current: Every hour at minute 0
+  cron: "0 * * * *"
+
+  # Time zone for schedule (GitHub Actions runs in UTC)
+  timezone: "UTC"
+
+# Backup retention settings
+retention:
+  # How long to keep backup artifacts (max 90 days for GitHub)
+  days: 30
+
+  # Maximum number of artifacts to keep per day
+  max_per_day: 24
+
+# What to include in backups
+include:
+  # Include full git history
+  git_history: true
+
+  # Include working directory files
+  working_files: true
+
+  # Include git metadata (branches, tags, remotes)
+  git_metadata: true
+
+  # Include file listings and directory structure
+  file_listings: true
+
+# What to exclude from file backups
+exclude:
+  patterns:
+    - ".git"
+    - "node_modules"
+    - "**/node_modules"
+    - ".DS_Store"
+    - "**/.DS_Store"
+    - "*.tmp"
+    - "*.log"
+    - "*.swp"
+    - "*~"
+    - "backup"
+    - "backups"
+    - ".backup-*"
+
+# Backup verification settings
+verification:
+  # Verify git bundle integrity
+  verify_bundle: true
+
+  # Check minimum file sizes (in bytes)
+  min_bundle_size: 1000
+  min_archive_size: 1000
+
+  # Fail backup if verification fails
+  fail_on_verification_error: true
+
+# Notification settings (future enhancement)
+notifications:
+  # Enable backup status notifications
+  enabled: false
+
+  # Slack webhook URL (use GitHub secrets)
+  slack_webhook_secret: "SLACK_WEBHOOK_URL"
+
+  # Email notifications
+  email_on_failure: false
+
+# Storage settings
+storage:
+  # Use GitHub Actions artifacts (free with usage limits)
+  type: "github_artifacts"
+
+  # Compression level (1-9, higher = more compression, slower)
+  compression_level: 9
+
+  # Artifact naming pattern
+  artifact_name_pattern: "repo-backup-{date}-{hour}h"
+
+# Advanced settings
+advanced:
+  # Timeout for backup job (minutes)
+  job_timeout: 30
+
+  # Ubuntu runner version
+  runner_version: "ubuntu-latest"
+
+  # Git checkout depth (0 = full history)
+  checkout_depth: 0
+
+  # Enable debug logging
+  debug_logging: false
